@@ -10,11 +10,13 @@ export default function NewContentModal({ onClose, onSubmit }) {
   const [title, setTitle] = useState('')
   const [platform, setPlatform] = useState(PLATFORMS[0].key)
   const [pillar, setPillar] = useState(PILLARS[0])
+  const [scheduledDate, setScheduledDate] = useState('')
+  const [scheduledTime, setScheduledTime] = useState('')
 
   function handleSubmit(e) {
     e.preventDefault()
     if (!title.trim()) return
-    onSubmit({ title: title.trim(), platform, pillar })
+    onSubmit({ title: title.trim(), platform, pillar, scheduledDate: scheduledDate || null, scheduledTime: scheduledTime || null })
   }
 
   return (
@@ -50,6 +52,27 @@ export default function NewContentModal({ onClose, onSubmit }) {
             <select value={pillar} onChange={(e) => setPillar(e.target.value)} style={{ width: '100%', border: '0.5px solid var(--border)', borderRadius: 8, padding: '8px 10px', fontSize: 12.5 }}>
               {PILLARS.map((p) => <option key={p} value={p}>{p}</option>)}
             </select>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+          <div style={{ flex: 1 }}>
+            <label style={{ fontSize: 11.5, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>Tanggal (opsional)</label>
+            <input
+              type="date"
+              value={scheduledDate}
+              onChange={(e) => setScheduledDate(e.target.value)}
+              style={{ width: '100%', border: '0.5px solid var(--border)', borderRadius: 8, padding: '8px 10px', fontSize: 12.5, boxSizing: 'border-box' }}
+            />
+          </div>
+          <div style={{ flex: 1 }}>
+            <label style={{ fontSize: 11.5, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>Jam (opsional)</label>
+            <input
+              type="time"
+              value={scheduledTime}
+              onChange={(e) => setScheduledTime(e.target.value)}
+              style={{ width: '100%', border: '0.5px solid var(--border)', borderRadius: 8, padding: '8px 10px', fontSize: 12.5, boxSizing: 'border-box' }}
+            />
           </div>
         </div>
 

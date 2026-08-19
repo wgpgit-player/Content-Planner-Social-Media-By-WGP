@@ -86,7 +86,7 @@ export default function KanbanBoard() {
     }
   }
 
-  async function handleAddContent({ title, platform, pillar }) {
+  async function handleAddContent({ title, platform, pillar, scheduledDate, scheduledTime }) {
     if (!supabase) {
       setShowModal(false)
       return
@@ -99,6 +99,8 @@ export default function KanbanBoard() {
       pillar_id: pillarRow?.id ?? null,
       status: 'idea',
       created_by: user?.id ?? null,
+      scheduled_date: scheduledDate ?? null,
+      scheduled_time: scheduledTime ?? null,
     }
     const { data, error: insertErr } = await supabase.from('content_items').insert(payload).select().single()
     if (insertErr) {
