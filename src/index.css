@@ -99,3 +99,31 @@ body {
 .hero-btn.filled {
   background: rgba(255, 255, 255, 0.16);
 }
+
+.hero-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 11.5px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  border: 0.5px solid var(--border);
+  background: var(--surface-2);
+  transition: filter 0.15s ease;
+}
+
+.hero-pill i {
+  font-size: 13px;
+}
+
+.hero-pill:hover {
+  filter: brightness(0.97);
+}
+
+.hero-pill.filled {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
