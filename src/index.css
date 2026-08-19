@@ -127,3 +127,22 @@ body {
   color: #fff;
   border-color: var(--accent);
 }
+
+.hero-pill.on-image {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.hero-pill.on-image.filled {
+  background: rgba(255, 255, 255, 0.28);
+  border-color: rgba(255, 255, 255, 0.45);
+}
+
+.ti-loader-2 {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

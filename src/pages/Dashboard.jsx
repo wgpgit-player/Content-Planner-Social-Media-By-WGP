@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { useTenant } from '../lib/useTenant'
 import Sidebar from '../components/Sidebar'
 import Hero from '../components/Hero'
 import FeaturedCard from '../components/FeaturedCard'
@@ -111,10 +112,18 @@ function UpcomingItem({ platform, title, when }) {
 
 export default function Dashboard() {
   const [data, setData] = useState(null)
+  const { tenantId } = useTenant()
+  const [backgroundUrl, setBackgroundUrl] = useState(null)
 
   useEffect(() => {
     fetchDashboardData().then(setData)
   }, [])
+
+  useEffect(() => {
+    if (!supabase || !tenantId) return
+    supabase.from('tenants').select('hero_background_url').eq('id', tenantId).single()
+      .then(({ data: row }) => setBackgroundUrl(row?.hero_background_url ?? null))
+  }, [tenantId])
 
   function handleQuickAction(action) {
     // Placeholder — di Fase 5.5 ini manggil Edge Function yang nyambung ke
@@ -137,7 +146,13 @@ export default function Dashboard() {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <Hero userName="mas" onQuickAction={handleQuickAction} />
+          <Hero
+            userName="mas"
+            onQuickAction={handleQuickAction}
+            tenantId={tenantId}
+            backgroundUrl={backgroundUrl}
+            onBackgroundChange={setBackgroundUrl}
+          />
 
           <div style={{ background: 'var(--surface-2)', borderRadius: 16, padding: 16 }}>
             <p style={{ fontWeight: 500, fontSize: 13.5, margin: '0 0 13px' }}>Jadwal terdekat</p>
