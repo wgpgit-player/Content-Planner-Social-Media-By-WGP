@@ -9,9 +9,9 @@ import Icon from './Icon'
 // Branding milik masing-masing workspace baru muncul setelah login.
 
 const POINTS = [
-  { icon: 'albums-outline', text: 'Rencanakan dari ide sampai tayang di satu papan kerja' },
-  { icon: 'calendar-outline', text: 'Kalender konten lintas platform dalam satu tampilan' },
-  { icon: 'people-outline', text: 'Kerja bareng tim dengan peran dan akses yang jelas' },
+  { icon: 'document-text-outline', text: 'Setiap konten punya brief, bukan cuma judul' },
+  { icon: 'calendar-outline', text: 'Semua akun sosial media dalam satu kalender' },
+  { icon: 'people-outline', text: 'Tim tahu siapa mengerjakan apa dan kapan tayang' },
 ]
 
 export default function AuthLayout({ title, subtitle, children, footer }) {
@@ -39,12 +39,12 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
             >
               <Icon name="layers-outline" size={15} color="#fff" />
             </div>
-            <span style={{ fontWeight: 600, fontSize: 14, letterSpacing: '-0.01em' }}>Content Planner</span>
+            <span style={{ fontWeight: 600, fontSize: 14, letterSpacing: '-0.01em' }}>plannersm.co</span>
           </div>
 
           <div>
             <p style={{ fontSize: 21, fontWeight: 600, lineHeight: 1.3, letterSpacing: '-0.02em', marginBottom: 20 }}>
-              Satu ruang kerja untuk merencanakan konten semua akun sosial media.
+              Berhenti mengurus konten lewat catatan yang tercecer.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
               {POINTS.map((p) => (
@@ -57,7 +57,7 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
           </div>
 
           <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
-            Bikin workspace sendiri, undang tim, pakai brand kamu.
+            Ruang kerja sendiri, tim kamu, brand kamu.
           </p>
         </div>
 

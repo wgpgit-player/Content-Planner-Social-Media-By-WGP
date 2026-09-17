@@ -25,7 +25,7 @@ export default function CaptionFormulaLibrary() {
   return (
     <LibraryPageLayout
       title="Caption formula library"
-      subtitle="Rumus/template caption per tujuan konten — tinggal isi sesuai kebutuhan"
+      subtitle="Rumus caption per tujuan konten, tinggal isi sesuai kebutuhan"
       categories={goals}
       activeCategory={goal}
       onCategoryChange={setGoal}

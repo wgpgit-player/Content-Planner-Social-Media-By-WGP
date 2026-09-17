@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Sidebar from '../components/Sidebar'
 import { supabase } from '../lib/supabaseClient'
 import { useTenant } from '../lib/useTenant'
+import { Link } from 'react-router-dom'
 import { isoDate, startOfWeek, addDays, buildWeekDates, todayIso } from '../lib/dates'
 import { getPlatform } from '../config/platforms'
 import Icon from '../components/Icon'
@@ -93,7 +94,11 @@ function DetailPopup({ item, onClose, onSave }) {
           style={{ width: '100%', border: '0.5px solid var(--border)', borderRadius: 8, padding: '8px 10px', fontSize: 12.5, boxSizing: 'border-box' }}
         />
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
+        <Link to={`/content/${item.id}`} className="btn btn-sm btn-block" style={{ textDecoration: 'none', marginTop: 14 }}>
+          <Icon name="document-text-outline" size={14} /> Buka brief
+        </Link>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
           <button onClick={onClose} style={{ fontSize: 12.5, padding: '7px 12px', borderRadius: 8, border: '0.5px solid var(--border)', background: '#fff', cursor: 'pointer', color: 'var(--text-secondary)' }}>
             Tutup
           </button>

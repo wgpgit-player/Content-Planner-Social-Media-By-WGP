@@ -35,7 +35,7 @@ export default function Login() {
   return (
     <AuthLayout
       title="Masuk"
-      subtitle={isMock ? 'Mode preview — belum tersambung ke server, sesi disimpan lokal di browser.' : 'Masuk ke workspace kamu.'}
+      subtitle={isMock ? 'Mode preview. Belum tersambung ke server, sesi hanya disimpan di browser ini.' : 'Lanjutkan ke ruang kerja tim kamu.'}
       footer={
         <>
           Belum punya akun?{' '}

@@ -1,116 +1,196 @@
-import { useEffect, useState } from 'react'
-import Sidebar from '../components/Sidebar'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { useTenant } from '../lib/useTenant'
+import { isoDate } from '../lib/dates'
+import AppShell from '../components/AppShell'
 import Icon from '../components/Icon'
 
-// kpi_metrics belum punya kolom `target` di skema Fase 1 — cuma metric_key +
-// metric_value per period. Target dipetakan di frontend per metric_key
-// sampai ada kolom target di tabel (atau tabel kpi_targets terpisah).
-const TARGET_BY_KEY = {
-  followers_growth: 5,
-  engagement_rate: 4,
-  posting_consistency: 90,
-  reach_avg: 15000,
-}
-const LABEL_BY_KEY = {
-  followers_growth: 'Pertumbuhan followers',
-  engagement_rate: 'Engagement rate',
-  posting_consistency: 'Konsistensi posting',
-  reach_avg: 'Rata-rata reach/post',
-}
-const UNIT_BY_KEY = {
-  followers_growth: '%',
-  engagement_rate: '%',
-  posting_consistency: '%',
-  reach_avg: '',
+// KPI.
+//
+// Sebelumnya halaman ini membaca tabel kpi_metrics yang tidak pernah terisi,
+// dan targetnya ditulis tetap di dalam kode sehingga semua workspace melihat
+// angka yang sama tanpa bisa mengubahnya. Praktis halaman ini selalu kosong.
+//
+// Sekarang targetnya milik tiap workspace, disimpan di tabel kpi_targets per
+// bulan, sementara pencapaiannya dihitung dari data yang memang sudah ada:
+// konten yang tayang, konten yang dijadwalkan, dan brief yang sudah diisi.
+// Tidak ada angka yang dikarang.
+
+const METRIK = [
+  {
+    key: 'published_per_month',
+    label: 'Konten tayang',
+    satuan: 'konten',
+    bawaan: 12,
+    keterangan: 'Jumlah konten berstatus Tayang dengan tanggal di bulan ini.',
+  },
+  {
+    key: 'scheduled_per_month',
+    label: 'Konten terjadwal',
+    satuan: 'konten',
+    bawaan: 16,
+    keterangan: 'Konten yang sudah punya tanggal tayang di bulan ini, apa pun statusnya.',
+  },
+  {
+    key: 'briefed_per_month',
+    label: 'Konten ber-brief',
+    satuan: 'konten',
+    bawaan: 16,
+    keterangan: 'Konten bulan ini yang briefnya sudah diisi, bukan hanya judul.',
+  },
+]
+
+function awalBulanIni() {
+  const d = new Date()
+  return isoDate(new Date(d.getFullYear(), d.getMonth(), 1))
 }
 
-function KpiCard({ label, value, unit, target, trend }) {
-  const pct = Math.min(100, Math.round((value / target) * 100))
-  const isUp = trend === 'up'
+function akhirBulanIni() {
+  const d = new Date()
+  return isoDate(new Date(d.getFullYear(), d.getMonth() + 1, 0))
+}
+
+function KartuKpi({ metrik, capaian, target, onUbahTarget, menyimpan }) {
+  const persen = target > 0 ? Math.min(100, Math.round((capaian / target) * 100)) : 0
+  const tercapai = target > 0 && capaian >= target
+  const warna = tercapai ? 'var(--success)' : persen >= 60 ? 'var(--accent)' : 'var(--warning)'
+
   return (
-    <div style={{ background: 'var(--surface-2)', borderRadius: 14, padding: 16 }}>
-      <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '0 0 6px' }}>{label}</p>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 8 }}>
-        <p style={{ fontSize: 22, fontWeight: 500, margin: 0 }}>{value.toLocaleString('id-ID')}{unit}</p>
-        <span style={{ fontSize: 11, color: isUp ? '#3B6D11' : '#A32D2D', display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Icon name={isUp ? 'trending-up-outline' : 'trending-down-outline'} size={12} />
-        </span>
+    <div className="card">
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 12 }}>
+        <div style={{ flex: 1 }}>
+          <p style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 3 }}>{metrik.label}</p>
+          <p style={{ fontSize: 11.5, color: 'var(--text-secondary)', lineHeight: 1.45 }}>{metrik.keterangan}</p>
+        </div>
+        {tercapai && <Icon name="checkmark-circle-outline" size={18} color="var(--success)" />}
       </div>
-      <div style={{ height: 6, background: 'var(--surface-1)', borderRadius: 4, overflow: 'hidden' }}>
-        <div style={{ height: '100%', width: `${pct}%`, background: isUp ? '#639922' : '#EF9F27', borderRadius: 4 }} />
+
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 9 }}>
+        <span style={{ fontSize: 26, fontWeight: 600, letterSpacing: '-0.02em', color: warna }}>{capaian}</span>
+        <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>dari {target} {metrik.satuan}</span>
       </div>
-      <p style={{ fontSize: 10.5, color: 'var(--text-muted)', margin: '6px 0 0' }}>Target: {target.toLocaleString('id-ID')}{unit}</p>
+
+      <div className="bar-track" style={{ height: 7 }}>
+        <div className="bar-fill" style={{ width: `${persen}%`, background: warna }} />
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 13 }}>
+        <label className="field-label" style={{ margin: 0, whiteSpace: 'nowrap' }}>Target bulan ini</label>
+        <input
+          className="input"
+          type="number"
+          min="0"
+          value={target}
+          disabled={menyimpan}
+          onChange={(e) => onUbahTarget(metrik.key, e.target.value)}
+          style={{ width: 88, padding: '5px 8px', fontSize: 12.5 }}
+        />
+        <span style={{ fontSize: 11.5, color: 'var(--text-muted)', marginLeft: 'auto' }}>{persen}%</span>
+      </div>
     </div>
   )
 }
 
-async function fetchKpiMetrics() {
-  if (!supabase) return []
-
-  const { data: rows, error } = await supabase
-    .from('kpi_metrics')
-    .select('metric_key,metric_value,period_start,period_end')
-    .order('period_end', { ascending: false })
-  if (error) {
-    console.error('fetch kpi_metrics error:', error)
-    return []
-  }
-
-  // Ambil nilai terbaru dan sebelumnya per metric_key buat hitung trend naik/turun.
-  const latestByKey = {}
-  const previousByKey = {}
-  for (const row of rows ?? []) {
-    if (!latestByKey[row.metric_key]) {
-      latestByKey[row.metric_key] = row
-    } else if (!previousByKey[row.metric_key]) {
-      previousByKey[row.metric_key] = row
-    }
-  }
-
-  return Object.keys(latestByKey).map((key) => {
-    const latest = latestByKey[key]
-    const previous = previousByKey[key]
-    const trend = previous ? (latest.metric_value >= previous.metric_value ? 'up' : 'down') : 'up'
-    return {
-      key,
-      label: LABEL_BY_KEY[key] ?? key,
-      value: latest.metric_value,
-      unit: UNIT_BY_KEY[key] ?? '',
-      target: TARGET_BY_KEY[key] ?? latest.metric_value,
-      trend,
-    }
-  })
-}
-
 export default function Kpi() {
-  const [metrics, setMetrics] = useState([])
+  const { tenantId } = useTenant()
+  const [capaian, setCapaian] = useState({ published_per_month: 0, scheduled_per_month: 0, briefed_per_month: 0 })
+  const [target, setTarget] = useState({})
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [menyimpan, setMenyimpan] = useState(false)
+  const [pesan, setPesan] = useState(null)
 
+  const periode = awalBulanIni()
+
+  const muat = useCallback(async () => {
+    if (!supabase || !tenantId) return
+    setLoading(true)
+
+    const awal = awalBulanIni()
+    const akhir = akhirBulanIni()
+
+    const [{ data: items, error: itemErr }, { data: targetRows }] = await Promise.all([
+      supabase.from('content_items').select('status,scheduled_date,brief')
+        .eq('tenant_id', tenantId).gte('scheduled_date', awal).lte('scheduled_date', akhir),
+      supabase.from('kpi_targets').select('metric_key,target_value')
+        .eq('tenant_id', tenantId).eq('period_month', awal),
+    ])
+
+    if (itemErr) setPesan({ type: 'error', text: `Gagal memuat data: ${itemErr.message}` })
+
+    const rows = items ?? []
+    setCapaian({
+      published_per_month: rows.filter((r) => r.status === 'published').length,
+      scheduled_per_month: rows.length,
+      briefed_per_month: rows.filter((r) => r.brief && r.brief.trim() !== '').length,
+    })
+
+    const tersimpan = Object.fromEntries((targetRows ?? []).map((t) => [t.metric_key, Number(t.target_value)]))
+    setTarget(Object.fromEntries(METRIK.map((m) => [m.key, tersimpan[m.key] ?? m.bawaan])))
+    setLoading(false)
+  }, [tenantId])
+
+  useEffect(() => { muat() }, [muat])
+
+  // Target disimpan saat pengguna berhenti mengetik, bukan pada setiap
+  // ketukan, supaya tidak membanjiri server dengan permintaan.
   useEffect(() => {
-    fetchKpiMetrics()
-      .then(setMetrics)
-      .catch(setError)
-      .finally(() => setLoading(false))
-  }, [])
+    if (loading || !tenantId || !supabase) return
+    const timer = setTimeout(async () => {
+      setMenyimpan(true)
+      const baris = METRIK.map((m) => ({
+        tenant_id: tenantId,
+        period_month: periode,
+        metric_key: m.key,
+        target_value: Number(target[m.key]) || 0,
+      }))
+      const { error } = await supabase
+        .from('kpi_targets')
+        .upsert(baris, { onConflict: 'tenant_id,period_month,metric_key' })
+      setMenyimpan(false)
+      if (error) setPesan({ type: 'error', text: `Gagal menyimpan target: ${error.message}` })
+    }, 700)
+    return () => clearTimeout(timer)
+  }, [target, tenantId, periode, loading])
+
+  function ubahTarget(key, nilai) {
+    setPesan(null)
+    setTarget((t) => ({ ...t, [key]: nilai === '' ? 0 : Math.max(0, Number(nilai)) }))
+  }
+
+  const namaBulan = new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
 
   return (
-    <div style={{ background: 'var(--bg-page)', minHeight: '100vh', padding: 16, display: 'grid', gridTemplateColumns: '190px 1fr', gap: 16 }}>
-      <Sidebar />
-      <div style={{ maxWidth: 700 }}>
-        <div style={{ marginBottom: 14 }}>
-          <p style={{ fontWeight: 500, fontSize: 16, margin: 0 }}>KPI</p>
-          <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '2px 0 0' }}>Target vs pencapaian bulan ini</p>
-        </div>
-        {loading && <p style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>Memuat KPI...</p>}
-        {error && <p style={{ fontSize: 12.5, color: '#A32D2D' }}>Gagal memuat data: {error.message}</p>}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0,1fr))', gap: 12 }}>
-          {metrics.map((m) => (
-            <KpiCard key={m.key} {...m} />
-          ))}
-        </div>
-      </div>
-    </div>
+    <AppShell
+      title="KPI"
+      description={`Target dan pencapaian untuk ${namaBulan}.`}
+      maxWidth={820}
+    >
+      {pesan && (
+        <p className="alert alert-error" style={{ marginBottom: 14 }}>{pesan.text}</p>
+      )}
+
+      {loading ? (
+        <p style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>Memuat KPI...</p>
+      ) : (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(255px, 1fr))', gap: 12 }}>
+            {METRIK.map((m) => (
+              <KartuKpi
+                key={m.key}
+                metrik={m}
+                capaian={capaian[m.key] ?? 0}
+                target={target[m.key] ?? m.bawaan}
+                onUbahTarget={ubahTarget}
+                menyimpan={false}
+              />
+            ))}
+          </div>
+
+          <p style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 14 }}>
+            {menyimpan ? 'Menyimpan target...' : 'Target tersimpan otomatis dan berlaku untuk bulan ini saja.'}
+          </p>
+        </>
+      )}
+    </AppShell>
   )
 }

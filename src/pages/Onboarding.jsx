@@ -109,7 +109,7 @@ export default function Onboarding() {
               {isAdditional ? 'Workspace baru' : 'Selamat datang'}
             </p>
             <p className="page-subtitle" style={{ marginBottom: 22 }}>
-              Kasih nama workspace ini — biasanya nama brand, perusahaan, atau klien yang kontennya kamu kelola.
+              Beri nama ruang kerja ini. Biasanya nama brand, perusahaan, atau klien yang kontennya kamu kelola.
             </p>
 
             <label className="field-label" htmlFor="ws-name">Nama brand atau workspace</label>
@@ -134,7 +134,7 @@ export default function Onboarding() {
           <>
             <p className="page-title" style={{ marginBottom: 5 }}>Pilih titik awal content pillar</p>
             <p className="page-subtitle" style={{ marginBottom: 18 }}>
-              Ini cuma kerangka awal — pillar bisa ditambah, diubah, atau dihapus kapan saja.
+              Ini hanya kerangka awal. Pillar bisa ditambah, diubah, atau dihapus kapan saja.
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 320, overflowY: 'auto', paddingRight: 2 }}>

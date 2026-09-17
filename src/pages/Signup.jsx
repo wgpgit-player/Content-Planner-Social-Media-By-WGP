@@ -79,7 +79,7 @@ export default function Signup() {
   return (
     <AuthLayout
       title="Buat akun"
-      subtitle={isMock ? 'Mode preview — belum tersambung ke server, sesi disimpan lokal di browser.' : 'Gratis, dan langsung bisa dipakai.'}
+      subtitle={isMock ? 'Mode preview. Belum tersambung ke server, sesi hanya disimpan di browser ini.' : 'Gratis, dan ruang kerja pertama kamu jadi dalam satu menit.'}
       footer={
         <>
           Sudah punya akun?{' '}

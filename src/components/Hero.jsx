@@ -1,138 +1,182 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import Icon from './Icon'
 
-// Kartu sapaan ala referensi "fitplan". Sekarang bisa dikustom dengan gambar
-// wallpaper — tersimpan di Supabase Storage bucket 'branding', path
-// {tenantId}/hero.<ext>, URL-nya disimpan di kolom tenants.hero_background_url.
-// Kalau ada background, ditambah overlay gradient gelap tipis biar teks tetap
-// terbaca; kalau tidak ada, fallback ke background surface polos (bukan lagi
-// gradient ungu-pink, biar selaras sama gaya fitplan yang lebih tenang).
+// Panel sapaan di kepala dashboard.
+//
+// Versi sebelumnya punya kotak "Mau bikin apa hari ini..." yang tidak
+// tersambung ke apa pun dan empat tombol pintasan yang tidak melakukan apa-apa.
+// Isinya terlihat ramai tapi tidak bisa dipakai, jadi bagian itu dibuang.
+//
+// Sekarang panel ini mengerjakan tiga hal yang benar-benar berguna:
+//   1. menyapa dan menyebutkan apa yang perlu diperhatikan hari ini
+//   2. satu tombol untuk hal yang paling sering dilakukan, yaitu bikin konten
+//   3. wallpaper yang bisa diganti tim, supaya ruang kerjanya terasa milik
+//      mereka sendiri dan bukan aplikasi generik
+//
+// Wallpaper disimpan di bucket 'branding' dengan path {tenantId}/hero.<ext>,
+// URL-nya di kolom tenants.hero_background_url.
 
-// Sapaan dibuat netral: tidak mengklaim angka atau status yang belum tentu
-// benar (versi sebelumnya sempat bilang "engagement rate naik" tanpa data).
-const SUBTEXTS = [
-  'Semoga harimu produktif.',
-  'Siap merencanakan konten hari ini?',
-  'Satu langkah kecil hari ini, hasilnya kelihatan bulan depan.',
-]
-
-function greetingFor(hour) {
-  if (hour < 11) return 'Selamat pagi'
-  if (hour < 15) return 'Selamat siang'
-  if (hour < 18) return 'Selamat sore'
+function salamUntuk(jam) {
+  if (jam < 11) return 'Selamat pagi'
+  if (jam < 15) return 'Selamat siang'
+  if (jam < 18) return 'Selamat sore'
   return 'Selamat malam'
 }
 
-export default function Hero({ userName, onQuickAction, tenantId, backgroundUrl, onBackgroundChange }) {
-  const [now, setNow] = useState(new Date())
-  const [subtext] = useState(() => SUBTEXTS[Math.floor(Math.random() * SUBTEXTS.length)])
+export default function Hero({
+  userName,
+  tenantId,
+  backgroundUrl,
+  onBackgroundChange,
+  jadwalHariIni = 0,
+  perluDibrief = 0,
+  bisaUbahWallpaper = true,
+}) {
+  const navigate = useNavigate()
+  const [sekarang, setSekarang] = useState(new Date())
   const [uploading, setUploading] = useState(false)
-  const fileInputRef = useRef(null)
+  const [galat, setGalat] = useState(null)
+  const fileRef = useRef(null)
 
   useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 30000)
-    return () => clearInterval(timer)
+    const t = setInterval(() => setSekarang(new Date()), 60000)
+    return () => clearInterval(t)
   }, [])
 
-  // Tanpa nama, sapaannya tetap wajar: "Selamat pagi" saja.
-  const greeting = userName
-    ? `${greetingFor(now.getHours())}, ${userName}`
-    : greetingFor(now.getHours())
-  const hasImage = Boolean(backgroundUrl)
+  const adaGambar = Boolean(backgroundUrl)
+  const salam = userName ? `${salamUntuk(sekarang.getHours())}, ${userName}` : salamUntuk(sekarang.getHours())
 
-  async function handleFileChange(e) {
+  // Kalimat kedua mengikuti keadaan sebenarnya, bukan basa-basi tetap.
+  let ringkasan
+  if (jadwalHariIni > 0) ringkasan = `Ada ${jadwalHariIni} konten dijadwalkan tayang hari ini.`
+  else if (perluDibrief > 0) ringkasan = `${perluDibrief} konten belum punya brief.`
+  else ringkasan = 'Tidak ada yang mendesak hari ini.'
+
+  async function gantiWallpaper(e) {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file || !supabase || !tenantId) return
 
-    setUploading(true)
-    const ext = file.name.split('.').pop()
-    const path = `${tenantId}/hero.${ext}`
-    const { error: uploadErr } = await supabase.storage.from('branding').upload(path, file, { upsert: true })
-    if (uploadErr) {
-      console.error('upload hero background error:', uploadErr)
-      setUploading(false)
+    if (!file.type.startsWith('image/')) {
+      setGalat('File harus berupa gambar.')
       return
     }
-    const { data: pub } = supabase.storage.from('branding').getPublicUrl(path)
-    const url = `${pub.publicUrl}?t=${Date.now()}` // cache-bust biar langsung update
-    await supabase.from('tenants').update({ hero_background_url: url }).eq('id', tenantId)
-    onBackgroundChange?.(url)
-    setUploading(false)
+    if (file.size > 5 * 1024 * 1024) {
+      setGalat('Ukuran gambar maksimal 5 MB.')
+      return
+    }
+
+    setUploading(true)
+    setGalat(null)
+    try {
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
+      const path = `${tenantId}/hero.${ext}`
+
+      const { error: upErr } = await supabase.storage.from('branding').upload(path, file, { upsert: true })
+      if (upErr) throw upErr
+
+      const { data } = supabase.storage.from('branding').getPublicUrl(path)
+      const url = `${data.publicUrl}?t=${Date.now()}`
+
+      const { error: dbErr } = await supabase.from('tenants').update({ hero_background_url: url }).eq('id', tenantId)
+      if (dbErr) throw dbErr
+
+      onBackgroundChange?.(url)
+    } catch (err) {
+      setGalat(err.message || 'Gagal mengunggah gambar.')
+    } finally {
+      setUploading(false)
+    }
   }
 
-  async function handleRemoveBackground() {
+  async function hapusWallpaper() {
     if (!supabase || !tenantId) return
-    await supabase.from('tenants').update({ hero_background_url: null }).eq('id', tenantId)
+    const { error } = await supabase.from('tenants').update({ hero_background_url: null }).eq('id', tenantId)
+    if (error) { setGalat(error.message); return }
     onBackgroundChange?.(null)
   }
 
+  const teksUtama = adaGambar ? '#fff' : 'var(--text-primary)'
+  const teksKedua = adaGambar ? 'rgba(255,255,255,0.82)' : 'var(--text-secondary)'
+
   return (
-    <div style={{
-      position: 'relative', overflow: 'hidden', borderRadius: 16,
-      padding: '20px 20px 16px', background: hasImage ? '#2a2438' : 'var(--surface-2)',
-      backgroundImage: hasImage ? `linear-gradient(135deg, rgba(30,20,45,0.72), rgba(30,20,45,0.35)), url(${backgroundUrl})` : 'none',
-      backgroundSize: 'cover', backgroundPosition: 'center',
-    }}>
-      <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 6 }}>
-        {hasImage && (
-          <button
-            onClick={handleRemoveBackground}
-            title="Hapus wallpaper"
-            style={{
-              width: 26, height: 26, borderRadius: 8, border: 'none', cursor: 'pointer',
-              background: 'rgba(255,255,255,0.18)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
-          >
-            <Icon name="close-outline" size={13} />
-          </button>
+    <div
+      style={{
+        position: 'relative',
+        borderRadius: 16,
+        padding: '20px 22px',
+        overflow: 'hidden',
+        border: adaGambar ? 'none' : '0.5px solid var(--border)',
+        boxShadow: 'var(--shadow-sm)',
+        background: adaGambar
+          ? `linear-gradient(100deg, rgba(14,14,20,0.82) 0%, rgba(14,14,20,0.45) 55%, rgba(14,14,20,0.25) 100%), center/cover no-repeat url(${backgroundUrl})`
+          : 'var(--surface-2)',
+        minHeight: 104,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 16,
+        flexWrap: 'wrap',
+      }}
+    >
+      <div style={{ flex: 1, minWidth: 220 }}>
+        <p style={{ fontSize: 17, fontWeight: 600, letterSpacing: '-0.01em', color: teksUtama, marginBottom: 3 }}>
+          {salam}
+        </p>
+        <p style={{ fontSize: 12.5, color: teksKedua }}>{ringkasan}</p>
+
+        {galat && (
+          <p style={{ fontSize: 11.5, color: adaGambar ? '#FFD4D4' : 'var(--danger)', marginTop: 8 }}>{galat}</p>
         )}
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <button
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-          title="Ganti wallpaper"
-          style={{
-            width: 26, height: 26, borderRadius: 8, border: 'none', cursor: 'pointer',
-            background: hasImage ? 'rgba(255,255,255,0.18)' : 'var(--surface-1)',
-            color: hasImage ? '#fff' : 'var(--text-secondary)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
+          type="button"
+          className="btn btn-primary btn-sm"
+          onClick={() => navigate('/kanban')}
         >
-          <Icon name={uploading ? 'reload-outline' : 'image-outline'} className={uploading ? 'spin' : undefined} size={13} />
+          <Icon name="add-outline" size={15} /> Konten baru
         </button>
-        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
-      </div>
 
-      <p style={{ fontSize: 19, fontWeight: 600, margin: '0 0 4px', color: hasImage ? '#fff' : 'var(--text-primary)' }}>
-        {greeting} <span aria-hidden="true">👋</span>
-      </p>
-      <p style={{ fontSize: 12.5, color: hasImage ? 'rgba(255,255,255,0.85)' : 'var(--text-secondary)', margin: '0 0 16px', lineHeight: 1.5 }}>{subtext}</p>
+        {bisaUbahWallpaper && (
+          <>
+            <button
+              type="button"
+              className={adaGambar ? 'hero-pill on-image' : 'hero-pill'}
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading}
+              title={adaGambar ? 'Ganti wallpaper' : 'Pasang wallpaper'}
+            >
+              <Icon
+                name={uploading ? 'reload-outline' : 'image-outline'}
+                className={uploading ? 'spin' : undefined}
+                size={14}
+              />
+              {uploading ? 'Mengunggah' : 'Wallpaper'}
+            </button>
 
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 8,
-        background: hasImage ? 'rgba(255,255,255,0.14)' : 'var(--surface-1)',
-        border: hasImage ? '0.5px solid rgba(255,255,255,0.25)' : '0.5px solid var(--border)',
-        borderRadius: 10, padding: '9px 12px', marginBottom: 12,
-      }}>
-        <Icon name="sparkles-outline" size={14} color={hasImage ? '#fff' : 'var(--accent)'} />
-        <span style={{ fontSize: 12.5, color: hasImage ? 'rgba(255,255,255,0.8)' : 'var(--text-muted)' }}>Mau bikin apa hari ini...</span>
-        <Icon name="send-outline" size={14} color={hasImage ? '#fff' : 'var(--accent)'} style={{ marginLeft: 'auto', cursor: 'pointer' }} />
-      </div>
+            {adaGambar && !uploading && (
+              <button
+                type="button"
+                className="hero-pill on-image"
+                onClick={hapusWallpaper}
+                title="Hapus wallpaper"
+              >
+                <Icon name="close-outline" size={14} />
+              </button>
+            )}
 
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-        <button className={`hero-pill ${hasImage ? 'on-image filled' : 'filled'}`} onClick={() => onQuickAction?.('now')}>
-          <Icon name="flash-outline"  /> Sekarang
-        </button>
-        <button className={`hero-pill ${hasImage ? 'on-image' : ''}`} onClick={() => onQuickAction?.('draft-jadwal')}>
-          <Icon name="calendar-number-outline"  /> Besok
-        </button>
-        <button className={`hero-pill ${hasImage ? 'on-image' : ''}`} onClick={() => onQuickAction?.('minggu-depan')}>
-          <Icon name="calendar-outline"  /> Minggu depan
-        </button>
-        <button className={`hero-pill ${hasImage ? 'on-image' : ''}`} onClick={() => onQuickAction?.('ringkas-performa')}>
-          <Icon name="options-outline"  /> Custom
-        </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={gantiWallpaper}
+            />
+          </>
+        )}
       </div>
     </div>
   )

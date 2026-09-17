@@ -71,7 +71,7 @@ export default function TenantSwitcher() {
             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
           }}
         >
-          {tenant?.name ?? 'Content Planner'}
+          {tenant?.name ?? 'plannersm.co'}
         </span>
         {multi && (
           <Icon name="chevron-expand-outline" size={13} color="var(--text-muted)" style={{ marginLeft: 'auto' }} />

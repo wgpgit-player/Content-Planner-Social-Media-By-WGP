@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { getPlatform } from '../config/platforms'
 import { isoDate, parseIsoDate, buildWeekDates, todayIso } from '../lib/dates'
 
@@ -16,9 +17,9 @@ export default function WeekCalendar({ startIso, itemsByDate }) {
   const weekDates = weekDatesFrom(startIso)
 
   return (
-    <div style={{ background: 'var(--surface-2)', borderRadius: 16, padding: 16 }}>
+    <div className="card">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-        <p style={{ fontWeight: 500, fontSize: 13.5, margin: 0 }}>Jadwal minggu ini</p>
+        <p style={{ fontWeight: 600, fontSize: 13.5, margin: 0 }}>Jadwal minggu ini</p>
         <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
           {weekDates[0].getDate()} - {weekDates[6].getDate()} {weekDates[6].toLocaleDateString('id-ID', { month: 'short' })}
         </span>
@@ -43,16 +44,18 @@ export default function WeekCalendar({ startIso, itemsByDate }) {
                 {items.slice(0, 3).map((it) => {
                   const p = getPlatform(it.platform)
                   return (
-                    <div
+                    <Link
                       key={it.id}
-                      title={it.title}
+                      to={`/content/${it.id}`}
+                      title={`${it.title} (klik untuk membuka brief)`}
                       style={{
                         fontSize: 9.5, padding: '4px 5px', borderRadius: 6, background: p.bg, color: p.color,
-                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', cursor: 'default',
+                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                        display: 'block', textDecoration: 'none',
                       }}
                     >
                       {it.title}
-                    </div>
+                    </Link>
                   )
                 })}
                 {items.length > 3 && (

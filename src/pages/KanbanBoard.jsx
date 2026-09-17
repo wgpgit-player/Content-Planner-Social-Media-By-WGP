@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import Sidebar from '../components/Sidebar'
+import { useNavigate } from 'react-router-dom'
+import AppShell from '../components/AppShell'
 import KanbanCard from '../components/KanbanCard'
 import NewContentModal from '../components/NewContentModal'
 import { supabase } from '../lib/supabaseClient'
@@ -33,6 +34,7 @@ function mapRow(row, pillarNameById) {
 const BOARD_LIMIT = 300
 
 export default function KanbanBoard() {
+  const navigate = useNavigate()
   const { user } = useAuth()
   const { tenantId } = useTenant()
   const [items, setItems] = useState([])
@@ -116,26 +118,23 @@ export default function KanbanBoard() {
     const pillarNameById = Object.fromEntries(pillars.map((p) => [p.id, p.name]))
     setItems((prev) => [mapRow(data, pillarNameById), ...prev])
     setShowModal(false)
+    // Langsung dibawa ke halaman brief: judul saja tidak cukup untuk
+    // dikerjakan, jadi lebih baik mengisi briefnya selagi idenya masih hangat.
+    navigate(`/content/${data.id}`)
   }
 
   return (
-    <div style={{ background: 'var(--bg-page)', minHeight: '100vh', padding: 16, display: 'grid', gridTemplateColumns: '190px 1fr', gap: 16 }}>
-      <Sidebar />
-
+    <AppShell
+      title="Project tracker"
+      description="Geser kartu untuk mengubah status, klik untuk membuka briefnya."
+      maxWidth={1180}
+      actions={
+        <button onClick={() => setShowModal(true)} className="btn btn-primary btn-sm">
+          + Konten baru
+        </button>
+      }
+    >
       <div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-          <div>
-            <p style={{ fontWeight: 500, fontSize: 16, margin: 0 }}>Project tracker</p>
-            <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '2px 0 0' }}>Drag kartu antar kolom buat ubah status</p>
-          </div>
-          <button
-            onClick={() => setShowModal(true)}
-            className="hero-btn filled"
-            style={{ color: 'var(--accent)', border: '0.5px solid var(--border)', background: 'var(--accent-bg)' }}
-          >
-            + Konten baru
-          </button>
-        </div>
 
         {loading && <p style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>Memuat konten...</p>}
         {error && <p style={{ fontSize: 12.5, color: '#A32D2D' }}>Gagal memuat data: {error.message}</p>}
@@ -170,6 +169,6 @@ export default function KanbanBoard() {
       {showModal && (
         <NewContentModal onClose={() => setShowModal(false)} onSubmit={handleAddContent} pillars={pillars} />
       )}
-    </div>
+    </AppShell>
   )
 }

@@ -75,9 +75,15 @@ export default function Sidebar() {
 
   return (
     <div
+      className="sidebar-scroll"
       style={{
+        // Menempel di tempatnya dan punya scrollbar sendiri. Sebelumnya sidebar
+        // ikut memanjang ke bawah, jadi untuk menjangkau menu paling bawah
+        // seluruh halaman harus di-scroll dulu.
         background: 'var(--surface-2)', border: '0.5px solid var(--border)', borderRadius: 16,
-        padding: '16px 12px', width: 190, height: 'fit-content',
+        padding: '16px 12px', width: 190,
+        position: 'sticky', top: 16,
+        maxHeight: 'calc(100vh - 32px)', overflowY: 'auto', overscrollBehavior: 'contain',
         display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow-sm)',
       }}
     >

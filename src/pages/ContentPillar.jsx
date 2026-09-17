@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import Sidebar from '../components/Sidebar'
+import AppShell from '../components/AppShell'
 import NewPillarModal from '../components/NewPillarModal'
 import { supabase } from '../lib/supabaseClient'
 import { useTenant } from '../lib/useTenant'
@@ -59,8 +59,7 @@ export default function ContentPillar() {
   }
 
   return (
-    <div style={{ background: 'var(--bg-page)', minHeight: '100vh', padding: 16, display: 'grid', gridTemplateColumns: '190px 1fr', gap: 16 }}>
-      <Sidebar />
+    <AppShell maxWidth={820}>
       <div style={{ maxWidth: 760 }}>
         <div style={{ marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
@@ -96,6 +95,6 @@ export default function ContentPillar() {
       {showModal && (
         <NewPillarModal onClose={() => setShowModal(false)} onSubmit={handleAddPillar} />
       )}
-    </div>
+    </AppShell>
   )
 }

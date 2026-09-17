@@ -1,148 +1,315 @@
-import { useEffect, useState } from 'react'
-import { useTenant } from '../lib/useTenant'
-import Sidebar from '../components/Sidebar'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
-import { getPlatform } from '../config/platforms'
+import { useTenant } from '../lib/useTenant'
+import { PLATFORMS, getPlatform } from '../config/platforms'
+import { isoDate, todayIso } from '../lib/dates'
+import AppShell from '../components/AppShell'
 import Icon from '../components/Icon'
 
-function ProfileCard({ platformKey, data }) {
-  const platform = getPlatform(platformKey)
+// Performance tracker.
+//
+// Halaman ini sebelumnya selalu kosong. Ia menunggu data di analytics_profile
+// dan analytics_content, padahal belum ada satu pun integrasi API sosial media
+// yang mengisinya, jadi tidak akan pernah terisi dengan sendirinya.
+//
+// Sekarang isinya dibagi dua, dan keduanya jujur soal asal datanya:
+//
+//   1. Statistik produksi, dihitung langsung dari konten yang tim buat sendiri.
+//      Ini data nyata dan tersedia sejak hari pertama: berapa yang tayang,
+//      seberapa konsisten, dan sebarannya ke mana saja.
+//
+//   2. Metrik akun (follower dan engagement), dicatat manual. Angka ini hanya
+//      bisa didapat dari platformnya, jadi selama belum ada integrasi, mencatat
+//      sendiri lebih berguna daripada membiarkan halaman kosong. Setiap catatan
+//      menyimpan tanggalnya, sehingga perkembangannya tetap terlihat.
+
+const NAMA_BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
+
+function kunciBulan(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+function labelBulan(kunci) {
+  const [th, bl] = kunci.split('-')
+  return `${NAMA_BULAN[Number(bl) - 1].slice(0, 3)} ${th.slice(2)}`
+}
+
+// Enam bulan terakhir termasuk bulan berjalan, dari yang paling lama.
+function enamBulanTerakhir() {
+  const sekarang = new Date()
+  return Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(sekarang.getFullYear(), sekarang.getMonth() - (5 - i), 1)
+    return kunciBulan(d)
+  })
+}
+
+function Metric({ label, value, sub }) {
   return (
-    <div style={{ background: 'var(--surface-2)', borderRadius: 14, padding: 16 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-        <div style={{
-          width: 26, height: 26, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: platform.bg,
-        }}>
-          <Icon name={platform.icon} size={14} color={platform.color} />
-        </div>
-        <p style={{ fontSize: 13.5, fontWeight: 500, margin: 0 }}>{platform.label}</p>
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0,1fr))', gap: 10 }}>
-        <div>
-          <p style={{ fontSize: 18, fontWeight: 500, margin: 0 }}>{data.followers.toLocaleString('id-ID')}</p>
-          <p style={{ fontSize: 10.5, color: 'var(--text-muted)', margin: 0 }}>Followers (+{data.followersGrowth}%)</p>
-        </div>
-        <div>
-          <p style={{ fontSize: 18, fontWeight: 500, margin: 0 }}>{data.engagementRate}%</p>
-          <p style={{ fontSize: 10.5, color: 'var(--text-muted)', margin: 0 }}>Engagement rate</p>
-        </div>
-        <div>
-          <p style={{ fontSize: 18, fontWeight: 500, margin: 0 }}>{data.postsThisMonth}</p>
-          <p style={{ fontSize: 10.5, color: 'var(--text-muted)', margin: 0 }}>Post bulan ini</p>
-        </div>
-      </div>
+    <div className="metric">
+      <p className="metric-label">{label}</p>
+      <p className="metric-value">{value}</p>
+      {sub && <p className="metric-sub">{sub}</p>}
     </div>
   )
 }
 
-async function fetchPerformanceData(tenantId) {
-  if (!supabase || !tenantId) return { profiles: {}, topContent: [] }
-
-  // Ambil 2 snapshot terbaru per platform (buat hitung followers growth
-  // secara kasar), lalu ambil konten performa terbaik dari analytics_content.
-  const [{ data: profileRows, error: profileErr }, { data: contentRows, error: contentErr }] = await Promise.all([
-    supabase.from('analytics_profile').select('platform,snapshot_date,followers,engagement_rate,posts_count').eq('tenant_id', tenantId).order('snapshot_date', { ascending: false }),
-    supabase.from('analytics_content').select('content_item_id,platform,likes,comments_count,shares,reach').eq('tenant_id', tenantId).order('reach', { ascending: false }).limit(10),
-  ])
-  if (profileErr) console.error('fetch analytics_profile error:', profileErr)
-  if (contentErr) console.error('fetch analytics_content error:', contentErr)
-
-  const profiles = {}
-  for (const row of profileRows ?? []) {
-    if (profiles[row.platform]) continue // sudah ada snapshot terbaru, skip yang lebih lama
-    const prev = (profileRows ?? []).find((r) => r.platform === row.platform && r.snapshot_date !== row.snapshot_date)
-    const followersGrowth = prev && prev.followers ? Number((((row.followers - prev.followers) / prev.followers) * 100).toFixed(1)) : 0
-    profiles[row.platform] = {
-      followers: row.followers ?? 0,
-      followersGrowth,
-      engagementRate: row.engagement_rate ?? 0,
-      postsThisMonth: row.posts_count ?? 0,
-    }
-  }
-
-  const contentItemIds = [...new Set((contentRows ?? []).map((r) => r.content_item_id).filter(Boolean))]
-  let titleById = {}
-  if (contentItemIds.length) {
-    const { data: itemRows } = await supabase.from('content_items').select('id,title').eq('tenant_id', tenantId).in('id', contentItemIds)
-    titleById = Object.fromEntries((itemRows ?? []).map((i) => [i.id, i.title]))
-  }
-
-  const topContent = (contentRows ?? []).map((row, idx) => ({
-    id: row.content_item_id ?? idx,
-    title: titleById[row.content_item_id] ?? '(tanpa judul)',
-    platform: row.platform,
-    likes: row.likes ?? 0,
-    comments: row.comments_count ?? 0,
-    shares: row.shares ?? 0,
-    reach: row.reach ?? 0,
-  }))
-
-  return { profiles, topContent }
+function GrafikBatang({ data }) {
+  const maks = Math.max(1, ...data.map((d) => d.jumlah))
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, height: 120, padding: '0 2px' }}>
+      {data.map((d) => (
+        <div key={d.kunci} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 11, fontWeight: 600, color: d.jumlah ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+            {d.jumlah}
+          </span>
+          <div
+            style={{
+              width: '100%',
+              height: `${(d.jumlah / maks) * 80}px`,
+              minHeight: 3,
+              background: d.jumlah ? 'var(--accent)' : 'var(--border)',
+              borderRadius: 6,
+            }}
+          />
+          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{labelBulan(d.kunci)}</span>
+        </div>
+      ))}
+    </div>
+  )
 }
 
 export default function PerformanceTracker() {
   const { tenantId } = useTenant()
-  const [data, setData] = useState({ profiles: {}, topContent: [] })
+  const [items, setItems] = useState([])
+  const [snapshots, setSnapshots] = useState([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [pesan, setPesan] = useState(null)
 
-  useEffect(() => {
-    fetchPerformanceData(tenantId)
-      .then(setData)
-      .catch(setError)
-      .finally(() => setLoading(false))
+  const [form, setForm] = useState({ platform: PLATFORMS[0].key, followers: '', engagement: '', tanggal: todayIso() })
+  const [menyimpan, setMenyimpan] = useState(false)
+
+  const muat = useCallback(async () => {
+    if (!supabase || !tenantId) return
+    setLoading(true)
+
+    const [{ data: contentRows, error: contentErr }, { data: profileRows }] = await Promise.all([
+      supabase.from('content_items').select('id,status,platform,scheduled_date').eq('tenant_id', tenantId).limit(1000),
+      supabase.from('analytics_profile').select('platform,snapshot_date,followers,engagement_rate')
+        .eq('tenant_id', tenantId).order('snapshot_date', { ascending: false }).limit(200),
+    ])
+
+    if (contentErr) setPesan({ type: 'error', text: `Gagal memuat data: ${contentErr.message}` })
+    setItems(contentRows ?? [])
+    setSnapshots(profileRows ?? [])
+    setLoading(false)
   }, [tenantId])
 
-  const sorted = [...data.topContent].sort((a, b) => b.reach - a.reach)
-  const trackedPlatforms = Object.keys(data.profiles)
+  useEffect(() => { muat() }, [muat])
+
+  async function simpanSnapshot(e) {
+    e.preventDefault()
+    setPesan(null)
+
+    const followers = form.followers === '' ? null : Number(form.followers)
+    const engagement = form.engagement === '' ? null : Number(form.engagement)
+
+    if (followers === null && engagement === null) {
+      setPesan({ type: 'error', text: 'Isi minimal salah satu angka.' })
+      return
+    }
+    if (followers !== null && (Number.isNaN(followers) || followers < 0)) {
+      setPesan({ type: 'error', text: 'Jumlah follower tidak valid.' })
+      return
+    }
+    if (engagement !== null && (Number.isNaN(engagement) || engagement < 0 || engagement > 100)) {
+      setPesan({ type: 'error', text: 'Engagement rate harus antara 0 dan 100.' })
+      return
+    }
+
+    setMenyimpan(true)
+    const { error } = await supabase.from('analytics_profile').insert({
+      tenant_id: tenantId,
+      platform: form.platform,
+      snapshot_date: form.tanggal,
+      followers,
+      engagement_rate: engagement,
+    })
+    setMenyimpan(false)
+
+    if (error) {
+      setPesan({ type: 'error', text: `Gagal menyimpan: ${error.message}` })
+      return
+    }
+    setForm((f) => ({ ...f, followers: '', engagement: '' }))
+    setPesan({ type: 'success', text: 'Catatan tersimpan.' })
+    muat()
+  }
+
+  // --- Statistik produksi, dihitung dari konten sendiri ---
+  const tayang = items.filter((i) => i.status === 'published')
+  const bulanIni = kunciBulan(new Date())
+  const tayangBulanIni = tayang.filter((i) => i.scheduled_date && kunciBulan(new Date(i.scheduled_date)) === bulanIni)
+
+  const perBulan = enamBulanTerakhir().map((kunci) => ({
+    kunci,
+    jumlah: tayang.filter((i) => i.scheduled_date && kunciBulan(new Date(i.scheduled_date)) === kunci).length,
+  }))
+
+  const rataPerBulan = perBulan.reduce((a, b) => a + b.jumlah, 0) / perBulan.length
+
+  // Konsistensi: berapa hari dalam 30 hari terakhir yang ada kontennya tayang.
+  const tigaPuluhHariLalu = isoDate(new Date(Date.now() - 29 * 86400000))
+  const hariTerisi = new Set(
+    tayang.filter((i) => i.scheduled_date && i.scheduled_date >= tigaPuluhHariLalu).map((i) => i.scheduled_date)
+  ).size
+
+  // Snapshot terbaru per platform, beserta pembandingnya untuk melihat arah.
+  const terbaruPerPlatform = {}
+  const sebelumnyaPerPlatform = {}
+  for (const s of snapshots) {
+    if (!terbaruPerPlatform[s.platform]) terbaruPerPlatform[s.platform] = s
+    else if (!sebelumnyaPerPlatform[s.platform]) sebelumnyaPerPlatform[s.platform] = s
+  }
 
   return (
-    <div style={{ background: 'var(--bg-page)', minHeight: '100vh', padding: 16, display: 'grid', gridTemplateColumns: '190px 1fr', gap: 16 }}>
-      <Sidebar />
-      <div style={{ maxWidth: 780 }}>
-        <div style={{ marginBottom: 14 }}>
-          <p style={{ fontWeight: 500, fontSize: 16, margin: 0 }}>Performance tracker</p>
-          <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '2px 0 0' }}>Ringkasan akun dan konten dengan performa terbaik bulan ini</p>
-        </div>
+    <AppShell
+      title="Performance tracker"
+      description="Seberapa produktif tim, dan bagaimana perkembangan akunnya."
+      maxWidth={860}
+    >
+      {pesan && (
+        <p className={`alert alert-${pesan.type === 'error' ? 'error' : 'success'}`} style={{ marginBottom: 14 }}>
+          {pesan.text}
+        </p>
+      )}
 
-        {loading && <p style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>Memuat data performa...</p>}
-        {error && <p style={{ fontSize: 12.5, color: '#A32D2D' }}>Gagal memuat data: {error.message}</p>}
-
-        {trackedPlatforms.length > 0 && (
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${trackedPlatforms.length}, minmax(0,1fr))`, gap: 12, marginBottom: 16 }}>
-            {trackedPlatforms.map((key) => (
-              <ProfileCard key={key} platformKey={key} data={data.profiles[key]} />
-            ))}
+      {loading ? (
+        <p style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>Memuat data...</p>
+      ) : (
+        <>
+          <p className="section-label" style={{ marginBottom: 9 }}>PRODUKSI KONTEN</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(165px, 1fr))', gap: 12, marginBottom: 14 }}>
+            <Metric label="Tayang bulan ini" value={tayangBulanIni.length} sub={`total ${tayang.length} sepanjang waktu`} />
+            <Metric label="Rata-rata per bulan" value={rataPerBulan.toFixed(1)} sub="enam bulan terakhir" />
+            <Metric label="Hari ada konten" value={`${hariTerisi}/30`} sub="dalam 30 hari terakhir" />
+            <Metric label="Total konten" value={items.length} sub="semua status" />
           </div>
-        )}
 
-        <div style={{ background: 'var(--surface-2)', borderRadius: 14, padding: 16 }}>
-          <p style={{ fontWeight: 500, fontSize: 13.5, margin: '0 0 12px' }}>Konten terbaik</p>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
-            <thead>
-              <tr style={{ textAlign: 'left', color: 'var(--text-muted)', fontSize: 11 }}>
-                <th style={{ fontWeight: 400, paddingBottom: 8 }}>Judul</th>
-                <th style={{ fontWeight: 400, paddingBottom: 8 }}>Likes</th>
-                <th style={{ fontWeight: 400, paddingBottom: 8 }}>Komentar</th>
-                <th style={{ fontWeight: 400, paddingBottom: 8 }}>Share</th>
-                <th style={{ fontWeight: 400, paddingBottom: 8 }}>Reach</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sorted.map((c) => (
-                <tr key={c.id} style={{ borderTop: '0.5px solid var(--border)' }}>
-                  <td style={{ padding: '8px 0' }}>{c.title}</td>
-                  <td>{c.likes.toLocaleString('id-ID')}</td>
-                  <td>{c.comments}</td>
-                  <td>{c.shares}</td>
-                  <td>{c.reach.toLocaleString('id-ID')}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+          <div className="card" style={{ marginBottom: 14 }}>
+            <p style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 4 }}>Konten tayang per bulan</p>
+            <p style={{ fontSize: 11.5, color: 'var(--text-secondary)', marginBottom: 16 }}>
+              Dihitung dari tanggal tayang konten berstatus Tayang.
+            </p>
+            <GrafikBatang data={perBulan} />
+          </div>
+
+          <p className="section-label" style={{ marginBottom: 9 }}>METRIK AKUN</p>
+          <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 12 }}>
+            Belum ada koneksi ke API sosial media, jadi angka ini dicatat manual.
+            Catat berkala supaya perkembangannya kelihatan.
+          </p>
+
+          <form onSubmit={simpanSnapshot} className="card" style={{ marginBottom: 14 }}>
+            <div style={{ display: 'flex', gap: 9, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+              <div>
+                <label className="field-label">Platform</label>
+                <select
+                  className="select"
+                  value={form.platform}
+                  onChange={(e) => setForm({ ...form, platform: e.target.value })}
+                  style={{ width: 'auto' }}
+                >
+                  {PLATFORMS.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
+                </select>
+              </div>
+              <div style={{ width: 130 }}>
+                <label className="field-label">Follower</label>
+                <input
+                  className="input" type="number" min="0" value={form.followers}
+                  onChange={(e) => setForm({ ...form, followers: e.target.value })}
+                  placeholder="12500"
+                />
+              </div>
+              <div style={{ width: 130 }}>
+                <label className="field-label">Engagement (%)</label>
+                <input
+                  className="input" type="number" min="0" max="100" step="0.1" value={form.engagement}
+                  onChange={(e) => setForm({ ...form, engagement: e.target.value })}
+                  placeholder="3.4"
+                />
+              </div>
+              <div style={{ width: 150 }}>
+                <label className="field-label">Tanggal</label>
+                <input
+                  className="input" type="date" value={form.tanggal}
+                  onChange={(e) => setForm({ ...form, tanggal: e.target.value })}
+                />
+              </div>
+              <button type="submit" className="btn btn-primary" disabled={menyimpan}>
+                {menyimpan ? 'Menyimpan...' : 'Catat'}
+              </button>
+            </div>
+          </form>
+
+          {Object.keys(terbaruPerPlatform).length === 0 ? (
+            <div className="card" style={{ textAlign: 'center', padding: '26px 20px' }}>
+              <Icon name="bar-chart-outline" size={22} color="var(--text-muted)" />
+              <p style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginTop: 8 }}>
+                Belum ada catatan metrik akun. Isi formulir di atas untuk yang pertama.
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 12 }}>
+              {Object.entries(terbaruPerPlatform).map(([key, s]) => {
+                const p = getPlatform(key)
+                const prev = sebelumnyaPerPlatform[key]
+                const selisih = prev && s.followers != null && prev.followers != null ? s.followers - prev.followers : null
+                return (
+                  <div key={key} className="card">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                      <div
+                        style={{
+                          width: 26, height: 26, borderRadius: 8, background: p.bg,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}
+                      >
+                        <Icon name={p.icon} size={14} color={p.color} />
+                      </div>
+                      <p style={{ fontSize: 13, fontWeight: 600 }}>{p.label}</p>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 20 }}>
+                      <div>
+                        <p style={{ fontSize: 19, fontWeight: 600, letterSpacing: '-0.02em' }}>
+                          {s.followers != null ? s.followers.toLocaleString('id-ID') : 'belum dicatat'}
+                        </p>
+                        <p style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>
+                          Follower
+                          {selisih != null && selisih !== 0 && (
+                            <span style={{ color: selisih > 0 ? 'var(--success)' : 'var(--danger)', marginLeft: 4 }}>
+                              {selisih > 0 ? '+' : ''}{selisih.toLocaleString('id-ID')}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                      <div>
+                        <p style={{ fontSize: 19, fontWeight: 600, letterSpacing: '-0.02em' }}>
+                          {s.engagement_rate != null ? `${s.engagement_rate}%` : 'belum dicatat'}
+                        </p>
+                        <p style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>Engagement</p>
+                      </div>
+                    </div>
+
+                    <p style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 10 }}>
+                      Dicatat {s.snapshot_date}
+                    </p>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </>
+      )}
+    </AppShell>
   )
 }

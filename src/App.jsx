@@ -13,6 +13,7 @@ import Dashboard from './pages/Dashboard.jsx'
 import KanbanBoard from './pages/KanbanBoard.jsx'
 import ContentBank from './pages/ContentBank.jsx'
 import ContentCalendar from './pages/ContentCalendar.jsx'
+import ContentDetail from './pages/ContentDetail.jsx'
 import CtaLibrary from './pages/CtaLibrary.jsx'
 import CaptionFormulaLibrary from './pages/CaptionFormulaLibrary.jsx'
 import HookLibrary from './pages/HookLibrary.jsx'
@@ -60,6 +61,7 @@ export default function App() {
             <Route path="/kanban" element={<ProtectedRoute><KanbanBoard /></ProtectedRoute>} />
             <Route path="/content-bank" element={<ProtectedRoute><ContentBank /></ProtectedRoute>} />
             <Route path="/content-calendar" element={<ProtectedRoute><ContentCalendar /></ProtectedRoute>} />
+            <Route path="/content/:id" element={<ProtectedRoute><ContentDetail /></ProtectedRoute>} />
             <Route path="/content-pillar" element={<ProtectedRoute><ContentPillar /></ProtectedRoute>} />
             <Route path="/cta-library" element={<ProtectedRoute><CtaLibrary /></ProtectedRoute>} />
             <Route path="/caption-formula" element={<ProtectedRoute><CaptionFormulaLibrary /></ProtectedRoute>} />

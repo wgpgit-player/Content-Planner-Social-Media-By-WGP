@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import { getPlatform } from '../config/platforms'
 import Icon from './Icon'
 
@@ -5,10 +6,25 @@ import Icon from './Icon'
 // buat kebutuhan kita, tidak perlu tambah dependency drag-and-drop.
 export default function KanbanCard({ item, onDragStart }) {
   const platform = getPlatform(item.platform)
+  const navigate = useNavigate()
+
+  // Drag untuk memindah kolom, klik untuk membuka briefnya. Dibedakan lewat
+  // jarak geser: klik biasa hampir tidak menggeser kursor, sedangkan drag
+  // pasti bergerak jauh. Tanpa ini, setiap kali kartu di-drag halaman ikut
+  // berpindah ke detail begitu tombol dilepas.
+  let mulai = null
   return (
     <div
       draggable
       onDragStart={(e) => onDragStart(e, item.id)}
+      onMouseDown={(e) => { mulai = { x: e.clientX, y: e.clientY } }}
+      onMouseUp={(e) => {
+        if (!mulai) return
+        const geser = Math.abs(e.clientX - mulai.x) + Math.abs(e.clientY - mulai.y)
+        mulai = null
+        if (geser < 5) navigate(`/content/${item.id}`)
+      }}
+      title="Klik untuk membuka brief"
       style={{
         background: 'var(--surface-1)', borderRadius: 10, padding: 10, marginBottom: 8,
         cursor: 'grab', border: '0.5px solid var(--border)',
