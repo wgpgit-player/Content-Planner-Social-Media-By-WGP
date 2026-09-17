@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { TenantProvider } from './context/TenantContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import { isMisconfiguredDeployment } from './lib/supabaseClient'
+import SetupNeeded from './pages/SetupNeeded.jsx'
 
 import Login from './pages/Login.jsx'
 import Signup from './pages/Signup.jsx'
@@ -39,6 +41,11 @@ function RequireAuth({ children }) {
 }
 
 export default function App() {
+  // Dicegat paling awal: kalau build produksi ini tidak punya kredensial
+  // Supabase, tidak ada gunanya menampilkan halaman login yang pasti gagal.
+  // Lebih jujur menyatakan masalahnya dan cara memperbaikinya.
+  if (isMisconfiguredDeployment) return <SetupNeeded />
+
   return (
     <BrowserRouter>
       <AuthProvider>
