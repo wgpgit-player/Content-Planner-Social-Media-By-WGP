@@ -6,12 +6,19 @@
 //
 // Urutannya sengaja sesuai alur kerja, dari ide sampai tayang.
 
+// Tiap tahap punya warna sendiri yang jelas berbeda satu sama lain. Versi
+// sebelumnya memberi Ide dan Draft warna abu-abu yang nyaris sama, sehingga
+// dua kolom pertama di papan Kanban sulit dibedakan sekilas.
+//
+// Warna di sini sengaja tidak mengikuti warna brand tenant. Ia menandakan
+// tahap pengerjaan, bukan identitas merek, dan artinya harus tetap sama di
+// semua ruang kerja.
 export const STATUSES = [
-  { key: 'idea', label: 'Ide', color: '#8A8A96', bg: '#F1F1F4' },
-  { key: 'draft', label: 'Draft', color: '#6E6E7A', bg: '#F1F1F4' },
-  { key: 'review', label: 'Review', color: '#8A5A12', bg: '#FDF4E6' },
-  { key: 'scheduled', label: 'Terjadwal', color: '#4B3FBF', bg: '#EFEDFC' },
-  { key: 'published', label: 'Tayang', color: '#2F7D5B', bg: '#EAF6F0' },
+  { key: 'idea', label: 'Ide', color: '#6B7280', bg: '#F1F2F4' },
+  { key: 'draft', label: 'Draft', color: '#2563A8', bg: '#E7F0FA' },
+  { key: 'review', label: 'Review', color: '#9A5B0E', bg: '#FDF3E4' },
+  { key: 'scheduled', label: 'Terjadwal', color: '#5B44C4', bg: '#EEEBFB' },
+  { key: 'published', label: 'Tayang', color: '#1F7A55', bg: '#E6F5EE' },
 ]
 
 const BY_KEY = Object.fromEntries(STATUSES.map((s) => [s.key, s]))

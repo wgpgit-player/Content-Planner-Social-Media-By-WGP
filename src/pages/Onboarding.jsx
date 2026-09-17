@@ -1,34 +1,57 @@
-import { useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useNavigate, useSearchParams, Navigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
+import { useAuth } from '../context/AuthContext'
 import { useTenantContext } from '../context/TenantContext'
 import { PILLAR_TEMPLATES, PILLAR_COLOR_CHOICES } from '../config/pillarTemplates'
 import Icon from '../components/Icon'
 
-// Wizard pembuatan workspace, 3 langkah:
-//   1. Nama brand      → jadi nama workspace + slug (dibuat otomatis di server)
-//   2. Template pillar → titik awal content pillar, bukan lagi hardcode
-//   3. Warna aksen     → tampilan white-label langsung terasa sejak awal
+// Wizard pembuatan ruang kerja.
 //
-// Semuanya dikirim dalam satu panggilan RPC create_tenant_for_current_user().
-// Harus lewat RPC karena tabel tenants sengaja tidak punya policy INSERT:
-// saat baris tenant dibuat, user belum jadi anggota tenant manapun, jadi RLS
-// pasti menolak kalau insert-nya lewat jalur biasa dari client.
+// KAPAN LAYAR INI MUNCUL
+// Hanya ketika akun belum punya ruang kerja sama sekali, atau ketika pengguna
+// sengaja membuat ruang kerja tambahan lewat menu di sidebar. Setelah satu
+// ruang kerja jadi, login berikutnya langsung ke dashboard dan layar ini tidak
+// pernah muncul lagi. Pengaturan yang dipilih di sini tersimpan permanen di
+// tabel tenants, bukan ditanyakan ulang.
 //
-// Logo tidak diminta di sini — file upload di langkah pertama akan menambah
-// gesekan, dan bucket storage-nya per-tenant (butuh tenant_id yang baru ada
-// setelah workspace jadi). Logo diatur belakangan di halaman Pengaturan.
+// DUA MASALAH YANG DIPERBAIKI DI SINI
+//
+// 1. Isian hilang kalau ditinggal. Seseorang yang berhenti di langkah kedua
+//    lalu menutup tab akan kembali ke formulir kosong, dan karena ruang
+//    kerjanya belum jadi, layar ini menyambutnya lagi setiap login. Sekarang
+//    isian disimpan sementara di browser dan dipulihkan saat ia kembali.
+//
+// 2. Tiga langkah terasa seperti penghalang. Padahal hanya nama yang benar
+//    benar wajib; pillar dan warna punya nilai bawaan yang masuk akal dan bisa
+//    diubah kapan saja di halaman Pengaturan. Jadi sejak langkah pertama sudah
+//    tersedia jalan pintas untuk langsung membuat ruang kerjanya.
 
 const STEPS = ['Brand', 'Pillar', 'Warna']
 const NAME_MAX = 60
+const WARNA_BAWAAN = '#6B5EE0'
 
-function StepDots({ current }) {
+// Kunci penyimpanan dibuat per akun supaya draf satu orang tidak terbawa ke
+// akun lain yang memakai komputer yang sama.
+function kunciDraf(userId) {
+  return `plannersm-onboarding-draft-${userId ?? 'anon'}`
+}
+
+function StepDots({ current, onPilih }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 26 }}>
       {STEPS.map((label, i) => (
         <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div
+          <button
+            type="button"
+            onClick={() => i < current && onPilih(i)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6, border: 'none',
+              background: 'transparent', padding: 0, fontFamily: 'inherit',
+              cursor: i < current ? 'pointer' : 'default',
+            }}
+          >
+            <span
               style={{
                 width: 20, height: 20, borderRadius: '50%', fontSize: 10, fontWeight: 600,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -38,11 +61,11 @@ function StepDots({ current }) {
               }}
             >
               {i < current ? <Icon name="checkmark-outline" size={12} /> : i + 1}
-            </div>
+            </span>
             <span style={{ fontSize: 11.5, fontWeight: 500, color: i <= current ? 'var(--text-primary)' : 'var(--text-muted)' }}>
               {label}
             </span>
-          </div>
+          </button>
           {i < STEPS.length - 1 && <div style={{ width: 22, height: '0.5px', background: 'var(--border-strong)' }} />}
         </div>
       ))}
@@ -53,45 +76,91 @@ function StepDots({ current }) {
 export default function Onboarding() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
-  const { tenants, reloadTenants, switchTenant } = useTenantContext()
+  const { user } = useAuth()
+  const { tenants, reloadTenants, switchTenant, loading: tenantLoading } = useTenantContext()
 
-  // ?new=1 dipakai TenantSwitcher untuk membuat workspace tambahan. Tanpa itu,
-  // halaman ini adalah onboarding pertama kali.
-  const isAdditional = params.get('new') === '1' || tenants.length > 0
+  // Diminta secara sadar lewat menu "Ruang kerja baru" di sidebar.
+  const sengajaBuatBaru = params.get('new') === '1'
+  const tambahan = sengajaBuatBaru || tenants.length > 0
 
   const [step, setStep] = useState(0)
   const [name, setName] = useState('')
   const [templateKey, setTemplateKey] = useState('general')
-  const [accent, setAccent] = useState('#6B5EE0')
+  const [accent, setAccent] = useState(WARNA_BAWAAN)
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [drafDipulihkan, setDrafDipulihkan] = useState(false)
+
+  // Pulihkan draf yang tertinggal.
+  useEffect(() => {
+    if (!user) return
+    try {
+      const mentah = localStorage.getItem(kunciDraf(user.id))
+      if (!mentah) return
+      const d = JSON.parse(mentah)
+      if (d.name) setName(d.name)
+      if (d.templateKey) setTemplateKey(d.templateKey)
+      if (d.accent) setAccent(d.accent)
+      if (typeof d.step === 'number') setStep(Math.min(d.step, STEPS.length - 1))
+      if (d.name) setDrafDipulihkan(true)
+    } catch {
+      // Draf rusak tidak boleh menghalangi orang membuat ruang kerja.
+    }
+  }, [user])
+
+  // Simpan setiap perubahan, supaya menutup tab tidak menghapus pekerjaan.
+  useEffect(() => {
+    if (!user) return
+    try {
+      localStorage.setItem(kunciDraf(user.id), JSON.stringify({ name, templateKey, accent, step }))
+    } catch {
+      // Penyimpanan penuh atau diblokir. Bukan alasan untuk menghentikan alur.
+    }
+  }, [user, name, templateKey, accent, step])
 
   const template = PILLAR_TEMPLATES.find((t) => t.key === templateKey) ?? PILLAR_TEMPLATES[0]
-  // Batas 60 karakter mengikuti constraint di database. Tanpa batas, satu
-  // nama panjang merusak tata letak sidebar untuk semua anggota workspace.
-  const trimmedName = name.trim()
-  const canContinue = step !== 0 || (trimmedName.length >= 2 && trimmedName.length <= NAME_MAX)
+  const namaBersih = name.trim()
+  const namaValid = namaBersih.length >= 2 && namaBersih.length <= NAME_MAX
 
-  async function handleFinish() {
+  // Lapis pengaman kedua. Kalau seseorang sampai di halaman ini padahal sudah
+  // punya ruang kerja dan tidak sedang sengaja membuat yang baru, ia dipulangkan
+  // ke dashboard. Tanpa ini, satu kesalahan pengalihan saja sudah cukup untuk
+  // melahirkan ruang kerja duplikat, dan itu pernah benar-benar terjadi.
+  if (tenantLoading) {
+    return <p style={{ padding: 24, fontSize: 13, color: 'var(--text-muted)' }}>Memuat...</p>
+  }
+  if (!sengajaBuatBaru && tenants.length > 0) {
+    return <Navigate to="/" replace />
+  }
+
+  async function buatWorkspace() {
     setError('')
 
+    if (!namaValid) {
+      setError('Nama ruang kerja minimal 2 karakter.')
+      setStep(0)
+      return
+    }
     if (!supabase) {
-      setError('Belum tersambung ke server. Isi VITE_SUPABASE_URL dan VITE_SUPABASE_ANON_KEY dulu.')
+      setError('Belum tersambung ke server.')
       return
     }
 
     setSaving(true)
     const { data, error: rpcErr } = await supabase.rpc('create_tenant_for_current_user', {
-      p_name: name.trim(),
+      p_name: namaBersih,
       p_brand_color: accent,
       p_pillars: template.pillars,
     })
     setSaving(false)
 
     if (rpcErr) {
-      setError(rpcErr.message || 'Gagal membuat workspace.')
+      setError(rpcErr.message || 'Gagal membuat ruang kerja.')
       return
     }
+
+    // Draf tidak diperlukan lagi begitu ruang kerjanya benar-benar ada.
+    try { localStorage.removeItem(kunciDraf(user?.id)) } catch { /* abaikan */ }
 
     await reloadTenants()
     if (data) switchTenant(data)
@@ -101,18 +170,25 @@ export default function Onboarding() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-page)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <div className="card" style={{ width: '100%', maxWidth: 520, padding: 30 }}>
-        <StepDots current={step} />
+        <StepDots current={step} onPilih={setStep} />
+
+        {drafDipulihkan && step === 0 && (
+          <p className="alert alert-info" style={{ marginBottom: 16, display: 'flex', gap: 8 }}>
+            <Icon name="refresh-outline" size={15} style={{ marginTop: 1 }} />
+            <span>Isian terakhir kamu dipulihkan. Lanjutkan saja dari sini.</span>
+          </p>
+        )}
 
         {step === 0 && (
           <>
             <p className="page-title" style={{ marginBottom: 5 }}>
-              {isAdditional ? 'Workspace baru' : 'Selamat datang'}
+              {tambahan ? 'Ruang kerja baru' : 'Satu langkah sebelum mulai'}
             </p>
             <p className="page-subtitle" style={{ marginBottom: 22 }}>
               Beri nama ruang kerja ini. Biasanya nama brand, perusahaan, atau klien yang kontennya kamu kelola.
             </p>
 
-            <label className="field-label" htmlFor="ws-name">Nama brand atau workspace</label>
+            <label className="field-label" htmlFor="ws-name">Nama brand atau ruang kerja</label>
             <input
               id="ws-name"
               className="input"
@@ -121,11 +197,10 @@ export default function Onboarding() {
               placeholder="Contoh: Studio Kopi Senja"
               autoFocus
               maxLength={NAME_MAX}
-              onKeyDown={(e) => { if (e.key === 'Enter' && canContinue) setStep(1) }}
+              onKeyDown={(e) => { if (e.key === 'Enter' && namaValid) buatWorkspace() }}
             />
             <p className="field-hint">
-              Bisa diganti kapan saja di halaman Pengaturan.
-              {trimmedName.length > NAME_MAX - 15 && ` Sisa ${NAME_MAX - trimmedName.length} karakter.`}
+              Ditanyakan sekali saja. Semua pengaturan di sini bisa diubah kapan saja di halaman Pengaturan.
             </p>
           </>
         )}
@@ -178,7 +253,7 @@ export default function Onboarding() {
           <>
             <p className="page-title" style={{ marginBottom: 5 }}>Warna brand</p>
             <p className="page-subtitle" style={{ marginBottom: 20 }}>
-              Warna ini dipakai di seluruh tampilan workspace kamu.
+              Warna ini dipakai di seluruh tampilan ruang kerja kamu.
             </p>
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 11, marginBottom: 18 }}>
@@ -199,7 +274,7 @@ export default function Onboarding() {
               <input
                 id="ws-color"
                 type="color"
-                value={accent}
+                value={/^#[0-9a-fA-F]{6}$/.test(accent) ? accent : WARNA_BAWAAN}
                 onChange={(e) => setAccent(e.target.value)}
                 style={{ width: 44, height: 38, padding: 2, border: '0.5px solid var(--border-strong)', borderRadius: 9, background: 'var(--surface-2)', cursor: 'pointer' }}
               />
@@ -207,7 +282,7 @@ export default function Onboarding() {
                 className="input"
                 value={accent}
                 onChange={(e) => setAccent(e.target.value)}
-                placeholder="#6B5EE0"
+                placeholder={WARNA_BAWAAN}
                 style={{ fontFamily: 'ui-monospace, monospace' }}
               />
             </div>
@@ -225,10 +300,10 @@ export default function Onboarding() {
                   display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: 14,
                 }}
               >
-                {(name.trim() || 'W').charAt(0).toUpperCase()}
+                {(namaBersih || 'W').charAt(0).toUpperCase()}
               </div>
               <div>
-                <p style={{ fontSize: 13, fontWeight: 600 }}>{name.trim() || 'Workspace kamu'}</p>
+                <p style={{ fontSize: 13, fontWeight: 600 }}>{namaBersih || 'Ruang kerja kamu'}</p>
                 <p style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>
                   {template.pillars.length > 0 ? `${template.pillars.length} content pillar` : 'Tanpa pillar awal'}
                 </p>
@@ -239,25 +314,44 @@ export default function Onboarding() {
 
         {error && <p className="alert alert-error" style={{ marginTop: 18 }}>{error}</p>}
 
-        <div style={{ display: 'flex', gap: 9, marginTop: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginTop: 24, flexWrap: 'wrap' }}>
           {step > 0 && (
             <button type="button" className="btn" onClick={() => setStep((s) => s - 1)} disabled={saving}>
               <Icon name="chevron-back-outline" size={14} /> Kembali
             </button>
           )}
-          {isAdditional && step === 0 && (
-            <button type="button" className="btn btn-ghost" onClick={() => navigate('/')}>
+          {tambahan && step === 0 && (
+            <button type="button" className="btn btn-ghost" onClick={() => navigate('/')} disabled={saving}>
               Batal
             </button>
           )}
-          <div style={{ marginLeft: 'auto' }}>
+
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 9 }}>
             {step < STEPS.length - 1 ? (
-              <button type="button" className="btn btn-primary" onClick={() => setStep((s) => s + 1)} disabled={!canContinue}>
-                Lanjut <Icon name="chevron-forward-outline" size={14} />
-              </button>
+              <>
+                {/* Jalan pintas: nama sudah cukup untuk membuat ruang kerja.
+                    Pillar dan warna memakai nilai bawaan yang bisa diubah nanti. */}
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={buatWorkspace}
+                  disabled={!namaValid || saving}
+                  title="Pakai pilihan bawaan, atur detailnya nanti"
+                >
+                  {saving ? 'Membuat...' : 'Buat sekarang'}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => setStep((s) => s + 1)}
+                  disabled={!namaValid || saving}
+                >
+                  Atur detail <Icon name="chevron-forward-outline" size={14} />
+                </button>
+              </>
             ) : (
-              <button type="button" className="btn btn-primary" onClick={handleFinish} disabled={saving}>
-                {saving ? 'Membuat...' : 'Buat workspace'}
+              <button type="button" className="btn btn-primary" onClick={buatWorkspace} disabled={saving}>
+                {saving ? 'Membuat...' : 'Buat ruang kerja'}
               </button>
             )}
           </div>

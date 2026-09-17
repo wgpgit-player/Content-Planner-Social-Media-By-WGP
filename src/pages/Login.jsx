@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useNavigate, Navigate, Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import AuthLayout from '../components/AuthLayout'
+import PesanAuth from '../components/PesanAuth'
+import { pesanGalatAuth, emailTerlihatBenar } from '../lib/authErrors'
 
 export default function Login() {
   const { user, signIn, isMock } = useAuth()
@@ -9,7 +11,7 @@ export default function Login() {
   const [params] = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
+  const [pesan, setPesan] = useState(null)
   const [loading, setLoading] = useState(false)
 
   // Kalau user sampai di sini lewat link undangan, simpan tujuannya supaya
@@ -20,13 +22,25 @@ export default function Login() {
 
   async function handleSubmit(e) {
     e.preventDefault()
-    setError('')
+    setPesan(null)
+
+    // Disaring lebih dulu supaya salah ketik yang jelas tidak perlu
+    // menunggu jawaban server.
+    if (!emailTerlihatBenar(email)) {
+      setPesan({
+        teks: 'Format email belum benar.',
+        saran: 'Contoh yang benar: nama@perusahaan.com',
+        nada: 'error',
+      })
+      return
+    }
+
     setLoading(true)
     try {
       await signIn(email, password)
       navigate(next || '/')
     } catch (err) {
-      setError(err.message || 'Gagal masuk. Coba lagi.')
+      setPesan(pesanGalatAuth(err))
     } finally {
       setLoading(false)
     }
@@ -72,7 +86,7 @@ export default function Login() {
           style={{ marginBottom: 18 }}
         />
 
-        {error && <p className="alert alert-error" style={{ marginBottom: 14 }}>{error}</p>}
+        <PesanAuth pesan={pesan} />
 
         <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
           {loading ? 'Memproses...' : 'Masuk'}

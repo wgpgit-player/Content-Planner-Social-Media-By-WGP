@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import { useNavigate, Navigate, Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useTenantContext } from '../context/TenantContext'
 import AuthLayout from '../components/AuthLayout'
+import PesanAuth from '../components/PesanAuth'
+import { pesanGalatAuth, emailTerlihatBenar } from '../lib/authErrors'
 import Icon from '../components/Icon'
 
 // Pendaftaran mandiri. Ini yang mengubah aplikasi dari "dipasang untuk satu
@@ -11,6 +14,7 @@ import Icon from '../components/Icon'
 
 export default function Signup() {
   const { user, signUp, isMock } = useAuth()
+  const { tenants, loading: tenantLoading } = useTenantContext()
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const next = params.get('next')
@@ -18,22 +22,41 @@ export default function Signup() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
-  const [error, setError] = useState('')
+  const [pesan, setPesan] = useState(null)
   const [loading, setLoading] = useState(false)
   const [sentConfirmation, setSentConfirmation] = useState(false)
 
-  if (user && !sentConfirmation) return <Navigate to={next || '/onboarding'} replace />
+  // Pengguna yang sudah login dan sudah punya ruang kerja tidak boleh dikirim
+  // ke wizard. Sebelumnya halaman ini selalu melempar ke /onboarding, sehingga
+  // membuka /signup dalam keadaan sudah login menampilkan formulir pembuatan
+  // ruang kerja yang sama sekali tidak diminta.
+  if (user && !sentConfirmation) {
+    if (tenantLoading) return null
+    return <Navigate to={next || (tenants.length > 0 ? '/' : '/onboarding')} replace />
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
-    setError('')
+    setPesan(null)
 
+    if (!emailTerlihatBenar(email)) {
+      setPesan({
+        teks: 'Format email belum benar.',
+        saran: 'Contoh yang benar: nama@perusahaan.com',
+        nada: 'error',
+      })
+      return
+    }
     if (password.length < 6) {
-      setError('Password minimal 6 karakter.')
+      setPesan({ teks: 'Password minimal 6 karakter.', nada: 'error' })
       return
     }
     if (password !== confirm) {
-      setError('Konfirmasi password tidak sama.')
+      setPesan({
+        teks: 'Konfirmasi password tidak sama.',
+        saran: 'Ketik ulang password yang sama persis di kedua kolom.',
+        nada: 'error',
+      })
       return
     }
 
@@ -46,7 +69,7 @@ export default function Signup() {
         navigate(next || '/onboarding')
       }
     } catch (err) {
-      setError(err.message || 'Gagal mendaftar. Coba lagi.')
+      setPesan(pesanGalatAuth(err))
     } finally {
       setLoading(false)
     }
@@ -129,7 +152,7 @@ export default function Signup() {
           style={{ marginBottom: 18 }}
         />
 
-        {error && <p className="alert alert-error" style={{ marginBottom: 14 }}>{error}</p>}
+        <PesanAuth pesan={pesan} />
 
         <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
           {loading ? 'Membuat akun...' : 'Buat akun'}

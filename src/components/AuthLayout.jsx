@@ -1,12 +1,17 @@
 import Icon from './Icon'
 
-// Kerangka halaman untuk semua layar sebelum login (Masuk, Daftar, Undangan).
-// Dipisah jadi komponen sendiri supaya ketiganya konsisten dan copy-nya
-// cuma ditulis di satu tempat.
+// Kerangka halaman untuk semua layar sebelum login: Masuk, Daftar, Undangan.
 //
-// Catatan white-label: teks di panel kiri sengaja netral — tidak menyebut
-// organisasi tertentu — karena aplikasi ini dipakai banyak brand berbeda.
-// Branding milik masing-masing workspace baru muncul setelah login.
+// PERBAIKAN TAMPILAN DI LAYAR KECIL
+//
+// Sebelumnya lebar kolomnya dipaksa dua bagian sama besar tanpa memperhatikan
+// lebar layar. Di ponsel berlayar 375 piksel, tiap kolom hanya kebagian sekitar
+// 167 piksel, sehingga kalimat di panel kiri pecah menjadi satu kata per baris
+// dan sebagian terpotong keluar layar.
+//
+// Sekarang panel kiri disembunyikan di layar sempit dan diganti logo ringkas di
+// atas formulir. Panel itu isinya ajakan, bukan sesuatu yang dibutuhkan untuk
+// masuk, jadi di ruang yang terbatas ia yang mengalah.
 
 const POINTS = [
   { icon: 'document-text-outline', text: 'Setiap konten punya brief, bukan cuma judul' },
@@ -16,20 +21,9 @@ const POINTS = [
 
 export default function AuthLayout({ title, subtitle, children, footer }) {
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-page)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-      <div
-        style={{
-          display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
-          maxWidth: 860, width: '100%', borderRadius: 20, overflow: 'hidden',
-          boxShadow: 'var(--shadow-md)', border: '0.5px solid var(--border)',
-        }}
-      >
-        <div
-          style={{
-            background: 'var(--text-primary)', padding: 34, color: '#fff',
-            display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 32,
-          }}
-        >
+    <div className="auth-page">
+      <div className="auth-card">
+        <div className="auth-promo">
           <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
             <div
               style={{
@@ -61,7 +55,21 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
           </p>
         </div>
 
-        <div style={{ background: 'var(--surface-2)', padding: 34, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <div className="auth-form">
+          {/* Hanya tampil di layar sempit, menggantikan panel kiri yang
+              disembunyikan, supaya orang tetap tahu ini aplikasi apa. */}
+          <div className="auth-brand-mobile">
+            <div
+              style={{
+                width: 26, height: 26, borderRadius: 7, background: 'var(--accent)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              <Icon name="layers-outline" size={15} color="var(--accent-text)" />
+            </div>
+            <span style={{ fontWeight: 600, fontSize: 14, letterSpacing: '-0.01em' }}>plannersm.co</span>
+          </div>
+
           <p style={{ fontWeight: 600, fontSize: 18, letterSpacing: '-0.01em', marginBottom: 4 }}>{title}</p>
           {subtitle && <p style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginBottom: 22 }}>{subtitle}</p>}
           {children}

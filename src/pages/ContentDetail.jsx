@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
-import { useTenant } from '../lib/useTenant'
+import { useTenantContext } from '../context/TenantContext'
+import { useAuth } from '../context/AuthContext'
+import { useTenantMembers, namaAnggota } from '../lib/useTenantMembers'
+import Avatar from '../components/Avatar'
 import { PLATFORMS, getPlatform } from '../config/platforms'
 import { STATUSES, getStatus } from '../config/statuses'
 import AppShell from '../components/AppShell'
@@ -69,7 +72,7 @@ const KOLOM_BRIEF = [
 ]
 
 const KOSONG = {
-  title: '', platform: '', pillar_id: '', status: 'idea',
+  title: '', platform: '', pillar_id: '', status: 'idea', assignee_id: '',
   scheduled_date: '', scheduled_time: '',
   brief: '', objective: '', target_audience: '', key_message: '',
   caption: '', cta: '', hashtags: '', reference_url: '', production_notes: '',
@@ -88,7 +91,9 @@ function Field({ label, children, hint }) {
 export default function ContentDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { tenantId } = useTenant()
+  const { tenantId, isAdmin } = useTenantContext()
+  const { user } = useAuth()
+  const { members } = useTenantMembers()
 
   const [form, setForm] = useState(KOSONG)
   const [pillars, setPillars] = useState([])
@@ -184,6 +189,7 @@ export default function ContentDetail() {
 
   const platform = getPlatform(form.platform)
   const status = getStatus(form.status)
+  const anggotaTertugas = members.find((m) => m.user_id === form.assignee_id) ?? null
 
   // Seberapa lengkap briefnya, ditampilkan sebagai penanda ringan supaya
   // terlihat mana konten yang masih setengah jadi.
@@ -242,6 +248,36 @@ export default function ContentDetail() {
             </select>
           </Field>
 
+          {/* Admin bebas menugaskan ke siapa pun. Staff hanya bisa mengambil
+              atau melepas tugasnya sendiri, sesuai aturan yang juga ditegakkan
+              trigger di database, bukan sekadar disembunyikan di layar. */}
+          <Field label="Penanggung jawab">
+            {isAdmin ? (
+              <select className="select" value={form.assignee_id ?? ''} onChange={(e) => ubah('assignee_id', e.target.value)}>
+                <option value="">Belum ditugaskan</option>
+                {members.map((m) => (
+                  <option key={m.user_id} value={m.user_id}>{namaAnggota(m)}</option>
+                ))}
+              </select>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 38 }}>
+                <Avatar anggota={anggotaTertugas} size={24} />
+                <span style={{ fontSize: 12.5, color: anggotaTertugas ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                  {anggotaTertugas ? namaAnggota(anggotaTertugas) : 'Belum ditugaskan'}
+                </span>
+                {form.assignee_id === user?.id ? (
+                  <button type="button" className="btn btn-sm btn-ghost" onClick={() => ubah('assignee_id', '')}>
+                    Lepas
+                  </button>
+                ) : !form.assignee_id ? (
+                  <button type="button" className="btn btn-sm" onClick={() => ubah('assignee_id', user?.id ?? '')}>
+                    Ambil tugas
+                  </button>
+                ) : null}
+              </div>
+            )}
+          </Field>
+
           <Field label="Tanggal tayang">
             <input className="input" type="date" value={form.scheduled_date ?? ''} onChange={(e) => ubah('scheduled_date', e.target.value)} />
           </Field>
@@ -258,8 +294,9 @@ export default function ContentDetail() {
           <span className="chip" style={{ background: status.bg, color: status.color, borderColor: 'transparent' }}>
             {status.label}
           </span>
-          <span style={{ marginLeft: 'auto', fontSize: 11.5, color: 'var(--text-muted)' }}>
-            Brief terisi {persen}%
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
+            <Avatar anggota={anggotaTertugas} size={20} />
+            <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>Brief terisi {persen}%</span>
           </span>
         </div>
       </div>

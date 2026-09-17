@@ -2,20 +2,34 @@ import { createContext, useCallback, useContext, useEffect, useState } from 'rea
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from './AuthContext'
 
-// Pusat state workspace (tenant) untuk aplikasi white-label ini.
+// Pusat state ruang kerja (tenant).
 //
-// Kenapa dibuat context, bukan hook lokal seperti useTenant.js yang lama:
-// dulu aplikasinya diasumsikan satu organisasi saja, jadi cukup cari satu
-// tenant_id lalu di-cache di module scope. Sekarang satu user bisa jadi
-// anggota beberapa workspace (mis. agensi yang mengelola beberapa klien),
-// jadi butuh:
-//   - daftar semua workspace milik user
-//   - workspace mana yang sedang aktif (bisa diganti lewat TenantSwitcher)
-//   - role user di workspace itu (admin/staff) buat gating tombol
-//   - branding workspace (nama, logo, warna) buat tampilan white-label
+// Satu user bisa jadi anggota beberapa ruang kerja, jadi di sini disimpan:
+// daftarnya, mana yang sedang aktif, peran user di situ, dan brandingnya.
+// Warna aksen diterapkan langsung ke CSS variable --accent, sehingga seluruh
+// tampilan ikut berubah tanpa perlu meneruskan prop warna ke mana-mana.
 //
-// Warna aksen diterapkan langsung ke CSS variable --accent di <html>, jadi
-// seluruh komponen ikut berubah tanpa perlu meneruskan prop warna ke mana-mana.
+// CATATAN PENTING SOAL `siapReady` DAN `needsOnboarding`
+//
+// Versi sebelumnya memakai satu penanda `loading` biasa, dan itu menimbulkan
+// bug yang merugikan: setiap login membuat ruang kerja baru.
+//
+// Penyebabnya begini. Saat halaman dimuat, sesi login belum selesai dipulihkan
+// sehingga `user` masih null. Pemuatan data langsung berhenti di situ dan
+// menyetel loading menjadi false dengan daftar ruang kerja kosong. Begitu sesi
+// selesai dan `user` terisi, React merender ulang dalam keadaan:
+//
+//     user ada  +  loading false  +  daftar ruang kerja masih kosong
+//
+// Kombinasi itu terbaca sebagai "user ini belum punya ruang kerja", padahal
+// datanya memang belum sempat diambil. Penjaga halaman langsung melempar ke
+// wizard onboarding saat render, sebelum efek pemuatan untuk user yang baru
+// sempat berjalan. Wizard tidak memeriksa apa-apa, jadi ia membuat ruang kerja
+// duplikat. Tiga kali login berarti tiga ruang kerja bernama sama.
+//
+// Karena itu yang dipakai sekarang bukan "sedang memuat atau tidak", melainkan
+// "data untuk user INI sudah benar-benar berhasil diambil atau belum", lewat
+// `dimuatUntuk`. Selama belum, halaman menunggu dan tidak menyimpulkan apa pun.
 
 const TenantContext = createContext(null)
 const ACTIVE_TENANT_KEY = 'content-planner-active-tenant'
@@ -24,7 +38,7 @@ const DEFAULT_ACCENT = '#6B5EE0'
 // Dipakai hanya saat aplikasi berjalan tanpa Supabase (mode preview).
 const MOCK_TENANT = {
   id: 'mock-tenant',
-  name: 'Workspace Preview',
+  name: 'Ruang Kerja Preview',
   slug: 'preview',
   logo_url: null,
   brand_color: DEFAULT_ACCENT,
@@ -51,43 +65,45 @@ function isLight(hex) {
 }
 
 export function TenantProvider({ children }) {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
+
   const [tenants, setTenants] = useState([])
   const [tenantId, setTenantId] = useState(null)
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  // Id user yang datanya sudah berhasil diambil. null berarti belum ada.
+  const [dimuatUntuk, setDimuatUntuk] = useState(null)
 
   const load = useCallback(async () => {
     if (!user) {
       setTenants([])
       setTenantId(null)
-      setLoading(false)
+      setDimuatUntuk(null)
+      setError(null)
       return
     }
 
-    // Mode preview (belum tersambung ke Supabase): sediakan satu workspace
-    // tiruan. Tanpa ini daftar workspace selalu kosong, needsOnboarding jadi
-    // true selamanya, dan user terkunci di wizard onboarding yang justru tidak
-    // bisa menyimpan apa-apa karena servernya memang belum ada.
+    // Mode preview (belum tersambung ke Supabase): sediakan satu ruang kerja
+    // tiruan, supaya tampilan tetap bisa dilihat tanpa server.
     if (!supabase) {
       setTenants([MOCK_TENANT])
       setTenantId(MOCK_TENANT.id)
-      setLoading(false)
+      setDimuatUntuk(user.id)
       return
     }
 
-    setLoading(true)
     setError(null)
 
-    // Ambil keanggotaan + data tenant-nya sekaligus lewat relasi foreign key.
     const { data, error: err } = await supabase
       .from('tenant_members')
       .select('role, tenant_id, tenants(id, name, slug, logo_url, brand_color, hero_background_url, onboarding_completed, subscription_plan)')
       .eq('user_id', user.id)
 
     if (err) {
+      // Gagal mengambil data BUKAN berarti user tidak punya ruang kerja.
+      // `dimuatUntuk` sengaja tidak diisi, sehingga needsOnboarding tetap
+      // false dan tidak ada yang terlempar ke wizard hanya karena jaringan
+      // sedang bermasalah.
       setError(err)
-      setLoading(false)
       return
     }
 
@@ -98,7 +114,7 @@ export function TenantProvider({ children }) {
 
     setTenants(list)
 
-    // Pilih workspace aktif: yang terakhir dipakai kalau masih jadi anggota,
+    // Ruang kerja aktif: yang terakhir dipakai kalau masih jadi anggota,
     // kalau tidak ambil yang pertama.
     const saved = localStorage.getItem(ACTIVE_TENANT_KEY)
     const next = list.find((t) => t.id === saved) ?? list[0] ?? null
@@ -106,7 +122,7 @@ export function TenantProvider({ children }) {
     if (next) localStorage.setItem(ACTIVE_TENANT_KEY, next.id)
     else localStorage.removeItem(ACTIVE_TENANT_KEY)
 
-    setLoading(false)
+    setDimuatUntuk(user.id)
   }, [user])
 
   useEffect(() => { load() }, [load])
@@ -127,20 +143,26 @@ export function TenantProvider({ children }) {
     setTenants((prev) => prev.map((t) => (t.id === tenantId ? { ...t, ...patch } : t)))
   }
 
+  // Data untuk user yang sedang login sudah benar-benar ada di tangan.
+  const siap = Boolean(user) && dimuatUntuk === user.id
+
   const value = {
     tenants,
     tenant,
     tenantId,
     role: tenant?.role ?? null,
     isAdmin: tenant?.role === 'admin',
-    loading,
+    // Menunggu selama sesi belum jelas, atau data user ini belum selesai
+    // diambil dan belum ada galat yang perlu ditampilkan.
+    loading: authLoading || (Boolean(user) && !siap && !error),
     error,
+    siap,
     switchTenant,
     patchActiveTenant,
     reloadTenants: load,
-    // true kalau user sudah login tapi belum punya workspace sama sekali —
-    // dipakai OnboardingGate buat melempar ke wizard.
-    needsOnboarding: !loading && !!user && tenants.length === 0,
+    // Hanya boleh true kalau datanya sudah benar-benar diambil dan hasilnya
+    // memang kosong. Bukan karena masih dimuat, dan bukan karena gagal.
+    needsOnboarding: siap && tenants.length === 0,
   }
 
   return <TenantContext.Provider value={value}>{children}</TenantContext.Provider>
