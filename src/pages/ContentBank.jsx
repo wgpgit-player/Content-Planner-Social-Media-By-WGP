@@ -27,6 +27,9 @@ function mapRow(row, pillarNameById) {
 // begitu Kanban & Content Bank sama-sama connect ke Supabase (insert row
 // content_items dari content_bank_items yang dipilih), jadi sengaja belum
 // dibangun di versi ini juga.
+// Batas jumlah ide yang dimuat sekali jalan (lihat catatan di KanbanBoard).
+const BANK_LIMIT = 300
+
 export default function ContentBank() {
   const { user } = useAuth()
   const { tenantId } = useTenant()
@@ -40,11 +43,11 @@ export default function ContentBank() {
 
   useEffect(() => {
     async function load() {
-      if (!supabase) return
+      if (!supabase || !tenantId) return
       setLoading(true)
       const [{ data: pillarRows }, { data: bankRows, error: err }] = await Promise.all([
-        supabase.from('content_pillars').select('id,name'),
-        supabase.from('content_bank_items').select('id,idea_text,pillar_id,status').order('created_at', { ascending: false }),
+        supabase.from('content_pillars').select('id,name').eq('tenant_id', tenantId),
+        supabase.from('content_bank_items').select('id,idea_text,pillar_id,status').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(BANK_LIMIT),
       ])
       if (err) setError(err)
       const pillarNameById = Object.fromEntries((pillarRows ?? []).map((p) => [p.id, p.name]))
@@ -54,7 +57,7 @@ export default function ContentBank() {
       setLoading(false)
     }
     load()
-  }, [])
+  }, [tenantId])
 
   const filtered = filter === 'all' ? items : items.filter((i) => i.status === filter)
 

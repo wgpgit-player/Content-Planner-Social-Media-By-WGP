@@ -1,19 +1,50 @@
+/* ============================================================
+   Content Planner — design tokens & komponen dasar
+   ------------------------------------------------------------
+   Arah desain: minimalis, banyak ruang kosong, kontras teks tinggi,
+   warna dipakai hemat (hanya untuk penanda status/platform/aksen).
+   Tujuannya keterbacaan — bukan tampilan yang ramai.
+
+   Catatan white-label: --accent diubah saat runtime oleh TenantContext
+   sesuai warna brand tenant yang sedang aktif (lihat context/TenantContext.jsx).
+   Turunannya (--accent-bg, --accent-soft) dihitung otomatis dengan color-mix
+   supaya tidak perlu menyetel banyak variabel satu per satu.
+   ============================================================ */
+
 :root {
-  --bg-page: #F4F3FB;
-  --surface-1: #F5F4FB;
-  --surface-2: #ffffff;
-  --border: #ECEAF6;
-  --text-primary: #1a1a2e;
-  --text-secondary: #8b8a94;
-  --text-muted: #a8a7ae;
+  --bg-page: #F7F7FA;
+  --surface-1: #FBFBFD;
+  --surface-2: #FFFFFF;
+  --border: #ECECF2;
+  --border-strong: #DEDEE7;
+
+  --text-primary: #17171F;
+  --text-secondary: #6E6E7A;
+  --text-muted: #A0A0AC;
+
+  /* Diubah per tenant saat runtime. */
   --accent: #6B5EE0;
-  --accent-bg: #F1EEFE;
-  --warning: #854F0B;
-  --warning-bg: #FDF3E2;
+  --accent-bg: color-mix(in srgb, var(--accent) 9%, #fff);
+  --accent-soft: color-mix(in srgb, var(--accent) 18%, #fff);
+  --accent-text: #fff;
+
+  --success: #2F7D5B;
+  --success-bg: #EAF6F0;
+  --warning: #8A5A12;
+  --warning-bg: #FDF4E6;
+  --danger: #A33333;
+  --danger-bg: #FBEDED;
   --pink: #D4537E;
-  --pink-bg: #FDEBEF;
+  --pink-bg: #FDEFF3;
+
   --radius: 10px;
-  font-family: -apple-system, "Segoe UI", Inter, sans-serif;
+  --radius-lg: 16px;
+  --shadow-sm: 0 1px 2px rgba(23, 23, 31, 0.04);
+  --shadow-md: 0 4px 16px rgba(23, 23, 31, 0.06);
+
+  font-family: -apple-system, "Segoe UI", Inter, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  color-scheme: light;
 }
 
 * { box-sizing: border-box; }
@@ -22,23 +53,71 @@ body {
   margin: 0;
   background: var(--bg-page);
   color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.5;
 }
+
+h1, h2, h3, h4, p { margin: 0; }
+
+/* ---------- Layout & kartu ---------- */
+
+.card {
+  background: var(--surface-2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+.card-flat {
+  background: var(--surface-2);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+}
+
+.page-title {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.page-subtitle {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+.section-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.divider {
+  height: 0.5px;
+  background: var(--border);
+  border: none;
+  margin: 16px 0;
+}
+
+/* ---------- Sidebar ---------- */
 
 .sidebar-item {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: 9px;
   font-size: 12.5px;
   color: var(--text-secondary);
   cursor: pointer;
   text-decoration: none;
+  transition: background 0.14s ease, color 0.14s ease;
 }
 
-.sidebar-item:hover {
-  background: #FAFAFD;
-}
+.sidebar-item:hover { background: var(--surface-1); color: var(--text-primary); }
 
 .sidebar-item.active {
   background: var(--accent-bg);
@@ -47,20 +126,133 @@ body {
 }
 
 .sidebar-group-label {
-  font-size: 10.5px;
-  font-weight: 500;
+  font-size: 10px;
+  font-weight: 600;
   color: var(--text-muted);
-  margin: 14px 0 4px;
+  margin: 16px 0 4px;
   padding: 0 10px;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.07em;
 }
 
+/* ---------- Badge & chip ---------- */
+
 .badge {
-  font-size: 11px;
-  padding: 1px 6px;
-  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 6px;
   margin-left: auto;
+  letter-spacing: 0.01em;
 }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  border: 0.5px solid var(--border);
+}
+
+/* ---------- Tombol ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 9px;
+  padding: 9px 15px;
+  font-size: 12.5px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  border: 0.5px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text-primary);
+  transition: background 0.14s ease, border-color 0.14s ease, opacity 0.14s ease;
+  white-space: nowrap;
+}
+
+.btn:hover:not(:disabled) { background: var(--surface-1); }
+.btn:disabled { opacity: 0.55; cursor: default; }
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+.btn-primary:hover:not(:disabled) { background: var(--accent); filter: brightness(1.07); }
+
+.btn-ghost { background: transparent; border-color: transparent; color: var(--text-secondary); }
+.btn-ghost:hover:not(:disabled) { background: var(--surface-1); color: var(--text-primary); }
+
+.btn-danger { color: var(--danger); border-color: var(--border-strong); background: var(--surface-2); }
+.btn-danger:hover:not(:disabled) { background: var(--danger-bg); border-color: var(--danger-bg); }
+
+.btn-sm { padding: 6px 10px; font-size: 11.5px; border-radius: 8px; }
+.btn-block { width: 100%; }
+
+/* ---------- Form ---------- */
+
+.field-label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 5px;
+}
+
+.field-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 5px;
+}
+
+.input,
+.select,
+.textarea {
+  width: 100%;
+  border: 0.5px solid var(--border-strong);
+  border-radius: 9px;
+  padding: 9px 11px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--surface-2);
+  outline: none;
+  transition: border-color 0.14s ease, box-shadow 0.14s ease;
+}
+
+.input::placeholder, .textarea::placeholder { color: var(--text-muted); }
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.textarea { resize: vertical; min-height: 78px; line-height: 1.55; }
+
+/* ---------- Pesan status ---------- */
+
+.alert {
+  font-size: 12px;
+  padding: 9px 11px;
+  border-radius: 9px;
+  line-height: 1.5;
+}
+
+.alert-error { color: var(--danger); background: var(--danger-bg); }
+.alert-success { color: var(--success); background: var(--success-bg); }
+.alert-info { color: var(--text-secondary); background: var(--surface-1); }
+
+/* ---------- Komponen lama (dipertahankan) ---------- */
 
 .stat-card {
   border-radius: 14px;
@@ -69,36 +261,28 @@ body {
   cursor: default;
   transition: transform 0.15s ease;
 }
-
-.stat-card:hover {
-  transform: translateY(-2px);
-}
+.stat-card:hover { transform: translateY(-2px); }
 
 .kanban-item {
-  border-radius: 8px;
-  padding: 8px;
+  border-radius: 9px;
+  padding: 9px;
   font-size: 11.5px;
   cursor: pointer;
   transition: filter 0.15s ease;
 }
-
-.kanban-item:hover {
-  filter: brightness(0.97);
-}
+.kanban-item:hover { filter: brightness(0.98); }
 
 .hero-btn {
-  border-radius: 8px;
+  border-radius: 9px;
   padding: 7px 12px;
   font-size: 12px;
   cursor: pointer;
   color: #fff;
   border: 0.5px solid rgba(255, 255, 255, 0.4);
   background: transparent;
+  font-family: inherit;
 }
-
-.hero-btn.filled {
-  background: rgba(255, 255, 255, 0.16);
-}
+.hero-btn.filled { background: rgba(255, 255, 255, 0.16); }
 
 .hero-pill {
   display: inline-flex;
@@ -111,38 +295,54 @@ body {
   color: var(--text-secondary);
   border: 0.5px solid var(--border);
   background: var(--surface-2);
+  font-family: inherit;
   transition: filter 0.15s ease;
 }
+.hero-pill:hover { filter: brightness(0.97); }
+.hero-pill.filled { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+.hero-pill.on-image { background: rgba(255, 255, 255, 0.14); color: #fff; border-color: rgba(255, 255, 255, 0.3); }
+.hero-pill.on-image.filled { background: rgba(255, 255, 255, 0.28); border-color: rgba(255, 255, 255, 0.45); }
 
-.hero-pill i {
-  font-size: 13px;
-}
+/* ---------- Pemilih (template pillar, warna, dll) ---------- */
 
-.hero-pill:hover {
-  filter: brightness(0.97);
+.option-card {
+  text-align: left;
+  width: 100%;
+  border: 0.5px solid var(--border-strong);
+  background: var(--surface-2);
+  border-radius: 12px;
+  padding: 13px 14px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.14s ease, background 0.14s ease;
 }
+.option-card:hover { border-color: var(--accent-soft); }
+.option-card.selected { border-color: var(--accent); background: var(--accent-bg); }
 
-.hero-pill.filled {
-  background: var(--accent);
-  color: #fff;
-  border-color: var(--accent);
+.color-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  outline-offset: 2px;
+  transition: transform 0.12s ease;
 }
+.color-dot:hover { transform: scale(1.1); }
+.color-dot.selected { border-color: var(--text-primary); }
 
-.hero-pill.on-image {
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.3);
-}
+/* ---------- Animasi ---------- */
 
-.hero-pill.on-image.filled {
-  background: rgba(255, 255, 255, 0.28);
-  border-color: rgba(255, 255, 255, 0.45);
-}
-
-.ti-loader-2 {
-  animation: spin 0.8s linear infinite;
-}
+.spin { animation: spin 0.8s linear infinite; }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* Ionicons adalah web component; tanpa ini ukurannya kadang melompat
+   sebelum script CDN-nya selesai dimuat. */
+ion-icon {
+  display: inline-block;
+  line-height: 1;
 }

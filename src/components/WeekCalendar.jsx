@@ -1,4 +1,5 @@
 import { getPlatform } from '../config/platforms'
+import { isoDate, parseIsoDate, buildWeekDates, todayIso } from '../lib/dates'
 
 // Ala "Upcoming Schedule" di referensi fitplan — grid 7 kolom (Minggu-Sabtu),
 // tiap kolom menampilkan kartu kecil berwarna per konten yang dijadwalkan
@@ -6,22 +7,13 @@ import { getPlatform } from '../config/platforms'
 
 const DAY_LABELS = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab']
 
-function isoDate(d) {
-  return d.toISOString().slice(0, 10)
-}
-
-function buildWeekDates(startIso) {
-  const start = new Date(startIso + 'T00:00:00')
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(start)
-    d.setDate(start.getDate() + i)
-    return d
-  })
+function weekDatesFrom(startIso) {
+  return buildWeekDates(parseIsoDate(startIso))
 }
 
 export default function WeekCalendar({ startIso, itemsByDate }) {
-  const today = isoDate(new Date())
-  const weekDates = buildWeekDates(startIso)
+  const today = todayIso()
+  const weekDates = weekDatesFrom(startIso)
 
   return (
     <div style={{ background: 'var(--surface-2)', borderRadius: 16, padding: 16 }}>

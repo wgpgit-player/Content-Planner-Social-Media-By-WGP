@@ -29,6 +29,9 @@ function mapRow(row, pillarNameById) {
   }
 }
 
+// Batas jumlah kartu yang dimuat sekali jalan.
+const BOARD_LIMIT = 300
+
 export default function KanbanBoard() {
   const { user } = useAuth()
   const { tenantId } = useTenant()
@@ -40,11 +43,13 @@ export default function KanbanBoard() {
   const [showModal, setShowModal] = useState(false)
 
   async function loadItems() {
-    if (!supabase) return
+    if (!supabase || !tenantId) return
     setLoading(true)
     const [{ data: pillarRows }, { data: itemRows, error: err }] = await Promise.all([
-      supabase.from('content_pillars').select('id,name'),
-      supabase.from('content_items').select('id,title,platform,pillar_id,status,scheduled_date').order('created_at', { ascending: false }),
+      supabase.from('content_pillars').select('id,name').eq('tenant_id', tenantId),
+      // Dibatasi supaya papan tidak menarik puluhan ribu baris sekaligus pada
+      // workspace yang sudah lama berjalan. Kartu terbaru yang ditampilkan.
+      supabase.from('content_items').select('id,title,platform,pillar_id,status,scheduled_date').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(BOARD_LIMIT),
     ])
     if (err) setError(err)
     const pillarNameById = Object.fromEntries((pillarRows ?? []).map((p) => [p.id, p.name]))
@@ -55,7 +60,7 @@ export default function KanbanBoard() {
 
   useEffect(() => {
     loadItems()
-  }, [])
+  }, [tenantId])
 
   function handleDragStart(e, id) {
     e.dataTransfer.setData('text/plain', String(id))
@@ -163,7 +168,7 @@ export default function KanbanBoard() {
       </div>
 
       {showModal && (
-        <NewContentModal onClose={() => setShowModal(false)} onSubmit={handleAddContent} />
+        <NewContentModal onClose={() => setShowModal(false)} onSubmit={handleAddContent} pillars={pillars} />
       )}
     </div>
   )

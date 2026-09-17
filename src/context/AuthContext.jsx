@@ -52,6 +52,29 @@ export function AuthProvider({ children }) {
     setUser(mockUser)
   }
 
+  // Pendaftaran mandiri — inti dari produk white-label: siapa saja bisa bikin
+  // akun sendiri tanpa perlu dibuatkan manual lewat dashboard Supabase.
+  //
+  // Kalau konfirmasi email diaktifkan di Supabase Auth, signUp() mengembalikan
+  // user tapi TANPA session. Nilai balik needsEmailConfirmation dipakai halaman
+  // Signup untuk menampilkan pesan "cek email dulu" alih-alih langsung
+  // melempar user ke wizard onboarding yang pasti gagal karena belum login.
+  async function signUp(email, password) {
+    if (supabase) {
+      const { data, error } = await supabase.auth.signUp({ email, password })
+      if (error) throw error
+      if (data.session) setUser(data.user)
+      return { needsEmailConfirmation: !data.session }
+    }
+
+    if (!email.includes('@')) throw new Error('Format email tidak valid.')
+    if (password.length < 6) throw new Error('Password minimal 6 karakter.')
+    const mockUser = { id: 'mock-user', email, name: email.split('@')[0] }
+    localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(mockUser))
+    setUser(mockUser)
+    return { needsEmailConfirmation: false }
+  }
+
   async function signOut() {
     if (supabase) {
       await supabase.auth.signOut()
@@ -63,7 +86,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signOut, isMock: !supabase }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut, isMock: !supabase }}>
       {children}
     </AuthContext.Provider>
   )

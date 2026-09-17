@@ -13,11 +13,11 @@ export default function ContentPillar() {
 
   useEffect(() => {
     async function load() {
-      if (!supabase) return
+      if (!supabase || !tenantId) return
       setLoading(true)
       const now = new Date()
       const startOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
-      const { data: pillarRows, error: err } = await supabase.from('content_pillars').select('id,name,description,color')
+      const { data: pillarRows, error: err } = await supabase.from('content_pillars').select('id,name,description,color').eq('tenant_id', tenantId)
       if (err) {
         setError(err)
         setLoading(false)
@@ -37,7 +37,7 @@ export default function ContentPillar() {
       setLoading(false)
     }
     load()
-  }, [])
+  }, [tenantId])
 
   async function handleAddPillar({ name, description, color }) {
     if (!supabase) {

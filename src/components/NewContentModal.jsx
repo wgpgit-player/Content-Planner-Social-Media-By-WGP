@@ -1,22 +1,22 @@
 import { useState } from 'react'
-import { PILLARS } from '../data/mockContentItems'
 import { PLATFORMS } from '../config/platforms'
 
-// Modal sederhana pakai normal-flow overlay (bukan position:fixed) biar
-// konsisten sama pola yang aman dipakai di widget preview sebelumnya, dan
-// gampang dites. Submit cuma push ke state lokal — begitu Supabase connect,
-// ganti onSubmit supaya insert ke tabel content_items.
-export default function NewContentModal({ onClose, onSubmit }) {
+// Daftar pillar datang dari pemanggil (halaman Kanban), bukan dari konstanta
+// di kode. Ini penting sejak aplikasi jadi white-label: tiap workspace punya
+// pillar-nya sendiri, jadi dropdown ini harus menampilkan milik workspace yang
+// sedang aktif — bukan daftar bawaan yang sama untuk semua orang.
+export default function NewContentModal({ onClose, onSubmit, pillars = [] }) {
+  const pillarNames = pillars.map((p) => p.name)
   const [title, setTitle] = useState('')
   const [platform, setPlatform] = useState(PLATFORMS[0].key)
-  const [pillar, setPillar] = useState(PILLARS[0])
+  const [pillar, setPillar] = useState(pillarNames[0] ?? '')
   const [scheduledDate, setScheduledDate] = useState('')
   const [scheduledTime, setScheduledTime] = useState('')
 
   function handleSubmit(e) {
     e.preventDefault()
     if (!title.trim()) return
-    onSubmit({ title: title.trim(), platform, pillar, scheduledDate: scheduledDate || null, scheduledTime: scheduledTime || null })
+    onSubmit({ title: title.trim(), platform, pillar: pillar || null, scheduledDate: scheduledDate || null, scheduledTime: scheduledTime || null })
   }
 
   return (
@@ -36,7 +36,7 @@ export default function NewContentModal({ onClose, onSubmit }) {
           autoFocus
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Contoh: Reels tips sedekah subuh"
+          placeholder="Contoh: Reels tips buat pemula"
           style={{ width: '100%', border: '0.5px solid var(--border)', borderRadius: 8, padding: '8px 10px', fontSize: 12.5, marginBottom: 12, boxSizing: 'border-box' }}
         />
 
@@ -49,8 +49,10 @@ export default function NewContentModal({ onClose, onSubmit }) {
           </div>
           <div style={{ flex: 1 }}>
             <label style={{ fontSize: 11.5, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>Pillar</label>
-            <select value={pillar} onChange={(e) => setPillar(e.target.value)} style={{ width: '100%', border: '0.5px solid var(--border)', borderRadius: 8, padding: '8px 10px', fontSize: 12.5 }}>
-              {PILLARS.map((p) => <option key={p} value={p}>{p}</option>)}
+            <select value={pillar} onChange={(e) => setPillar(e.target.value)} disabled={pillarNames.length === 0} style={{ width: '100%', border: '0.5px solid var(--border)', borderRadius: 8, padding: '8px 10px', fontSize: 12.5 }}>
+              {pillarNames.length === 0
+                ? <option value="">Belum ada pillar</option>
+                : pillarNames.map((p) => <option key={p} value={p}>{p}</option>)}
             </select>
           </div>
         </div>

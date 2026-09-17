@@ -1,4 +1,5 @@
 import { getPlatform } from '../config/platforms'
+import Icon from './Icon'
 
 // Ala kartu "Traveling to Switzerland" di referensi fitplan — banner gradient
 // besar dengan bentuk dekoratif, plus kartu kecil mengambang di sudut kiri
@@ -43,14 +44,14 @@ export default function FeaturedCard({ item }) {
             width: 30, height: 30, borderRadius: 8, flexShrink: 0, display: 'flex',
             alignItems: 'center', justifyContent: 'center', background: p.bg,
           }}>
-            <i className={`ti ${p.icon}`} style={{ fontSize: 15, color: p.color }} aria-hidden="true" />
+            <Icon name={p.icon} size={15} color={p.color} />
           </div>
           <div style={{ overflow: 'hidden' }}>
             <p style={{ fontSize: 12.5, fontWeight: 500, margin: 0, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {item.pillarName ?? 'Tanpa pillar'}
             </p>
             <p style={{ fontSize: 11, margin: 0, color: 'var(--text-secondary)' }}>
-              <i className="ti ti-clock" style={{ fontSize: 11, verticalAlign: -1 }} aria-hidden="true" /> {formatTanggal(item.scheduledDate)}
+              <Icon name="time-outline" size={11} style={{ verticalAlign: -1 }} /> {formatTanggal(item.scheduledDate)}
             </p>
           </div>
         </div>

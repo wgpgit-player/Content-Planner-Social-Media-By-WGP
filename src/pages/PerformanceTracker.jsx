@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
+import { useTenant } from '../lib/useTenant'
 import Sidebar from '../components/Sidebar'
 import { supabase } from '../lib/supabaseClient'
 import { getPlatform } from '../config/platforms'
+import Icon from '../components/Icon'
 
 function ProfileCard({ platformKey, data }) {
   const platform = getPlatform(platformKey)
@@ -12,7 +14,7 @@ function ProfileCard({ platformKey, data }) {
           width: 26, height: 26, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center',
           background: platform.bg,
         }}>
-          <i className={`ti ${platform.icon}`} style={{ fontSize: 14, color: platform.color }} aria-hidden="true" />
+          <Icon name={platform.icon} size={14} color={platform.color} />
         </div>
         <p style={{ fontSize: 13.5, fontWeight: 500, margin: 0 }}>{platform.label}</p>
       </div>
@@ -34,14 +36,14 @@ function ProfileCard({ platformKey, data }) {
   )
 }
 
-async function fetchPerformanceData() {
-  if (!supabase) return { profiles: {}, topContent: [] }
+async function fetchPerformanceData(tenantId) {
+  if (!supabase || !tenantId) return { profiles: {}, topContent: [] }
 
   // Ambil 2 snapshot terbaru per platform (buat hitung followers growth
   // secara kasar), lalu ambil konten performa terbaik dari analytics_content.
   const [{ data: profileRows, error: profileErr }, { data: contentRows, error: contentErr }] = await Promise.all([
-    supabase.from('analytics_profile').select('platform,snapshot_date,followers,engagement_rate,posts_count').order('snapshot_date', { ascending: false }),
-    supabase.from('analytics_content').select('content_item_id,platform,likes,comments_count,shares,reach').order('reach', { ascending: false }).limit(10),
+    supabase.from('analytics_profile').select('platform,snapshot_date,followers,engagement_rate,posts_count').eq('tenant_id', tenantId).order('snapshot_date', { ascending: false }),
+    supabase.from('analytics_content').select('content_item_id,platform,likes,comments_count,shares,reach').eq('tenant_id', tenantId).order('reach', { ascending: false }).limit(10),
   ])
   if (profileErr) console.error('fetch analytics_profile error:', profileErr)
   if (contentErr) console.error('fetch analytics_content error:', contentErr)
@@ -62,7 +64,7 @@ async function fetchPerformanceData() {
   const contentItemIds = [...new Set((contentRows ?? []).map((r) => r.content_item_id).filter(Boolean))]
   let titleById = {}
   if (contentItemIds.length) {
-    const { data: itemRows } = await supabase.from('content_items').select('id,title').in('id', contentItemIds)
+    const { data: itemRows } = await supabase.from('content_items').select('id,title').eq('tenant_id', tenantId).in('id', contentItemIds)
     titleById = Object.fromEntries((itemRows ?? []).map((i) => [i.id, i.title]))
   }
 
@@ -80,16 +82,17 @@ async function fetchPerformanceData() {
 }
 
 export default function PerformanceTracker() {
+  const { tenantId } = useTenant()
   const [data, setData] = useState({ profiles: {}, topContent: [] })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    fetchPerformanceData()
+    fetchPerformanceData(tenantId)
       .then(setData)
       .catch(setError)
       .finally(() => setLoading(false))
-  }, [])
+  }, [tenantId])
 
   const sorted = [...data.topContent].sort((a, b) => b.reach - a.reach)
   const trackedPlatforms = Object.keys(data.profiles)

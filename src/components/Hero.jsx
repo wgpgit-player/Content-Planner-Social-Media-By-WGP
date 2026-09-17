@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import Icon from './Icon'
 
 // Kartu sapaan ala referensi "fitplan". Sekarang bisa dikustom dengan gambar
 // wallpaper — tersimpan di Supabase Storage bucket 'branding', path
@@ -8,10 +9,12 @@ import { supabase } from '../lib/supabaseClient'
 // terbaca; kalau tidak ada, fallback ke background surface polos (bukan lagi
 // gradient ungu-pink, biar selaras sama gaya fitplan yang lebih tenang).
 
+// Sapaan dibuat netral: tidak mengklaim angka atau status yang belum tentu
+// benar (versi sebelumnya sempat bilang "engagement rate naik" tanpa data).
 const SUBTEXTS = [
-  'Semoga harimu produktif — ada beberapa konten yang perlu perhatian kamu.',
-  'Engagement rate naik dibanding minggu lalu.',
-  'Ada konten yang menunggu approval kamu.',
+  'Semoga harimu produktif.',
+  'Siap merencanakan konten hari ini?',
+  'Satu langkah kecil hari ini, hasilnya kelihatan bulan depan.',
 ]
 
 function greetingFor(hour) {
@@ -21,7 +24,7 @@ function greetingFor(hour) {
   return 'Selamat malam'
 }
 
-export default function Hero({ userName = 'mas', onQuickAction, tenantId, backgroundUrl, onBackgroundChange }) {
+export default function Hero({ userName, onQuickAction, tenantId, backgroundUrl, onBackgroundChange }) {
   const [now, setNow] = useState(new Date())
   const [subtext] = useState(() => SUBTEXTS[Math.floor(Math.random() * SUBTEXTS.length)])
   const [uploading, setUploading] = useState(false)
@@ -32,7 +35,10 @@ export default function Hero({ userName = 'mas', onQuickAction, tenantId, backgr
     return () => clearInterval(timer)
   }, [])
 
-  const greeting = `${greetingFor(now.getHours())}, ${userName}`
+  // Tanpa nama, sapaannya tetap wajar: "Selamat pagi" saja.
+  const greeting = userName
+    ? `${greetingFor(now.getHours())}, ${userName}`
+    : greetingFor(now.getHours())
   const hasImage = Boolean(backgroundUrl)
 
   async function handleFileChange(e) {
@@ -79,7 +85,7 @@ export default function Hero({ userName = 'mas', onQuickAction, tenantId, backgr
               background: 'rgba(255,255,255,0.18)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
           >
-            <i className="ti ti-x" style={{ fontSize: 13 }} aria-hidden="true" />
+            <Icon name="close-outline" size={13} />
           </button>
         )}
         <button
@@ -93,7 +99,7 @@ export default function Hero({ userName = 'mas', onQuickAction, tenantId, backgr
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
         >
-          <i className={`ti ${uploading ? 'ti-loader-2' : 'ti-photo'}`} style={{ fontSize: 13 }} aria-hidden="true" />
+          <Icon name={uploading ? 'reload-outline' : 'image-outline'} className={uploading ? 'spin' : undefined} size={13} />
         </button>
         <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
       </div>
@@ -109,23 +115,23 @@ export default function Hero({ userName = 'mas', onQuickAction, tenantId, backgr
         border: hasImage ? '0.5px solid rgba(255,255,255,0.25)' : '0.5px solid var(--border)',
         borderRadius: 10, padding: '9px 12px', marginBottom: 12,
       }}>
-        <i className="ti ti-sparkles" style={{ fontSize: 14, color: hasImage ? '#fff' : 'var(--accent)' }} aria-hidden="true" />
+        <Icon name="sparkles-outline" size={14} color={hasImage ? '#fff' : 'var(--accent)'} />
         <span style={{ fontSize: 12.5, color: hasImage ? 'rgba(255,255,255,0.8)' : 'var(--text-muted)' }}>Mau bikin apa hari ini...</span>
-        <i className="ti ti-send-2" style={{ fontSize: 14, color: hasImage ? '#fff' : 'var(--accent)', marginLeft: 'auto', cursor: 'pointer' }} aria-hidden="true" />
+        <Icon name="send-outline" size={14} color={hasImage ? '#fff' : 'var(--accent)'} style={{ marginLeft: 'auto', cursor: 'pointer' }} />
       </div>
 
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         <button className={`hero-pill ${hasImage ? 'on-image filled' : 'filled'}`} onClick={() => onQuickAction?.('now')}>
-          <i className="ti ti-bolt" aria-hidden="true" /> Sekarang
+          <Icon name="flash-outline"  /> Sekarang
         </button>
         <button className={`hero-pill ${hasImage ? 'on-image' : ''}`} onClick={() => onQuickAction?.('draft-jadwal')}>
-          <i className="ti ti-calendar-event" aria-hidden="true" /> Besok
+          <Icon name="calendar-number-outline"  /> Besok
         </button>
         <button className={`hero-pill ${hasImage ? 'on-image' : ''}`} onClick={() => onQuickAction?.('minggu-depan')}>
-          <i className="ti ti-calendar-plus" aria-hidden="true" /> Minggu depan
+          <Icon name="calendar-outline"  /> Minggu depan
         </button>
         <button className={`hero-pill ${hasImage ? 'on-image' : ''}`} onClick={() => onQuickAction?.('ringkas-performa')}>
-          <i className="ti ti-adjustments" aria-hidden="true" /> Custom
+          <Icon name="options-outline"  /> Custom
         </button>
       </div>
     </div>

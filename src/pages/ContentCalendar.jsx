@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import Sidebar from '../components/Sidebar'
 import { supabase } from '../lib/supabaseClient'
+import { useTenant } from '../lib/useTenant'
+import { isoDate, startOfWeek, addDays, buildWeekDates, todayIso } from '../lib/dates'
 import { getPlatform } from '../config/platforms'
+import Icon from '../components/Icon'
 
 // Grid kalender mingguan ala referensi "calendar.me" milik user, tapi warna
 // ditenangkan (bukan neon/dark) — pakai warna pastel per-platform yang sudah
@@ -15,27 +18,8 @@ const HOURS = Array.from({ length: 15 }, (_, i) => 7 + i) // 07..21
 const HOUR_HEIGHT = 52
 const DEFAULT_DURATION_MIN = 50
 
-function isoDate(d) {
-  return d.toISOString().slice(0, 10)
-}
-
-function mondayOf(d) {
-  const day = d.getDay()
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
-  const monday = new Date(d)
-  monday.setDate(diff)
-  monday.setHours(0, 0, 0, 0)
-  monday.setDate(monday.getDate() - 1) // mulai dari Minggu
-  return monday
-}
-
-function buildWeekDates(mondayStart) {
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(mondayStart)
-    d.setDate(mondayStart.getDate() + i)
-    return d
-  })
-}
+// Kalender ditampilkan Minggu-Sabtu; helper tanggalnya ada di lib/dates.js
+// supaya tidak lagi ada perhitungan tanggal yang ditulis ulang per halaman.
 
 function timeToMinutes(t) {
   if (!t) return null
@@ -89,7 +73,7 @@ function DetailPopup({ item, onClose, onSave }) {
       <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: 14, padding: 18, width: 300 }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
           <p style={{ fontWeight: 500, fontSize: 14, margin: 0, paddingRight: 10 }}>{item.title}</p>
-          <i className="ti ti-x" onClick={onClose} style={{ cursor: 'pointer', color: 'var(--text-muted)', fontSize: 15 }} aria-hidden="true" />
+          <Icon name="close-outline" size={15} color={'var(--text-muted)'} style={{ cursor: 'pointer' }} onClick={onClose} />
         </div>
 
         <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
@@ -98,7 +82,7 @@ function DetailPopup({ item, onClose, onSave }) {
         </div>
 
         <p style={{ fontSize: 11.5, color: 'var(--text-secondary)', margin: '0 0 4px' }}>
-          <i className="ti ti-calendar" style={{ fontSize: 13, verticalAlign: -2 }} aria-hidden="true" /> {item.scheduledDate}
+          <Icon name="calendar-outline" size={13} style={{ verticalAlign: -2 }} /> {item.scheduledDate}
         </p>
 
         <label style={{ fontSize: 11.5, color: 'var(--text-secondary)', display: 'block', margin: '10px 0 4px' }}>Jam tayang</label>
@@ -123,19 +107,33 @@ function DetailPopup({ item, onClose, onSave }) {
 }
 
 export default function ContentCalendar() {
+  const { tenantId } = useTenant()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [filter, setFilter] = useState('Semua')
-  const [weekStart, setWeekStart] = useState(() => mondayOf(new Date()))
+  const [weekStart, setWeekStart] = useState(() => startOfWeek())
   const [selected, setSelected] = useState(null)
 
+  // Hanya ambil konten pada rentang minggu yang sedang ditampilkan.
+  //
+  // Versi sebelumnya mengambil SELURUH konten terjadwal milik workspace tanpa
+  // batas. Pada uji beban, satu workspace dengan 500 konten mengirim 500 baris
+  // ke browser hanya untuk menampilkan 28 di antaranya — dan pada workspace
+  // yang lebih ramai, jumlah baris bisa melewati batas baris bawaan API
+  // sehingga sebagian jadwal hilang dari kalender tanpa peringatan apa pun.
   async function load() {
-    if (!supabase) return
+    if (!supabase || !tenantId) return
     setLoading(true)
+    const fromIso = isoDate(weekStart)
+    const toIso = isoDate(addDays(weekStart, 6))
     const [{ data: pillarRows }, { data: itemRows, error: err }] = await Promise.all([
-      supabase.from('content_pillars').select('id,name'),
-      supabase.from('content_items').select('id,title,platform,pillar_id,status,scheduled_date,scheduled_time').not('scheduled_date', 'is', null),
+      supabase.from('content_pillars').select('id,name').eq('tenant_id', tenantId),
+      supabase.from('content_items')
+        .select('id,title,platform,pillar_id,status,scheduled_date,scheduled_time')
+        .eq('tenant_id', tenantId)
+        .gte('scheduled_date', fromIso)
+        .lte('scheduled_date', toIso),
     ])
     if (err) setError(err)
     const pillarNameById = Object.fromEntries((pillarRows ?? []).map((p) => [p.id, p.name]))
@@ -151,7 +149,9 @@ export default function ContentCalendar() {
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [])
+  // Ikut memuat ulang saat pindah minggu, karena data yang diambil kini
+  // dibatasi per minggu.
+  useEffect(() => { load() }, [tenantId, weekStart])
 
   async function handleSaveTime(id, time) {
     if (!supabase) return
@@ -190,22 +190,22 @@ export default function ContentCalendar() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <button
-              onClick={() => setWeekStart((d) => { const n = new Date(d); n.setDate(n.getDate() - 7); return n })}
+              onClick={() => setWeekStart((d) => addDays(d, -7))}
               style={{ width: 30, height: 30, borderRadius: 8, border: '0.5px solid var(--border)', background: '#fff', cursor: 'pointer' }}
             >
-              <i className="ti ti-chevron-left" aria-hidden="true" />
+              <Icon name="chevron-back-outline"  />
             </button>
             <button
-              onClick={() => setWeekStart(mondayOf(new Date()))}
+              onClick={() => setWeekStart(startOfWeek())}
               style={{ fontSize: 12, padding: '7px 12px', borderRadius: 8, border: '0.5px solid var(--border)', background: '#fff', cursor: 'pointer', color: 'var(--text-secondary)' }}
             >
               Hari ini
             </button>
             <button
-              onClick={() => setWeekStart((d) => { const n = new Date(d); n.setDate(n.getDate() + 7); return n })}
+              onClick={() => setWeekStart((d) => addDays(d, 7))}
               style={{ width: 30, height: 30, borderRadius: 8, border: '0.5px solid var(--border)', background: '#fff', cursor: 'pointer' }}
             >
-              <i className="ti ti-chevron-right" aria-hidden="true" />
+              <Icon name="chevron-forward-outline"  />
             </button>
           </div>
         </div>

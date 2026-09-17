@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import Icon from './Icon'
 
 // Angka count-up dari 0 ke target saat kartu pertama kali muncul di layar —
 // efek kecil yang bikin dashboard kerasa hidup tanpa perlu library animasi.
@@ -28,7 +29,7 @@ export default function StatCard({ icon, value, suffix = '', label, gradient }) 
 
   return (
     <div className="stat-card" style={{ background: gradient }}>
-      <i className={`ti ${icon}`} style={{ fontSize: 16, opacity: 0.85 }} aria-hidden="true" />
+      <Icon name={icon} size={16} style={{ opacity: 0.85 }} />
       <p style={{ fontSize: 22, fontWeight: 500, margin: '8px 0 2px' }}>{display}{suffix}</p>
       <p style={{ fontSize: 11, opacity: 0.9, margin: 0 }}>{label}</p>
     </div>

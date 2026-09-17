@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useTenant } from '../lib/useTenant'
+import { useAuth } from '../context/AuthContext'
 import Sidebar from '../components/Sidebar'
 import Hero from '../components/Hero'
 import FeaturedCard from '../components/FeaturedCard'
 import WeekCalendar from '../components/WeekCalendar'
 import { getPlatform } from '../config/platforms'
+import { isoDate, startOfWeek, addDays, todayIso } from '../lib/dates'
+import Icon from '../components/Icon'
 
 // Layout Dashboard direstyle ala referensi "fitplan" (lihat
 // Referensi Design UI UX/referensi 5.jpg): kolom kiri = kartu unggulan +
@@ -24,33 +27,20 @@ const MOCK_DATA = {
   ],
 }
 
-function isoDate(d) {
-  return d.toISOString().slice(0, 10)
-}
-
 function startOfWeekIso() {
-  const d = new Date()
-  const day = d.getDay()
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
-  const monday = new Date(d.setDate(diff))
-  monday.setHours(0, 0, 0, 0)
-  // Kalender di UI mulai dari Minggu, jadi mundurkan satu hari dari Senin.
-  monday.setDate(monday.getDate() - 1)
-  return isoDate(monday)
+  return isoDate(startOfWeek())
 }
 
 function endOfWeekIso() {
-  const start = new Date(startOfWeekIso() + 'T00:00:00')
-  start.setDate(start.getDate() + 6)
-  return isoDate(start)
+  return isoDate(addDays(startOfWeek(), 6))
 }
 
-async function fetchDashboardData() {
-  if (!supabase) return MOCK_DATA
+async function fetchDashboardData(tenantId) {
+  if (!supabase || !tenantId) return MOCK_DATA
 
   const weekStart = startOfWeekIso()
   const weekEnd = endOfWeekIso()
-  const todayIso = isoDate(new Date())
+  const today = todayIso()
 
   const [
     { data: weekItems, error: weekErr },
@@ -58,10 +48,10 @@ async function fetchDashboardData() {
     { data: featuredRaw },
     { data: upcomingItems },
   ] = await Promise.all([
-    supabase.from('content_items').select('id,title,platform,scheduled_date,pillar_id').gte('scheduled_date', weekStart).lte('scheduled_date', weekEnd),
-    supabase.from('content_pillars').select('id,name'),
-    supabase.from('content_items').select('id,title,platform,scheduled_date,pillar_id').eq('status', 'scheduled').gte('scheduled_date', todayIso).order('scheduled_date', { ascending: true }).limit(1),
-    supabase.from('content_items').select('platform,title,scheduled_date').eq('status', 'scheduled').gte('scheduled_date', todayIso).order('scheduled_date', { ascending: true }).limit(4),
+    supabase.from('content_items').select('id,title,platform,scheduled_date,pillar_id').eq('tenant_id', tenantId).gte('scheduled_date', weekStart).lte('scheduled_date', weekEnd),
+    supabase.from('content_pillars').select('id,name').eq('tenant_id', tenantId),
+    supabase.from('content_items').select('id,title,platform,scheduled_date,pillar_id').eq('tenant_id', tenantId).eq('status', 'scheduled').gte('scheduled_date', today).order('scheduled_date', { ascending: true }).limit(1),
+    supabase.from('content_items').select('platform,title,scheduled_date').eq('tenant_id', tenantId).eq('status', 'scheduled').gte('scheduled_date', today).order('scheduled_date', { ascending: true }).limit(4),
   ])
 
   if (weekErr) console.error('fetchDashboardData error:', weekErr)
@@ -100,7 +90,7 @@ function UpcomingItem({ platform, title, when }) {
         width: 30, height: 30, borderRadius: 9, flexShrink: 0, display: 'flex',
         alignItems: 'center', justifyContent: 'center', background: p.bg,
       }}>
-        <i className={`ti ${p.icon}`} style={{ fontSize: 15, color: p.color }} aria-hidden="true" />
+        <Icon name={p.icon} size={15} color={p.color} />
       </div>
       <div style={{ overflow: 'hidden' }}>
         <p style={{ fontSize: 12.5, margin: 0, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</p>
@@ -111,13 +101,14 @@ function UpcomingItem({ platform, title, when }) {
 }
 
 export default function Dashboard() {
+  const { user } = useAuth()
   const [data, setData] = useState(null)
   const { tenantId } = useTenant()
   const [backgroundUrl, setBackgroundUrl] = useState(null)
 
   useEffect(() => {
-    fetchDashboardData().then(setData)
-  }, [])
+    fetchDashboardData(tenantId).then(setData)
+  }, [tenantId])
 
   useEffect(() => {
     if (!supabase || !tenantId) return
@@ -133,6 +124,10 @@ export default function Dashboard() {
 
   if (!data) return <p style={{ padding: 24 }}>Memuat...</p>
 
+  // Nama sapaan diambil dari bagian sebelum @ pada email, sekadar supaya
+  // terasa personal tanpa perlu kolom profil terpisah.
+  const greetingName = user?.email ? user.email.split('@')[0] : null
+
   const weekStart = data.weekStart ?? startOfWeekIso()
 
   return (
@@ -147,7 +142,7 @@ export default function Dashboard() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <Hero
-            userName="mas"
+            userName={greetingName}
             onQuickAction={handleQuickAction}
             tenantId={tenantId}
             backgroundUrl={backgroundUrl}

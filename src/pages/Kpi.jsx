@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import Sidebar from '../components/Sidebar'
 import { supabase } from '../lib/supabaseClient'
+import Icon from '../components/Icon'
 
 // kpi_metrics belum punya kolom `target` di skema Fase 1 — cuma metric_key +
 // metric_value per period. Target dipetakan di frontend per metric_key
@@ -33,7 +34,7 @@ function KpiCard({ label, value, unit, target, trend }) {
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 8 }}>
         <p style={{ fontSize: 22, fontWeight: 500, margin: 0 }}>{value.toLocaleString('id-ID')}{unit}</p>
         <span style={{ fontSize: 11, color: isUp ? '#3B6D11' : '#A32D2D', display: 'flex', alignItems: 'center', gap: 2 }}>
-          <i className={`ti ${isUp ? 'ti-trending-up' : 'ti-trending-down'}`} style={{ fontSize: 12 }} aria-hidden="true" />
+          <Icon name={isUp ? 'trending-up-outline' : 'trending-down-outline'} size={12} />
         </span>
       </div>
       <div style={{ height: 6, background: 'var(--surface-1)', borderRadius: 4, overflow: 'hidden' }}>
