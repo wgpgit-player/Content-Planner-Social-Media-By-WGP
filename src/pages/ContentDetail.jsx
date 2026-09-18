@@ -10,6 +10,7 @@ import { STATUSES, getStatus } from '../config/statuses'
 import AppShell from '../components/AppShell'
 import Icon from '../components/Icon'
 import PanelPersetujuan from '../components/PanelPersetujuan'
+import Komentar from '../components/Komentar'
 
 // Halaman brief konten.
 //
@@ -77,6 +78,7 @@ const KOSONG = {
   scheduled_date: '', scheduled_time: '',
   brief: '', objective: '', target_audience: '', key_message: '',
   caption: '', cta: '', hashtags: '', reference_url: '', production_notes: '',
+  asset_url: '', asset_label: '',
 }
 
 function Field({ label, children, hint }) {
@@ -334,7 +336,34 @@ export default function ContentDetail() {
           </Field>
         ))}
 
-        <Field label="Tautan referensi" hint="Contoh konten serupa, sumber data, atau file aset.">
+        {/* Aset disimpan sebagai tautan, bukan berkas. Aplikasi ini tidak
+            punya penyimpanan media, dan itu keputusan sadar: hampir semua
+            tim sudah menaruh asetnya di Drive atau Canva, jadi menyimpan
+            tautannya menyelesaikan pertanyaan "di mana filenya" tanpa
+            ongkos penyimpanan sama sekali. */}
+        <Field label="Tautan aset" hint="Google Drive, Canva, Dropbox — di mana pun materinya sekarang berada.">
+          <input
+            className="input"
+            type="url"
+            value={form.asset_url ?? ''}
+            onChange={(e) => ubah('asset_url', e.target.value)}
+            placeholder="https://"
+            style={{ marginBottom: 8 }}
+          />
+          {form.asset_url && (
+            <a
+              href={form.asset_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-sm"
+              style={{ textDecoration: 'none' }}
+            >
+              <Icon name="open-outline" size={14} /> Buka aset
+            </a>
+          )}
+        </Field>
+
+        <Field label="Tautan referensi" hint="Contoh konten serupa atau sumber data.">
           <input
             className="input"
             type="url"
@@ -344,6 +373,8 @@ export default function ContentDetail() {
           />
         </Field>
       </div>
+
+      <Komentar contentId={id} />
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginTop: 16 }}>
         <button type="button" className="btn btn-danger btn-sm" onClick={hapus}>

@@ -29,6 +29,8 @@ import ClientView from './pages/ClientView.jsx'
 import HashtagSets from './pages/HashtagSets.jsx'
 import GridPreview from './pages/GridPreview.jsx'
 import Reminders from './pages/Reminders.jsx'
+import Composer from './pages/Composer.jsx'
+import Strategy from './pages/Strategy.jsx'
 
 // Struktur route:
 //   Publik           → /login, /signup, /invite/:token
@@ -93,6 +95,8 @@ export default function App() {
             <Route path="/hashtag-sets" element={<ProtectedRoute><HashtagSets /></ProtectedRoute>} />
             <Route path="/client-links" element={<ProtectedRoute><ClientLinks /></ProtectedRoute>} />
             <Route path="/reminders" element={<ProtectedRoute><Reminders /></ProtectedRoute>} />
+            <Route path="/compose" element={<ProtectedRoute><Composer /></ProtectedRoute>} />
+            <Route path="/strategy" element={<ProtectedRoute><Strategy /></ProtectedRoute>} />
             <Route path="/cta-library" element={<ProtectedRoute><CtaLibrary /></ProtectedRoute>} />
             <Route path="/caption-formula" element={<ProtectedRoute><CaptionFormulaLibrary /></ProtectedRoute>} />
             <Route path="/hook-library" element={<ProtectedRoute><HookLibrary /></ProtectedRoute>} />

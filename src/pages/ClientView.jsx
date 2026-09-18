@@ -119,6 +119,18 @@ function KartuKonten({ item, bisaPutuskan, onPutuskan }) {
         </div>
       )}
 
+      {item.asset_url && (
+        <a
+          href={item.asset_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn btn-sm"
+          style={{ textDecoration: 'none', marginTop: 10 }}
+        >
+          <Icon name="image-outline" size={14} /> {item.asset_label || 'Lihat materinya'}
+        </a>
+      )}
+
       {bisaPutuskan && item.approval_state !== 'approved' && (
         <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
           <button
@@ -294,6 +306,12 @@ export default function ClientView() {
           <p className={`alert alert-${pesan.tipe === 'error' ? 'error' : 'success'}`} style={{ marginBottom: 14 }}>
             {pesan.teks}
           </p>
+        )}
+
+        {data.note && (
+          <div className="card" style={{ marginBottom: 14 }}>
+            <p style={{ fontSize: 13, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{data.note}</p>
+          </div>
         )}
 
         {konten.length === 0 ? (

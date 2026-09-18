@@ -7,6 +7,8 @@ import { Link } from 'react-router-dom'
 import { isoDate, startOfWeek, addDays, buildWeekDates, todayIso } from '../lib/dates'
 import { getPlatform } from '../config/platforms'
 import Icon from '../components/Icon'
+import BarisAgenda from '../components/BarisAgenda'
+import { useAgenda } from '../lib/useAgenda'
 
 // Grid kalender mingguan ala referensi "calendar.me" milik user, tapi warna
 // ditenangkan (bukan neon/dark) — pakai warna pastel per-platform yang sudah
@@ -166,6 +168,12 @@ export default function ContentCalendar() {
   const weekDates = useMemo(() => buildWeekDates(weekStart), [weekStart])
   const weekIsoSet = useMemo(() => new Set(weekDates.map(isoDate)), [weekDates])
 
+  // Hari penting dan kegiatan workspace untuk minggu yang sedang dilihat.
+  // Inilah yang membuat kalender tidak pernah kosong: bahkan sebelum ada
+  // satu konten pun, tanggal-tanggal yang layak direncanakan sudah
+  // ditandai sendiri.
+  const { agendaPerTanggal, reload: muatAgenda } = useAgenda(weekDates)
+
   const itemsByDate = useMemo(() => {
     const map = {}
     for (const it of filtered) {
@@ -251,6 +259,12 @@ export default function ContentCalendar() {
                 )
               })}
             </div>
+
+            <BarisAgenda
+              tanggalTerlihat={weekDates}
+              agendaPerTanggal={agendaPerTanggal}
+              onBerubah={muatAgenda}
+            />
 
             <div className="cal-grid" style={{ maxHeight: 560, overflowY: 'auto' }}>
               <div>

@@ -83,7 +83,18 @@ function Tautan({ tautan, onCabut, onSalin, tersalin }) {
             {tautan.view_count > 0
               ? `dibuka ${tautan.view_count} kali, terakhir ${formatWaktu(tautan.last_viewed_at)}`
               : 'belum pernah dibuka'}
+            {tautan.hide_drafts && ' · ide dan draf disembunyikan'}
           </p>
+
+          {tautan.note && (
+            <p style={{
+              fontSize: 11.5, color: 'var(--text-secondary)', marginTop: 6,
+              padding: '7px 9px', background: 'var(--surface-1)', borderRadius: 8,
+              lineHeight: 1.55,
+            }}>
+              “{tautan.note}”
+            </p>
+          )}
         </div>
       </div>
 
@@ -93,6 +104,20 @@ function Tautan({ tautan, onCabut, onSalin, tersalin }) {
             <Icon name={tersalin ? 'checkmark-outline' : 'copy-outline'} size={14} />
             {tersalin ? 'Tersalin' : 'Salin tautan'}
           </button>
+
+          {/* Melihatnya sendiri sebelum dikirim. Tanpa ini, satu-satunya cara
+              memastikan apa yang terlihat klien adalah membuka jendela
+              samaran — dan orang biasanya tidak repot, lalu kaget. */}
+          <a
+            href={`/r/${tautan.token}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-sm"
+            style={{ textDecoration: 'none' }}
+          >
+            <Icon name="eye-outline" size={14} /> Lihat sebagai klien
+          </a>
+
           <button type="button" className="btn btn-sm btn-ghost" onClick={() => onCabut(tautan)}
             style={{ color: 'var(--danger)' }}>
             Cabut
@@ -119,6 +144,8 @@ export default function ClientLinks() {
   const [mulai, setMulai] = useState(isoDate(awalBulan(sekarang)))
   const [selesai, setSelesai] = useState(isoDate(akhirBulan(sekarang)))
   const [bolehPutuskan, setBolehPutuskan] = useState(true)
+  const [sembunyikanDraf, setSembunyikanDraf] = useState(true)
+  const [sapaan, setSapaan] = useState('')
   const [hariBerlaku, setHariBerlaku] = useState(30)
 
   const muat = useCallback(async () => {
@@ -126,7 +153,7 @@ export default function ClientLinks() {
     setLoading(true)
     const { data, error } = await supabase
       .from('client_links')
-      .select('id,token,label,period_start,period_end,can_decide,expires_at,revoked_at,last_viewed_at,view_count,created_at')
+      .select('id,token,label,period_start,period_end,can_decide,hide_drafts,note,expires_at,revoked_at,last_viewed_at,view_count,created_at')
       .eq('tenant_id', tenantId)
       .order('created_at', { ascending: false })
     if (error) setGalat(error.message)
@@ -178,9 +205,29 @@ export default function ClientLinks() {
     }
 
     setFormTerbuka(false)
-    setLabel('')
 
     const baru = Array.isArray(data) ? data[0] : data
+
+    // Catatan dan pilihan sembunyikan-draf disimpan lewat update terpisah.
+    // RPC buat_tautan_klien() sengaja tidak ditambah dua parameter lagi:
+    // ia sudah punya enam, dan menambah terus akan membuat pemanggilnya
+    // sulit dibaca. Keduanya kolom biasa yang dilindungi RLS admin.
+    //
+    // Kolom form dikosongkan SETELAH blok ini, bukan sebelumnya. Nilai lama
+    // memang masih terbaca dari closure walau state sudah disetel ulang,
+    // tapi urutan yang bergantung pada seluk-beluk itu akan menjebak orang
+    // berikutnya yang menyunting fungsi ini.
+    if (baru?.id && (sapaan.trim() || sembunyikanDraf)) {
+      await supabase
+        .from('client_links')
+        .update({ note: sapaan.trim() || null, hide_drafts: sembunyikanDraf })
+        .eq('id', baru.id)
+        .eq('tenant_id', tenantId)
+    }
+
+    setLabel('')
+    setSapaan('')
+
     if (baru?.token) {
       try {
         await navigator.clipboard.writeText(`${window.location.origin}/r/${baru.token}`)
@@ -351,6 +398,47 @@ export default function ClientLinks() {
                 </span>
               </span>
             </button>
+
+            <button
+              type="button"
+              className="option-card"
+              onClick={() => setSembunyikanDraf((v) => !v)}
+              style={{
+                display: 'flex', alignItems: 'flex-start', gap: 10, marginTop: 10,
+                borderColor: sembunyikanDraf ? 'var(--accent)' : 'var(--border-strong)',
+                background: sembunyikanDraf ? 'var(--accent-bg)' : 'var(--surface-2)',
+              }}
+            >
+              <Icon
+                name={sembunyikanDraf ? 'checkbox-outline' : 'square-outline'}
+                size={18}
+                color={sembunyikanDraf ? 'var(--accent)' : 'var(--text-muted)'}
+              />
+              <span>
+                <span style={{ fontSize: 13, fontWeight: 600, display: 'block' }}>
+                  Sembunyikan yang masih ide dan draf
+                </span>
+                <span style={{ fontSize: 11.5, color: 'var(--text-secondary)', display: 'block', marginTop: 2, lineHeight: 1.55 }}>
+                  Klien hanya melihat yang sudah matang. Menampilkan ide
+                  setengah jadi membuat rencana terlihat lebih berantakan
+                  daripada keadaan sebenarnya.
+                </span>
+              </span>
+            </button>
+
+            <label className="field-label" htmlFor="tk-sapaan" style={{ marginTop: 14 }}>
+              Sapaan untuk klien (opsional)
+            </label>
+            <textarea
+              id="tk-sapaan"
+              className="textarea"
+              rows={3}
+              value={sapaan}
+              onChange={(e) => setSapaan(e.target.value)}
+              placeholder="Contoh: Halo Bu Sri, ini rencana konten Oktober. Mohon dicek dan ditandai kalau ada yang perlu diubah."
+              style={{ minHeight: 70 }}
+            />
+            <p className="field-hint">Tampil di bagian atas halaman yang dibuka klien.</p>
 
             <div className="sheet-aksi">
               <button type="button" className="btn" onClick={() => setFormTerbuka(false)}>Batal</button>

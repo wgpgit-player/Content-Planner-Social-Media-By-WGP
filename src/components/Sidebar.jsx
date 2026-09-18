@@ -23,6 +23,7 @@ export const NAV_GROUPS = [
     label: 'Utama',
     items: [
       { icon: 'grid-outline', label: 'Dashboard', path: '/dashboard' },
+      { icon: 'create-outline', label: 'Susun konten', path: '/compose' },
       { icon: 'albums-outline', label: 'Project tracker', path: '/kanban' },
       { icon: 'calendar-outline', label: 'Content calendar', path: '/content-calendar' },
       { icon: 'apps-outline', label: 'Grid pratinjau', path: '/grid' },
@@ -34,6 +35,7 @@ export const NAV_GROUPS = [
     items: [
       { icon: 'bulb-outline', label: 'Bank ide konten', path: '/content-bank' },
       { icon: 'layers-outline', label: 'Content pillar', path: '/content-pillar' },
+      { icon: 'compass-outline', label: 'Strategi konten', path: '/strategy' },
       { icon: 'chatbubble-ellipses-outline', label: 'Caption formula', path: '/caption-formula' },
       { icon: 'fish-outline', label: 'Hook library', path: '/hook-library' },
       { icon: 'megaphone-outline', label: 'CTA library', path: '/cta-library' },

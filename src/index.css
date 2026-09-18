@@ -1217,6 +1217,216 @@ h1, h2, h3, h4, p { margin: 0; }
 }
 
 /* ============================================================
+   Composer: menyusun di kiri, pratinjau feed di kanan
+   ------------------------------------------------------------
+   Dua kolom dengan pratinjau yang menempel saat digulir, supaya
+   feed tetap terlihat sementara caption panjang diketik di kiri.
+   Di layar sempit keduanya menumpuk dan pratinjau pindah ke
+   bawah — berdampingan pada lebar ponsel berarti keduanya
+   terlalu sempit untuk berguna.
+   ============================================================ */
+
+.compose-dua {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.compose-pratinjau { position: sticky; top: 16px; }
+
+@media (max-width: 900px) {
+  .compose-dua { grid-template-columns: minmax(0, 1fr); }
+  /* Menempel tidak ada gunanya saat elemennya sudah menumpuk. */
+  .compose-pratinjau { position: static; }
+}
+
+/* Bingkai telepon. Bukan hiasan: konteks "ini akan dilihat di layar
+   kecil" mengubah cara orang menilai komposisinya. */
+.telepon {
+  background: var(--surface-2);
+  border: 0.5px solid var(--border-strong);
+  border-radius: 26px;
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.telepon-kepala {
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-1);
+  border-bottom: 0.5px solid var(--border);
+}
+
+.telepon-takik {
+  width: 58px;
+  height: 5px;
+  border-radius: 99px;
+  background: var(--border-strong);
+}
+
+.telepon-isi { padding: 2px 0 0; }
+
+/* ============================================================
+   Baris agenda di atas kalender
+   ------------------------------------------------------------
+   Hari penting dan kegiatan workspace duduk di satu baris tanpa
+   sumbu jam, karena keduanya berlaku sepanjang hari. Tingginya
+   dibiarkan tumbuh mengikuti isi — memotongnya berarti hari
+   tersibuk justru yang paling tersembunyi.
+   ============================================================ */
+
+.agenda-baris {
+  border-bottom: 0.5px solid var(--border);
+  background: var(--surface-1);
+}
+
+.agenda-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  justify-content: flex-end;
+  padding: 7px 6px;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.agenda-tambah {
+  display: flex;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 1px;
+  border-radius: 5px;
+}
+
+.agenda-tambah:hover { color: var(--accent); background: var(--accent-bg); }
+
+.agenda-sel {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-height: 30px;
+  padding: 5px 4px;
+  border-left: 0.5px solid var(--border);
+}
+
+.agenda-pil {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  width: 100%;
+  padding: 3px 6px;
+  border: none;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 9.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: left;
+  cursor: pointer;
+}
+
+.agenda-pil-teks {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Tombol tambah yang hanya muncul saat kolomnya disorot. Selalu terlihat
+   membuat baris ini penuh tanda plus dan ramai tanpa guna. */
+.agenda-kosong {
+  border: none;
+  background: transparent;
+  color: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  padding: 3px;
+  border-radius: 5px;
+}
+
+.agenda-sel:hover .agenda-kosong { color: var(--text-muted); }
+
+/* Halaman strategi: daftar pillar di kiri, pola di kanan. Polanya
+   diberi porsi lebih besar karena di situlah pekerjaannya. */
+.strategi-dua {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  gap: 14px;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .strategi-dua { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ---------- Baris hari di composer ---------- */
+
+.strip-hari {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.strip-hari-sel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 2px;
+  border: 0.5px solid var(--border);
+  border-radius: 11px;
+  background: var(--surface-2);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.14s ease, border-color 0.14s ease;
+}
+
+.strip-hari-sel.aktif {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.strip-hari-nama {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.strip-hari-angka {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.strip-hari-sel.aktif .strip-hari-nama,
+.strip-hari-sel.aktif .strip-hari-angka { color: var(--accent-text); }
+
+/* Titik penanda hari ini. Tanpa ini, baris tanggal kehilangan
+   jangkarnya begitu pengguna menggeser ke minggu lain. */
+.strip-hari-titik {
+  position: absolute;
+  bottom: 4px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.strip-hari-sel.aktif .strip-hari-titik { background: var(--accent-text); }
+
+/* ============================================================
    Grid pratinjau feed
    ------------------------------------------------------------
    Tiga kolom dan kotak persegi, karena itu bentuk feed Instagram
