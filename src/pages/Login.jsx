@@ -18,7 +18,7 @@ export default function Login() {
   // setelah berhasil masuk dia langsung dibawa kembali ke halaman undangan.
   const next = params.get('next')
 
-  if (user) return <Navigate to={next || '/'} replace />
+  if (user) return <Navigate to={next || '/dashboard'} replace />
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -38,7 +38,7 @@ export default function Login() {
     setLoading(true)
     try {
       await signIn(email, password)
-      navigate(next || '/')
+      navigate(next || '/dashboard')
     } catch (err) {
       setPesan(pesanGalatAuth(err))
     } finally {

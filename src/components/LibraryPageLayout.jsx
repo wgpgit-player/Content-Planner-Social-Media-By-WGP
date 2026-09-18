@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import Sidebar from './Sidebar'
+import AppShell from './AppShell'
+import Sheet from './Sheet'
 
 // Layout dipakai bersama oleh CtaLibrary, CaptionFormulaLibrary, HookLibrary —
 // ketiganya polanya sama: judul + subjudul, tombol tambah, filter kategori,
@@ -7,8 +8,7 @@ import Sidebar from './Sidebar'
 // biar 3 halaman itu tidak duplikasi struktur yang sama persis.
 export default function LibraryPageLayout({ title, subtitle, categories, activeCategory, onCategoryChange, addLabel, onAddClick, children }) {
   return (
-    <div style={{ background: 'var(--bg-page)', minHeight: '100vh', padding: 16, display: 'grid', gridTemplateColumns: '190px 1fr', gap: 16 }}>
-      <Sidebar />
+    <AppShell maxWidth={820}>
       <div style={{ maxWidth: 760 }}>
         <div style={{ marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
@@ -47,7 +47,7 @@ export default function LibraryPageLayout({ title, subtitle, categories, activeC
 
         {children}
       </div>
-    </div>
+    </AppShell>
   )
 }
 
@@ -63,31 +63,24 @@ export function useCopyFeedback() {
 
 // Modal generik dipakai ketiga library page — bedanya cuma field yang
 // dirender lewat children (form fields), submit tetap konsisten.
+//
+// Wadahnya sekarang Sheet: kotak di tengah pada layar lebar, panel yang naik
+// dari bawah di ponsel. Kolom-kolomnya memakai kelas bersama .input dan
+// .field-label, bukan objek gaya yang di-spread seperti sebelumnya — dua
+// ekspor gaya itu sudah dihapus. Selain menghilangkan duplikasi, itu juga
+// yang membuat kolomnya berukuran 16 piksel di ponsel, karena di bawah angka
+// itu papan ketik iOS memperbesar seluruh halaman dan tidak pernah
+// mengembalikannya.
 export function LibraryFormModal({ title, onClose, onSubmit, children, submitLabel = 'Simpan' }) {
   return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(26,26,46,0.35)', display: 'flex',
-      alignItems: 'center', justifyContent: 'center', zIndex: 50,
-    }} onClick={onClose}>
-      <form
-        onSubmit={onSubmit}
-        onClick={(e) => e.stopPropagation()}
-        style={{ background: '#fff', borderRadius: 14, padding: 20, width: 380 }}
-      >
-        <p style={{ fontWeight: 500, fontSize: 14, margin: '0 0 14px' }}>{title}</p>
+    <Sheet open onClose={onClose} title={title} lebar={400}>
+      <form onSubmit={onSubmit}>
         {children}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 14 }}>
-          <button type="button" onClick={onClose} style={{ fontSize: 12.5, padding: '7px 12px', borderRadius: 8, border: '0.5px solid var(--border)', background: '#fff', cursor: 'pointer', color: 'var(--text-secondary)' }}>
-            Batal
-          </button>
-          <button type="submit" style={{ fontSize: 12.5, padding: '7px 12px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#fff', cursor: 'pointer' }}>
-            {submitLabel}
-          </button>
+        <div className="sheet-aksi">
+          <button type="button" onClick={onClose} className="btn">Batal</button>
+          <button type="submit" className="btn btn-primary">{submitLabel}</button>
         </div>
       </form>
-    </div>
+    </Sheet>
   )
 }
-
-export const formFieldStyle = { width: '100%', border: '0.5px solid var(--border)', borderRadius: 8, padding: '8px 10px', fontSize: 12.5, marginBottom: 12, boxSizing: 'border-box' }
-export const formLabelStyle = { fontSize: 11.5, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }

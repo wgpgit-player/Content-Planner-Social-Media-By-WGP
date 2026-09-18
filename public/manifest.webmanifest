@@ -1,0 +1,55 @@
+{
+  "name": "plannersm.co",
+  "short_name": "plannersm",
+  "description": "Perencana konten untuk tim media sosial. Rencanakan, jadwalkan, dan bagi tugas dalam satu tempat.",
+  "lang": "id",
+  "dir": "ltr",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "background_color": "#F7F7FA",
+  "theme_color": "#6B5EE0",
+  "categories": ["productivity", "business"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Project tracker",
+      "short_name": "Tracker",
+      "url": "/kanban",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Content calendar",
+      "short_name": "Kalender",
+      "url": "/content-calendar",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Bank ide konten",
+      "short_name": "Bank ide",
+      "url": "/content-bank",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

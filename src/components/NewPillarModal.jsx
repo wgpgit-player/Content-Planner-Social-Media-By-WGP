@@ -1,6 +1,9 @@
 import { useState } from 'react'
+import Sheet from './Sheet'
 import { PILLAR_COLOR_CHOICES } from '../config/pillars'
 
+// Formulir pillar baru. Wadahnya Sheet, alasannya sama seperti di
+// NewContentModal.jsx.
 export default function NewPillarModal({ onClose, onSubmit }) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -13,59 +16,67 @@ export default function NewPillarModal({ onClose, onSubmit }) {
   }
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(26,26,46,0.35)', display: 'flex',
-      alignItems: 'center', justifyContent: 'center', zIndex: 50,
-    }} onClick={onClose}>
-      <form
-        onSubmit={handleSubmit}
-        onClick={(e) => e.stopPropagation()}
-        style={{ background: '#fff', borderRadius: 14, padding: 20, width: 360 }}
-      >
-        <p style={{ fontWeight: 500, fontSize: 14, margin: '0 0 14px' }}>Pillar baru</p>
-
-        <label style={{ fontSize: 11.5, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>Nama pillar</label>
+    <Sheet
+      open
+      onClose={onClose}
+      title="Pillar baru"
+      description="Pillar adalah tema besar yang jadi payung konten-konten kamu."
+      lebar={400}
+    >
+      <form onSubmit={handleSubmit}>
+        <label className="field-label" htmlFor="pillar-nama">Nama pillar</label>
         <input
+          id="pillar-nama"
+          className="input"
           autoFocus
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Contoh: Ajakan wakaf tunai"
-          style={{ width: '100%', border: '0.5px solid var(--border)', borderRadius: 8, padding: '8px 10px', fontSize: 12.5, marginBottom: 12, boxSizing: 'border-box' }}
+          placeholder="Contoh: Edukasi produk"
+          style={{ marginBottom: 12 }}
         />
 
-        <label style={{ fontSize: 11.5, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>Deskripsi singkat</label>
+        <label className="field-label" htmlFor="pillar-deskripsi">Deskripsi singkat</label>
         <input
+          id="pillar-deskripsi"
+          className="input"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Buat apa pillar ini dipakai"
-          style={{ width: '100%', border: '0.5px solid var(--border)', borderRadius: 8, padding: '8px 10px', fontSize: 12.5, marginBottom: 12, boxSizing: 'border-box' }}
+          style={{ marginBottom: 14 }}
         />
 
-        <label style={{ fontSize: 11.5, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>Warna label</label>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+        <p className="field-label">Warna label</p>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           {PILLAR_COLOR_CHOICES.map((c) => (
             <button
               type="button"
               key={c}
               onClick={() => setColor(c)}
               aria-label={`Pilih warna ${c}`}
+              aria-pressed={color === c}
               style={{
-                width: 22, height: 22, borderRadius: '50%', background: c, cursor: 'pointer',
-                border: color === c ? '2px solid var(--text-primary)' : '0.5px solid var(--border)',
+                // Kotak ketuknya 34 piksel walau bulatan warnanya lebih
+                // kecil. Titik 22 piksel terlalu kecil untuk dibidik jempol,
+                // dan itu jenis kegagalan yang orang salahkan pada dirinya
+                // sendiri, bukan pada aplikasinya.
+                width: 34, height: 34, borderRadius: '50%', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'transparent', padding: 0,
+                border: color === c ? `2px solid ${c}` : '0.5px solid var(--border)',
               }}
-            />
+            >
+              <span style={{ width: 20, height: 20, borderRadius: '50%', background: c, display: 'block' }} />
+            </button>
           ))}
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <button type="button" onClick={onClose} style={{ fontSize: 12.5, padding: '7px 12px', borderRadius: 8, border: '0.5px solid var(--border)', background: '#fff', cursor: 'pointer', color: 'var(--text-secondary)' }}>
-            Batal
-          </button>
-          <button type="submit" style={{ fontSize: 12.5, padding: '7px 12px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#fff', cursor: 'pointer' }}>
+        <div className="sheet-aksi">
+          <button type="button" onClick={onClose} className="btn">Batal</button>
+          <button type="submit" className="btn btn-primary" disabled={!name.trim()}>
             Tambah pillar
           </button>
         </div>
       </form>
-    </div>
+    </Sheet>
   )
 }

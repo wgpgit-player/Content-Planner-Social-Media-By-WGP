@@ -130,7 +130,7 @@ export default function Onboarding() {
     return <p style={{ padding: 24, fontSize: 13, color: 'var(--text-muted)' }}>Memuat...</p>
   }
   if (!sengajaBuatBaru && tenants.length > 0) {
-    return <Navigate to="/" replace />
+    return <Navigate to="/dashboard" replace />
   }
 
   async function buatWorkspace() {
@@ -164,7 +164,7 @@ export default function Onboarding() {
 
     await reloadTenants()
     if (data) switchTenant(data)
-    navigate('/')
+    navigate('/dashboard')
   }
 
   return (
@@ -321,7 +321,7 @@ export default function Onboarding() {
             </button>
           )}
           {tambahan && step === 0 && (
-            <button type="button" className="btn btn-ghost" onClick={() => navigate('/')} disabled={saving}>
+            <button type="button" className="btn btn-ghost" onClick={() => navigate('/dashboard')} disabled={saving}>
               Batal
             </button>
           )}

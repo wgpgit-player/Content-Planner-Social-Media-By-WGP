@@ -5,6 +5,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import { isMisconfiguredDeployment } from './lib/supabaseClient'
 import SetupNeeded from './pages/SetupNeeded.jsx'
 
+import Landing from './pages/Landing.jsx'
 import Login from './pages/Login.jsx'
 import Signup from './pages/Signup.jsx'
 import Onboarding from './pages/Onboarding.jsx'
@@ -34,6 +35,14 @@ import Team from './pages/Team.jsx'
 // supaya halaman undangan bisa langsung memuat ulang daftar workspace begitu
 // undangannya diterima.
 
+// Root menampilkan halaman jualan untuk pengunjung baru, dan melompat ke
+// dashboard untuk orang yang sudah masuk.
+function BerandaPublik() {
+  const { user, loading } = useAuth()
+  if (loading) return null
+  return user ? <Navigate to="/dashboard" replace /> : <Landing />
+}
+
 function RequireAuth({ children }) {
   const { user, loading } = useAuth()
   if (loading) return <p style={{ padding: 24, fontSize: 13, color: 'var(--text-muted)' }}>Memuat...</p>
@@ -57,7 +66,10 @@ export default function App() {
             <Route path="/invite/:token" element={<AcceptInvite />} />
             <Route path="/onboarding" element={<RequireAuth><Onboarding /></RequireAuth>} />
 
-            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            {/* Root adalah halaman publik. Pengunjung yang sudah login tidak perlu
+                melihat halaman jualan lagi, jadi dialihkan ke dashboard. */}
+            <Route path="/" element={<BerandaPublik />} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/kanban" element={<ProtectedRoute><KanbanBoard /></ProtectedRoute>} />
             <Route path="/content-bank" element={<ProtectedRoute><ContentBank /></ProtectedRoute>} />
             <Route path="/content-calendar" element={<ProtectedRoute><ContentCalendar /></ProtectedRoute>} />

@@ -14,11 +14,15 @@ import Icon from './Icon'
 //
 // Ikon memakai penamaan Ionicons v7 (https://ionic.io/ionicons).
 
-const NAV_GROUPS = [
+// Diekspor karena tab bar bawah di mobile (components/BottomNav.jsx) memakai
+// daftar yang sama. Dua daftar terpisah berarti menu yang baru ditambahkan
+// akan muncul di satu tempat saja, dan itu jenis ketimpangan yang baru
+// ketahuan setelah ada yang mengeluh.
+export const NAV_GROUPS = [
   {
     label: 'Utama',
     items: [
-      { icon: 'grid-outline', label: 'Dashboard', path: '/' },
+      { icon: 'grid-outline', label: 'Dashboard', path: '/dashboard' },
       { icon: 'albums-outline', label: 'Project tracker', path: '/kanban' },
       { icon: 'calendar-outline', label: 'Content calendar', path: '/content-calendar' },
     ],
@@ -63,6 +67,8 @@ function Badge({ text }) {
   )
 }
 
+// Sidebar hanya dipakai di layar lebar. Di ponsel navigasinya diambil alih
+// oleh tab bar bawah, jadi tidak ada lagi mode laci di sini.
 export default function Sidebar() {
   const { user, signOut, isMock } = useAuth()
   const { isAdmin, role } = useTenantContext()
@@ -74,19 +80,7 @@ export default function Sidebar() {
   }
 
   return (
-    <div
-      className="sidebar-scroll"
-      style={{
-        // Menempel di tempatnya dan punya scrollbar sendiri. Sebelumnya sidebar
-        // ikut memanjang ke bawah, jadi untuk menjangkau menu paling bawah
-        // seluruh halaman harus di-scroll dulu.
-        background: 'var(--surface-2)', border: '0.5px solid var(--border)', borderRadius: 16,
-        padding: '16px 12px', width: 190,
-        position: 'sticky', top: 16,
-        maxHeight: 'calc(100vh - 32px)', overflowY: 'auto', overscrollBehavior: 'contain',
-        display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow-sm)',
-      }}
-    >
+    <div className="sidebar-scroll app-sidebar">
       <TenantSwitcher />
 
       {NAV_GROUPS.map((group) => {
@@ -101,7 +95,7 @@ export default function Sidebar() {
                 <NavLink
                   key={item.label}
                   to={item.path}
-                  end={item.path === '/'}
+                  end={item.path === '/dashboard'}
                   className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}
                 >
                   <Icon name={item.icon} size={16} />

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useTenantContext } from '../context/TenantContext'
 import { useAuth } from '../context/AuthContext'
-import Sidebar from '../components/Sidebar'
+import AppShell from '../components/AppShell'
 import Hero from '../components/Hero'
 import WeekCalendar from '../components/WeekCalendar'
 import Icon from '../components/Icon'
@@ -224,10 +224,9 @@ export default function DashboardAdmin() {
 
   if (!data) {
     return (
-      <div style={{ background: 'var(--bg-page)', minHeight: '100vh', padding: 16, display: 'grid', gridTemplateColumns: '190px 1fr', gap: 16, alignItems: 'start' }}>
-        <Sidebar />
+      <AppShell maxWidth={1100}>
         <p style={{ padding: 8, fontSize: 13, color: 'var(--text-muted)' }}>Memuat dashboard...</p>
-      </div>
+      </AppShell>
     )
   }
 
@@ -235,13 +234,7 @@ export default function DashboardAdmin() {
   const kosongTotal = data.total === 0
 
   return (
-    <div
-      style={{
-        background: 'var(--bg-page)', minHeight: '100vh', padding: 16,
-        display: 'grid', gridTemplateColumns: '190px 1fr', gap: 16, alignItems: 'start',
-      }}
-    >
-      <Sidebar />
+    <AppShell maxWidth={1100}>
 
       <div style={{ maxWidth: 1100, display: 'flex', flexDirection: 'column', gap: 14 }}>
         <Hero
@@ -301,7 +294,7 @@ export default function DashboardAdmin() {
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.5fr) minmax(0, 1fr)', gap: 14, alignItems: 'start' }}>
+            <div className="dash-two-col">
               <WeekCalendar startIso={data.awalMinggu} itemsByDate={data.itemsByDate} />
 
               <div className="card">
@@ -405,6 +398,6 @@ export default function DashboardAdmin() {
           </>
         )}
       </div>
-    </div>
+    </AppShell>
   )
 }

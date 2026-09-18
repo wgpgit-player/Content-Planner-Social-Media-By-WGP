@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import Sidebar from '../components/Sidebar'
+import AppShell from '../components/AppShell'
+import Sheet from '../components/Sheet'
 import { supabase } from '../lib/supabaseClient'
 import { useTenant } from '../lib/useTenant'
 import { Link } from 'react-router-dom'
@@ -67,47 +68,42 @@ function DetailPopup({ item, onClose, onSave }) {
   }
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(26,26,46,0.35)', display: 'flex',
-      alignItems: 'center', justifyContent: 'center', zIndex: 50,
-    }} onClick={onClose}>
-      <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: 14, padding: 18, width: 300 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
-          <p style={{ fontWeight: 500, fontSize: 14, margin: 0, paddingRight: 10 }}>{item.title}</p>
-          <Icon name="close-outline" size={15} color={'var(--text-muted)'} style={{ cursor: 'pointer' }} onClick={onClose} />
-        </div>
-
-        <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
-          <span style={{ fontSize: 11, padding: '3px 9px', borderRadius: 999, background: p.bg, color: p.color }}>{p.label}</span>
-          {item.pillar && <span style={{ fontSize: 11, padding: '3px 9px', borderRadius: 999, background: 'var(--accent-bg)', color: 'var(--accent)' }}>{item.pillar}</span>}
-        </div>
-
-        <p style={{ fontSize: 11.5, color: 'var(--text-secondary)', margin: '0 0 4px' }}>
-          <Icon name="calendar-outline" size={13} style={{ verticalAlign: -2 }} /> {item.scheduledDate}
-        </p>
-
-        <label style={{ fontSize: 11.5, color: 'var(--text-secondary)', display: 'block', margin: '10px 0 4px' }}>Jam tayang</label>
-        <input
-          type="time"
-          value={time}
-          onChange={(e) => setTime(e.target.value)}
-          style={{ width: '100%', border: '0.5px solid var(--border)', borderRadius: 8, padding: '8px 10px', fontSize: 12.5, boxSizing: 'border-box' }}
-        />
-
-        <Link to={`/content/${item.id}`} className="btn btn-sm btn-block" style={{ textDecoration: 'none', marginTop: 14 }}>
-          <Icon name="document-text-outline" size={14} /> Buka brief
-        </Link>
-
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
-          <button onClick={onClose} style={{ fontSize: 12.5, padding: '7px 12px', borderRadius: 8, border: '0.5px solid var(--border)', background: '#fff', cursor: 'pointer', color: 'var(--text-secondary)' }}>
-            Tutup
-          </button>
-          <button onClick={handleSave} disabled={saving} style={{ fontSize: 12.5, padding: '7px 12px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#fff', cursor: 'pointer' }}>
-            {saving ? 'Menyimpan...' : 'Simpan jam'}
-          </button>
-        </div>
+    <Sheet open onClose={onClose} title={item.title} lebar={360}>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
+        <span className="chip" style={{ background: p.bg, color: p.color, borderColor: 'transparent' }}>
+          {p.label}
+        </span>
+        {item.pillar && (
+          <span className="chip" style={{ background: 'var(--accent-bg)', color: 'var(--accent)', borderColor: 'transparent' }}>
+            {item.pillar}
+          </span>
+        )}
       </div>
-    </div>
+
+      <p style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 5 }}>
+        <Icon name="calendar-outline" size={13} /> {item.scheduledDate}
+      </p>
+
+      <label className="field-label" htmlFor="jadwal-jam" style={{ marginTop: 14 }}>Jam tayang</label>
+      <input
+        id="jadwal-jam"
+        className="input"
+        type="time"
+        value={time}
+        onChange={(e) => setTime(e.target.value)}
+      />
+
+      <Link to={`/content/${item.id}`} className="btn btn-block" style={{ textDecoration: 'none', marginTop: 14 }}>
+        <Icon name="document-text-outline" size={14} /> Buka brief
+      </Link>
+
+      <div className="sheet-aksi">
+        <button type="button" onClick={onClose} className="btn">Tutup</button>
+        <button type="button" onClick={handleSave} disabled={saving} className="btn btn-primary">
+          {saving ? 'Menyimpan...' : 'Simpan jam'}
+        </button>
+      </div>
+    </Sheet>
   )
 }
 
@@ -182,8 +178,7 @@ export default function ContentCalendar() {
   const today = isoDate(new Date())
 
   return (
-    <div style={{ background: 'var(--bg-page)', minHeight: '100vh', padding: 16, display: 'grid', gridTemplateColumns: '190px 1fr', gap: 16 }}>
-      <Sidebar />
+    <AppShell maxWidth={1180}>
 
       <div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -236,8 +231,8 @@ export default function ContentCalendar() {
         {error && <p style={{ fontSize: 12.5, color: '#A32D2D' }}>Gagal memuat data: {error.message}</p>}
 
         {!loading && (
-          <div style={{ background: 'var(--surface-2)', borderRadius: 16, overflow: 'hidden' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '48px repeat(7, 1fr)' }}>
+          <div className="cal-wrap" style={{ background: 'var(--surface-2)', borderRadius: 16 }}>
+            <div className="cal-grid">
               <div />
               {weekDates.map((d) => {
                 const iso = isoDate(d)
@@ -257,7 +252,7 @@ export default function ContentCalendar() {
               })}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '48px repeat(7, 1fr)', maxHeight: 560, overflowY: 'auto' }}>
+            <div className="cal-grid" style={{ maxHeight: 560, overflowY: 'auto' }}>
               <div>
                 {HOURS.map((h) => (
                   <div key={h} style={{ height: HOUR_HEIGHT, fontSize: 10, color: 'var(--text-muted)', textAlign: 'right', paddingRight: 6, borderTop: '0.5px solid var(--border)', boxSizing: 'border-box' }}>
@@ -315,6 +310,6 @@ export default function ContentCalendar() {
           <DetailPopup item={selected} onClose={() => setSelected(null)} onSave={handleSaveTime} />
         )}
       </div>
-    </div>
+    </AppShell>
   )
 }

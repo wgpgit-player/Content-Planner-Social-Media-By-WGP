@@ -53,7 +53,7 @@ export default function AcceptInvite() {
 
     await reloadTenants()
     if (data) switchTenant(data)
-    navigate('/')
+    navigate('/dashboard')
   }
 
   if (loading || authLoading) {

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useTenantContext } from '../context/TenantContext'
 import { useAuth } from '../context/AuthContext'
-import Sidebar from '../components/Sidebar'
+import AppShell from '../components/AppShell'
 import Hero from '../components/Hero'
 import Icon from '../components/Icon'
 import { getPlatform } from '../config/platforms'
@@ -134,10 +134,9 @@ export default function DashboardStaff() {
 
   if (!data) {
     return (
-      <div style={{ background: 'var(--bg-page)', minHeight: '100vh', padding: 16, display: 'grid', gridTemplateColumns: '190px 1fr', gap: 16, alignItems: 'start' }}>
-        <Sidebar />
+      <AppShell maxWidth={760}>
         <p style={{ padding: 8, fontSize: 13, color: 'var(--text-muted)' }}>Memuat tugas kamu...</p>
-      </div>
+      </AppShell>
     )
   }
 
@@ -145,13 +144,7 @@ export default function DashboardStaff() {
   const tidakAdaTugas = data.totalAktif === 0
 
   return (
-    <div
-      style={{
-        background: 'var(--bg-page)', minHeight: '100vh', padding: 16,
-        display: 'grid', gridTemplateColumns: '190px 1fr', gap: 16, alignItems: 'start',
-      }}
-    >
-      <Sidebar />
+    <AppShell maxWidth={760}>
 
       <div style={{ maxWidth: 760, display: 'flex', flexDirection: 'column', gap: 14 }}>
         <Hero
@@ -235,6 +228,6 @@ export default function DashboardStaff() {
           </>
         )}
       </div>
-    </div>
+    </AppShell>
   )
 }

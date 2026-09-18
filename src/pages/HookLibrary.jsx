@@ -1,6 +1,6 @@
 // TODO(supabase): needs a dedicated table — not part of Fase 1 schema yet
 import { useState } from 'react'
-import LibraryPageLayout, { useCopyFeedback, LibraryFormModal, formFieldStyle, formLabelStyle } from '../components/LibraryPageLayout'
+import LibraryPageLayout, { useCopyFeedback, LibraryFormModal } from '../components/LibraryPageLayout'
 import { HOOK_LIBRARY } from '../data/mockLibraries'
 
 export default function HookLibrary() {
@@ -51,10 +51,10 @@ export default function HookLibrary() {
 
       {showModal && (
         <LibraryFormModal title="Hook baru" onClose={() => setShowModal(false)} onSubmit={handleSubmit} submitLabel="Tambah hook">
-          <label style={formLabelStyle}>Teks hook</label>
-          <input autoFocus value={text} onChange={(e) => setText(e.target.value)} placeholder="Contoh: Kamu tau nggak kalau [fakta]?" style={formFieldStyle} />
-          <label style={formLabelStyle}>Kategori</label>
-          <input value={newCategory} onChange={(e) => setNewCategory(e.target.value)} placeholder="Contoh: Edukasi, Testimoni" style={{ ...formFieldStyle, marginBottom: 0 }} />
+          <label className="field-label">Teks hook</label>
+          <input autoFocus value={text} onChange={(e) => setText(e.target.value)} placeholder="Contoh: Kamu tau nggak kalau [fakta]?" className="input" style={{ marginBottom: 12 }} />
+          <label className="field-label">Kategori</label>
+          <input value={newCategory} onChange={(e) => setNewCategory(e.target.value)} placeholder="Contoh: Edukasi, Testimoni" className="input" />
         </LibraryFormModal>
       )}
     </LibraryPageLayout>

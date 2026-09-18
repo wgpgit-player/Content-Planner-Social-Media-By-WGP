@@ -32,7 +32,7 @@ export default function Signup() {
   // ruang kerja yang sama sekali tidak diminta.
   if (user && !sentConfirmation) {
     if (tenantLoading) return null
-    return <Navigate to={next || (tenants.length > 0 ? '/' : '/onboarding')} replace />
+    return <Navigate to={next || (tenants.length > 0 ? '/dashboard' : '/onboarding')} replace />
   }
 
   async function handleSubmit(e) {

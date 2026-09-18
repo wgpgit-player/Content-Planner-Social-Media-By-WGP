@@ -91,7 +91,7 @@ export default function TenantSwitcher() {
             <button
               key={t.id}
               type="button"
-              onClick={() => { switchTenant(t.id); setOpen(false); navigate('/') }}
+              onClick={() => { switchTenant(t.id); setOpen(false); navigate('/dashboard') }}
               className="sidebar-item"
               style={{ width: '100%', border: 'none', background: 'transparent', fontFamily: 'inherit' }}
             >

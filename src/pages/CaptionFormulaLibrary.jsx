@@ -1,6 +1,6 @@
 // TODO(supabase): needs a dedicated table — not part of Fase 1 schema yet
 import { useState } from 'react'
-import LibraryPageLayout, { LibraryFormModal, formFieldStyle, formLabelStyle } from '../components/LibraryPageLayout'
+import LibraryPageLayout, { LibraryFormModal } from '../components/LibraryPageLayout'
 import { CAPTION_FORMULAS } from '../data/mockLibraries'
 
 export default function CaptionFormulaLibrary() {
@@ -46,12 +46,12 @@ export default function CaptionFormulaLibrary() {
 
       {showModal && (
         <LibraryFormModal title="Caption formula baru" onClose={() => setShowModal(false)} onSubmit={handleSubmit} submitLabel="Tambah formula">
-          <label style={formLabelStyle}>Nama formula</label>
-          <input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="Contoh: Story-based hook" style={formFieldStyle} />
-          <label style={formLabelStyle}>Tujuan</label>
-          <input value={newGoal} onChange={(e) => setNewGoal(e.target.value)} placeholder="Contoh: Edukasi, Campaign" style={formFieldStyle} />
-          <label style={formLabelStyle}>Struktur</label>
-          <textarea value={structure} onChange={(e) => setStructure(e.target.value)} placeholder="Jelaskan urutan/struktur captionnya" rows={3} style={{ ...formFieldStyle, marginBottom: 0, resize: 'vertical' }} />
+          <label className="field-label">Nama formula</label>
+          <input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="Contoh: Story-based hook" className="input" style={{ marginBottom: 12 }} />
+          <label className="field-label">Tujuan</label>
+          <input value={newGoal} onChange={(e) => setNewGoal(e.target.value)} placeholder="Contoh: Edukasi, Campaign" className="input" style={{ marginBottom: 12 }} />
+          <label className="field-label">Struktur</label>
+          <textarea value={structure} onChange={(e) => setStructure(e.target.value)} placeholder="Jelaskan urutan/struktur captionnya" rows={3} className="textarea" style={{ resize: 'vertical' }} />
         </LibraryFormModal>
       )}
     </LibraryPageLayout>

@@ -2,13 +2,48 @@
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- viewport-fit=cover membuat halaman memakai seluruh layar termasuk area
+         di balik notch dan indikator home. Konsekuensinya, jarak aman harus
+         diatur sendiri lewat env(safe-area-inset-*) di index.css — tanpa itu
+         tab bar bawah akan tertutup indikator home di iPhone.
+         maximum-scale dan user-scalable sengaja TIDAK dipakai: mematikan zoom
+         menghalangi orang yang butuh memperbesar teks. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <title>plannersm.co — perencana konten tim</title>
+    <meta
+      name="description"
+      content="Perencana konten untuk tim media sosial dan agensi. Rencanakan, jadwalkan, dan bagi tugas dalam satu tempat."
+    />
+
+    <!-- ===== Progressive Web App ===== -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- Warna bilah status. Dua nilai supaya mode gelap perangkat tidak
+         menampilkan bilah putih yang menyilaukan. -->
+    <meta name="theme-color" content="#F7F7FA" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#F7F7FA" media="(prefers-color-scheme: dark)" />
+
+    <!-- iOS tidak membaca manifest untuk hal-hal ini, jadi harus ditulis
+         terpisah. Tanpa apple-mobile-web-app-capable, aplikasi yang dipasang
+         ke home screen tetap terbuka di dalam Safari lengkap dengan bilah
+         alamatnya, dan rasanya langsung kembali seperti situs biasa. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="plannersm" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+
     <!-- Ionicons v7 (https://ionic.io/ionicons). Dipakai lewat web component
          <ion-icon name="..."> — dibungkus komponen src/components/Icon.jsx
          supaya penulisannya seragam di seluruh aplikasi. -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
     <script type="module" src="https://cdn.jsdelivr.net/npm/ionicons@7.4.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://cdn.jsdelivr.net/npm/ionicons@7.4.0/dist/ionicons/ionicons.js"></script>
-    <title>plannersm.co</title>
   </head>
   <body>
     <div id="root"></div>

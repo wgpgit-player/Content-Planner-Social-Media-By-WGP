@@ -332,6 +332,577 @@ h1, h2, h3, h4, p { margin: 0; }
 .color-dot:hover { transform: scale(1.1); }
 .color-dot.selected { border-color: var(--text-primary); }
 
+/* ============================================================
+   Kerangka aplikasi (AppShell.jsx)
+   ------------------------------------------------------------
+   Layar lebar: sidebar jadi kolom tetap di sebelah konten.
+   Layar sempit: sidebar jadi laci yang tersembunyi di luar layar.
+   ============================================================ */
+
+.app-shell {
+  background: var(--bg-page);
+  min-height: 100vh;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.app-sidebar {
+  background: var(--surface-2);
+  border: 0.5px solid var(--border);
+  border-radius: 16px;
+  padding: 16px 12px;
+  width: 190px;
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-sm);
+}
+
+.app-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 18px;
+  padding: 4px 2px;
+}
+
+/* ============================================================
+   MOBILE — "web apps extreme"
+   ------------------------------------------------------------
+   Di bawah 900 piksel aplikasi ini berhenti tampil seperti situs
+   dan mulai tampil seperti aplikasi: navigasi di bawah layar
+   supaya terjangkau jempol, bilah atas tembus pandang, sudut
+   lebih besar, permukaan berlapis, judul besar, dan umpan balik
+   tekan pada setiap hal yang bisa diketuk.
+
+   Semuanya ada di dalam media query, dan itu disengaja. Tampilan
+   layar lebar tidak berubah satu piksel pun — yang sudah jalan
+   di sana tidak perlu diaduk untuk mendapatkan ini.
+   ============================================================ */
+
+/* Hanya muncul di layar sempit. */
+.app-topbar { display: none; }
+.tabbar { display: none; }
+
+@media (max-width: 900px) {
+  :root {
+    /* Sudut yang lebih besar adalah penanda paling kuat "ini aplikasi,
+       bukan dokumen", dan satu-satunya perubahan token yang langsung
+       terasa di hampir semua komponen sekaligus. */
+    --radius: 13px;
+    --radius-lg: 20px;
+    --shadow-md: 0 8px 28px rgba(23, 23, 31, 0.10);
+
+    /* Tinggi tab bar dan bilah atas dipakai untuk memberi jarak pada
+       konten. Ditulis sebagai variabel supaya angkanya tidak tersebar
+       di banyak tempat dan bisa berubah di satu titik. */
+    --tabbar-h: 54px;
+    /* 26px isi (avatar) + padding 9px atas dan bawah. */
+    --topbar-h: 44px;
+  }
+
+  body {
+    /* Sorotan abu-abu saat mengetuk tautan langsung membocorkan bahwa
+       ini halaman web. Dimatikan, dan digantikan umpan balik tekan
+       sendiri di bawah — kalau tidak ada penggantinya, aplikasi justru
+       terasa mati saat disentuh. */
+    -webkit-tap-highlight-color: transparent;
+    /* Efek memantul di ujung halaman menggeser seluruh aplikasi,
+       termasuk tab bar yang seharusnya menempel di bawah. */
+    overscroll-behavior-y: none;
+  }
+
+  /* Navigasi bukan teks bacaan. Tanpa ini, menekan agak lama pada
+     label tab memunculkan gagang seleksi teks. */
+  .app-topbar,
+  .tabbar,
+  .sheet-kepala { user-select: none; -webkit-user-select: none; }
+
+  .app-shell {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 0;
+    gap: 0;
+  }
+
+  /* Sidebar digantikan tab bar bawah. */
+  .app-sidebar-wrap { display: none; }
+
+  /* ---------- Bilah atas ---------- */
+
+  .app-topbar {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+
+    /* fixed, bukan sticky, dan itu perlu penjelasan.
+       .app-shell adalah grid dengan align-items:start, jadi bilah ini
+       menempati baris yang tingginya persis setinggi isinya. Blok
+       position:sticky dibatasi oleh area grid-nya sendiri, dan area
+       setinggi isi berarti tidak ada jarak sama sekali untuk melekat —
+       hasilnya bilah ini akan tergulir hilang seperti elemen biasa.
+       fixed melepaskannya dari grid, dan kebetulan juga yang benar untuk
+       rasa aplikasi: header di aplikasi telepon tidak ikut menggulir. */
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 40;
+    /* Jarak atas mengikuti area aman perangkat. Tanpa ini, pada iPhone
+       yang memasang aplikasi ke home screen isi bilah ini masuk ke
+       balik notch dan terpotong. */
+    padding: calc(env(safe-area-inset-top) + 9px) 16px 9px;
+    background: color-mix(in srgb, var(--bg-page) 76%, transparent);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 0.5px solid color-mix(in srgb, var(--border) 70%, transparent);
+  }
+
+  .app-topbar-nama {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* ---------- Isi halaman & judul besar ---------- */
+
+  .app-main {
+    /* Bilah atas dan tab bar keduanya melayang di atas halaman, jadi isi
+       halaman harus diberi jarak sendiri di kedua ujung. Tanpa itu, baris
+       pertama tersembunyi di balik bilah atas dan baris terakhir tertutup
+       tab bar tanpa bisa digulir lebih jauh. */
+    padding-top: calc(var(--topbar-h) + env(safe-area-inset-top) + 14px);
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 20px);
+  }
+
+  .app-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding: 2px 0;
+  }
+
+  /* Judul jadi elemen paling berat di layar, keterangannya jauh lebih
+     ringan. Jenjang yang tajam seperti ini yang membuat satu layar
+     terbaca sekali lihat, dan itu inti permintaannya: kemudahan dan
+     keterbacaan. */
+  .page-title {
+    font-size: 27px;
+    line-height: 1.16;
+    letter-spacing: -0.032em;
+    font-weight: 700;
+  }
+
+  .page-subtitle { font-size: 13px; }
+
+  .card { padding: 16px; }
+
+  /* Sasaran ketuk. Angka 44 piksel datang dari panduan antarmuka
+     sentuh Apple dan bertahan karena memang seukuran ujung jempol. */
+  .btn { min-height: 42px; border-radius: 12px; }
+  .btn-sm { min-height: 34px; border-radius: 10px; }
+
+  /* Papan ketik iOS otomatis memperbesar halaman kalau teks di dalam
+     kolom lebih kecil dari 16 piksel — dan halaman itu tidak pernah
+     kembali ke ukuran semula sesudahnya. */
+  .input, .select, .textarea { font-size: 16px; border-radius: 12px; }
+
+  /* ---------- Umpan balik tekan ---------- */
+
+  .btn, .row-link, .option-card, .tabbar-item, .sheet-baris {
+    transition: transform 0.1s ease, background 0.14s ease, border-color 0.14s ease;
+  }
+
+  .btn:active:not(:disabled),
+  .row-link:active,
+  .option-card:active,
+  .tabbar-item:active,
+  .sheet-baris:active:not(.nonaktif),
+  .sheet-keluar:active {
+    transform: scale(0.975);
+  }
+
+  /* ---------- Tab bar bawah ---------- */
+
+  .tabbar {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    padding-bottom: env(safe-area-inset-bottom);
+    background: color-mix(in srgb, var(--surface-2) 78%, transparent);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+    border-top: 0.5px solid color-mix(in srgb, var(--border-strong) 70%, transparent);
+  }
+
+  .tabbar-item {
+    flex: 1;
+    min-width: 0;
+    height: var(--tabbar-h);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 0 2px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    text-decoration: none;
+    color: var(--text-muted);
+  }
+
+  .tabbar-item span {
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .tabbar-item.aktif {
+    color: var(--accent);
+    font-weight: 600;
+  }
+}
+
+/* Gaya hover tidak berlaku di layar sentuh: yang terjadi justru gaya itu
+   menempel setelah diketuk dan baru hilang saat mengetuk tempat lain.
+   Selektornya ditulis persis sama dengan aslinya supaya menimpa, dan
+   nilainya dikembalikan ke nilai dasar masing-masing. */
+@media (hover: none) and (pointer: coarse) {
+  .btn:hover:not(:disabled) { background: var(--surface-2); }
+  .btn-primary:hover:not(:disabled) { background: var(--accent); filter: none; }
+  .btn-ghost:hover:not(:disabled) { background: transparent; color: var(--text-secondary); }
+  .btn-danger:hover:not(:disabled) { background: var(--surface-2); border-color: var(--border-strong); }
+  .row-link:hover { background: transparent; }
+}
+
+/* ============================================================
+   Sheet
+   ------------------------------------------------------------
+   Satu struktur, dua bentuk: kotak di tengah pada layar lebar,
+   panel yang menempel di bawah pada layar sempit. Lihat komentar
+   di components/Sheet.jsx untuk alasannya.
+   ============================================================ */
+
+.sheet-lapis {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(14, 14, 20, 0.42);
+  animation: sheet-lapis-masuk 0.16s ease;
+}
+
+.sheet-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  width: 100%;
+  max-width: var(--sheet-lebar, 400px);
+  max-height: calc(100vh - 40px);
+  background: var(--surface-2);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.sheet-kepala { flex-shrink: 0; padding: 0 18px; }
+.sheet-pegangan { display: none; }
+.sheet-judul-blok { padding: 18px 0 0; }
+
+.sheet-judul { font-size: 15px; font-weight: 600; letter-spacing: -0.015em; }
+.sheet-ket { font-size: 12.5px; color: var(--text-secondary); margin-top: 3px; line-height: 1.5; }
+
+.sheet-badan {
+  padding: 14px 18px 18px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  /* Guliran di dalam sheet tidak boleh berlanjut ke halaman di
+     belakangnya begitu mencapai ujung. */
+  overscroll-behavior: contain;
+}
+
+.sheet-kaki {
+  flex-shrink: 0;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding: 12px 18px;
+  border-top: 0.5px solid var(--border);
+  background: var(--surface-1);
+}
+
+/* Baris tombol di ujung formulir yang berada di dalam sheet. Dipakai
+   sebagai bagian dari <form>, bukan sebagai kaki sheet, supaya tombol
+   kirimnya tetap satu induk dengan formulirnya — tombol submit yang
+   terpisah dari form-nya hanya bekerja lewat atribut tambahan, dan itu
+   satu titik gagal yang tidak perlu ada di sini. */
+.sheet-aksi {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 0.5px solid var(--border);
+}
+
+@media (max-width: 900px) {
+  /* Di ponsel tombolnya melebar dan bertukar posisi: aksi utama di
+     kanan tetap, tapi keduanya jadi selebar separuh layar supaya
+     terjangkau tanpa membidik. */
+  .sheet-aksi > .btn { flex: 1; }
+}
+
+.sheet-kolom {
+  display: flex;
+  gap: 10px;
+}
+
+@media (max-width: 460px) {
+  /* Dua kolom berdampingan di layar sesempit ini membuat kolom tanggal
+     dan jam terhimpit sampai tulisannya terpotong. */
+  .sheet-kolom { flex-direction: column; gap: 12px; }
+}
+
+/* ---------- Isi sheet "Lainnya" ---------- */
+
+.sheet-tenant {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 2px 2px 14px;
+  border-bottom: 0.5px solid var(--border);
+}
+
+.sheet-tenant-nama {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sheet-tenant-peran {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sheet-grup { margin-top: 16px; }
+
+.sheet-grup-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  padding: 0 2px;
+}
+
+/* Daftar dikelompokkan dalam satu blok berlatar, dengan garis pemisah
+   antar baris. Ini bentuk daftar pengaturan yang sudah dikenal orang
+   dari aplikasi telepon, dan memang lebih mudah dibaca daripada
+   sederet tombol yang melayang. */
+.sheet-daftar {
+  background: var(--surface-1);
+  border: 0.5px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.sheet-baris {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 11px 13px;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 14px;
+  text-align: left;
+  text-decoration: none;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.sheet-baris + .sheet-baris { border-top: 0.5px solid var(--border); }
+.sheet-baris.aktif { color: var(--accent); font-weight: 600; }
+.sheet-baris.nonaktif { opacity: 0.45; cursor: default; }
+
+.sheet-baris-ikon { display: flex; flex-shrink: 0; color: var(--text-secondary); }
+.sheet-baris.aktif .sheet-baris-ikon { color: var(--accent); }
+
+.sheet-baris-label {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sheet-baris-badge {
+  flex-shrink: 0;
+  font-size: 9.5px;
+  font-weight: 600;
+  background: var(--accent-bg);
+  color: var(--accent);
+  padding: 2px 7px;
+  border-radius: 99px;
+}
+
+.sheet-keluar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 18px;
+  padding: 12px;
+  border: 0.5px solid var(--border-strong);
+  border-radius: 13px;
+  background: var(--surface-2);
+  color: var(--danger);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+@media (max-width: 900px) {
+  .sheet-lapis {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .sheet-panel {
+    max-width: none;
+    /* 88vh, bukan 100%: menyisakan sedikit halaman yang terlihat di
+       atas sheet supaya jelas ini lapisan di atas sesuatu, bukan
+       halaman baru. Itu juga area yang bisa diketuk untuk menutup. */
+    max-height: 88vh;
+    border-radius: 22px 22px 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    box-shadow: 0 -10px 40px rgba(14, 14, 20, 0.18);
+    animation: sheet-naik 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    /* Dipakai saat sheet dilepas setelah digeser sebagian ke bawah. */
+    transition: transform 0.24s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  /* Pegangan: penanda bahwa panel ini bisa digeser ke bawah untuk
+     ditutup. Tanpa itu, cara menutupnya tidak terlihat sama sekali. */
+  .sheet-pegangan {
+    display: block;
+    width: 36px;
+    height: 5px;
+    margin: 9px auto 2px;
+    border-radius: 99px;
+    background: var(--border-strong);
+  }
+
+  .sheet-judul-blok { padding: 10px 0 0; }
+  .sheet-badan { padding: 14px 16px 20px; }
+  .sheet-kaki { padding: 12px 16px; }
+}
+
+@keyframes sheet-naik {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes sheet-lapis-masuk {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Gerakan bisa memicu pusing pada sebagian orang, dan sistem operasi
+   sudah menyediakan cara menyatakannya. */
+@media (prefers-reduced-motion: reduce) {
+  .sheet-lapis, .sheet-panel { animation: none; }
+
+  .btn:active:not(:disabled),
+  .row-link:active,
+  .option-card:active,
+  .tabbar-item:active,
+  .sheet-baris:active,
+  .sheet-keluar:active { transform: none; }
+}
+
+/* ---------- Tata letak yang perlu perlakuan khusus di layar sempit ---------- */
+
+/* Papan Kanban: lima kolom. Di ponsel lima kolom berarti masing-masing sekitar
+   60 piksel, terlalu sempit untuk membaca judul konten apa pun. Jadi kolomnya
+   diberi lebar minimum dan papannya digulir mendatar, seperti papan Kanban di
+   aplikasi lain pada umumnya. */
+.kanban-cols {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+/* Kalender dengan sumbu jam: tujuh hari ditambah kolom jam. Sama seperti
+   Kanban, dipaksa muat di layar sempit hanya membuat semuanya tidak terbaca. */
+.cal-grid {
+  display: grid;
+  grid-template-columns: 48px repeat(7, 1fr);
+}
+
+.cal-wrap { overflow: hidden; }
+
+/* Kalender mingguan berdampingan dengan jadwal terdekat. */
+.dash-two-col {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+@media (max-width: 1000px) {
+  .dash-two-col { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 900px) {
+  .kanban-cols {
+    grid-template-columns: repeat(5, minmax(210px, 1fr));
+    overflow-x: auto;
+    padding-bottom: 8px;
+    scroll-snap-type: x proximity;
+  }
+
+  .kanban-cols > div { scroll-snap-align: start; }
+
+  .cal-wrap { overflow-x: auto; }
+
+  .cal-grid { min-width: 620px; }
+}
+
 /* ---------- Sidebar: scrollbar tipis ---------- */
 
 /* Sidebar punya area gulirnya sendiri. Scrollbar dibuat tipis dan hanya
@@ -476,6 +1047,173 @@ h1, h2, h3, h4, p { margin: 0; }
     gap: 9px;
     margin-bottom: 22px;
   }
+}
+
+/* ============================================================
+   Halaman depan publik (Landing.jsx)
+   ------------------------------------------------------------
+   Dipisah dari gaya aplikasi karena keperluannya berbeda: halaman ini dibaca
+   orang yang belum kenal produknya, jadi tipografinya lebih besar dan ruang
+   kosongnya lebih lega daripada di dalam aplikasi.
+   ============================================================ */
+
+.lp-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: color-mix(in srgb, var(--surface-2) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 0.5px solid var(--border);
+  padding: 13px 22px;
+}
+
+.lp-nav-links {
+  display: flex;
+  gap: 22px;
+  margin-left: 28px;
+}
+
+.lp-nav-links a {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.14s ease;
+}
+
+.lp-nav-links a:hover { color: var(--text-primary); }
+
+.lp-nav-cta {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+
+.lp-nav-cta .btn { text-decoration: none; }
+
+.lp-nav-toggle {
+  display: none;
+  margin-left: auto;
+  border: 0.5px solid var(--border-strong);
+  background: var(--surface-2);
+  border-radius: 9px;
+  padding: 6px 8px;
+  cursor: pointer;
+  color: var(--text-primary);
+}
+
+.lp-nav-mobile {
+  display: none;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 2px 6px;
+}
+
+.lp-nav-mobile a {
+  font-size: 14px;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.lp-nav-mobile .btn { text-decoration: none; justify-content: center; }
+
+.lp-title {
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.12;
+  margin-bottom: 18px;
+}
+
+.lp-sub {
+  font-size: 15.5px;
+  color: var(--text-secondary);
+  line-height: 1.65;
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+.lp-h2 {
+  font-size: 27px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+
+.lp-h2-sub {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-top: 10px;
+  max-width: 540px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.lp-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.lp-board {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.lp-faq {
+  border: 0.5px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.lp-faq summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px 17px;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  list-style: none;
+}
+
+.lp-faq summary::-webkit-details-marker { display: none; }
+
+.lp-faq[open] summary ion-icon { transform: rotate(180deg); }
+
+.lp-faq summary ion-icon { transition: transform 0.16s ease; }
+
+.lp-faq p {
+  padding: 0 17px 16px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.65;
+}
+
+@media (max-width: 900px) {
+  .lp-grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lp-board { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .lp-board > div:nth-child(n + 4) { display: none; }
+}
+
+@media (max-width: 720px) {
+  .lp-nav { padding: 11px 16px; }
+  .lp-nav-links, .lp-nav-cta { display: none; }
+  .lp-nav-toggle { display: block; }
+  .lp-nav-mobile { display: flex; }
+
+  .lp-title { font-size: 29px; letter-spacing: -0.03em; }
+  .lp-sub { font-size: 14px; }
+  .lp-h2 { font-size: 22px; }
+
+  .lp-grid-3 { grid-template-columns: 1fr; gap: 14px; }
+  .lp-board { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lp-board > div:nth-child(n + 3) { display: none; }
+
+  section { padding-top: 52px !important; padding-bottom: 52px !important; }
 }
 
 /* ---------- Animasi ---------- */

@@ -206,7 +206,7 @@ export default function KanbanBoard() {
 
       {loading && <p style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>Memuat konten...</p>}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0,1fr))', gap: 12 }}>
+      <div className="kanban-cols">
         {STATUSES.map((kolom) => {
           const isiKolom = terlihat.filter((i) => i.status === kolom.key)
           const aktif = kolomAktif === kolom.key

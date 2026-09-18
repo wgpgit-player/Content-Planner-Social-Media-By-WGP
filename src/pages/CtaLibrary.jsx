@@ -1,6 +1,6 @@
 // TODO(supabase): needs a dedicated table — not part of Fase 1 schema yet
 import { useState } from 'react'
-import LibraryPageLayout, { useCopyFeedback, LibraryFormModal, formFieldStyle, formLabelStyle } from '../components/LibraryPageLayout'
+import LibraryPageLayout, { useCopyFeedback, LibraryFormModal } from '../components/LibraryPageLayout'
 import { CTA_LIBRARY } from '../data/mockLibraries'
 
 export default function CtaLibrary() {
@@ -53,10 +53,10 @@ export default function CtaLibrary() {
 
       {showModal && (
         <LibraryFormModal title="CTA baru" onClose={() => setShowModal(false)} onSubmit={handleSubmit} submitLabel="Tambah CTA">
-          <label style={formLabelStyle}>Teks CTA</label>
-          <input autoFocus value={text} onChange={(e) => setText(e.target.value)} placeholder="Contoh: Klik link di bio buat donasi" style={formFieldStyle} />
-          <label style={formLabelStyle}>Tujuan</label>
-          <input value={newGoal} onChange={(e) => setNewGoal(e.target.value)} placeholder="Contoh: Donasi, Follow, Share" style={{ ...formFieldStyle, marginBottom: 0 }} />
+          <label className="field-label">Teks CTA</label>
+          <input autoFocus value={text} onChange={(e) => setText(e.target.value)} placeholder="Contoh: Klik link di bio buat donasi" className="input" style={{ marginBottom: 12 }} />
+          <label className="field-label">Tujuan</label>
+          <input value={newGoal} onChange={(e) => setNewGoal(e.target.value)} placeholder="Contoh: Donasi, Follow, Share" className="input" />
         </LibraryFormModal>
       )}
     </LibraryPageLayout>
