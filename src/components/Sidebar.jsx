@@ -25,6 +25,8 @@ export const NAV_GROUPS = [
       { icon: 'grid-outline', label: 'Dashboard', path: '/dashboard' },
       { icon: 'albums-outline', label: 'Project tracker', path: '/kanban' },
       { icon: 'calendar-outline', label: 'Content calendar', path: '/content-calendar' },
+      { icon: 'apps-outline', label: 'Grid pratinjau', path: '/grid' },
+      { icon: 'shield-checkmark-outline', label: 'Persetujuan', path: '/approvals' },
     ],
   },
   {
@@ -35,6 +37,7 @@ export const NAV_GROUPS = [
       { icon: 'chatbubble-ellipses-outline', label: 'Caption formula', path: '/caption-formula' },
       { icon: 'fish-outline', label: 'Hook library', path: '/hook-library' },
       { icon: 'megaphone-outline', label: 'CTA library', path: '/cta-library' },
+      { icon: 'pricetags-outline', label: 'Set hashtag', path: '/hashtag-sets' },
     ],
   },
   {
@@ -48,6 +51,8 @@ export const NAV_GROUPS = [
     label: 'Workspace',
     items: [
       { icon: 'people-outline', label: 'Tim', path: '/team' },
+      { icon: 'notifications-outline', label: 'Pengingat', path: '/reminders' },
+      { icon: 'link-outline', label: 'Tautan klien', path: '/client-links', adminOnly: true },
       { icon: 'settings-outline', label: 'Pengaturan', path: '/settings', adminOnly: true },
     ],
   },

@@ -9,6 +9,7 @@ import { PLATFORMS, getPlatform } from '../config/platforms'
 import { STATUSES, getStatus } from '../config/statuses'
 import AppShell from '../components/AppShell'
 import Icon from '../components/Icon'
+import PanelPersetujuan from '../components/PanelPersetujuan'
 
 // Halaman brief konten.
 //
@@ -102,6 +103,12 @@ export default function ContentDetail() {
   const [message, setMessage] = useState(null)
   const [terhapus, setTerhapus] = useState(false)
 
+  // Disimpan terpisah dari form, dan itu disengaja. Kolom persetujuan tidak
+  // boleh ikut terkirim saat tombol "Simpan brief" ditekan: menyetujui adalah
+  // tindakan tersendiri dengan aturannya sendiri di database, bukan efek
+  // samping dari menyimpan teks brief.
+  const [persetujuan, setPersetujuan] = useState(null)
+
   const load = useCallback(async () => {
     if (!supabase || !tenantId) return
     setLoading(true)
@@ -123,6 +130,11 @@ export default function ContentDetail() {
       const isi = { ...KOSONG }
       for (const k of Object.keys(KOSONG)) isi[k] = row[k] ?? ''
       setForm(isi)
+      setPersetujuan({
+        approval_state: row.approval_state ?? 'none',
+        approved_by: row.approved_by ?? null,
+        approved_at: row.approved_at ?? null,
+      })
     }
     setLoading(false)
   }, [id, tenantId])
@@ -300,6 +312,8 @@ export default function ContentDetail() {
           </span>
         </div>
       </div>
+
+      <PanelPersetujuan contentId={id} nilai={persetujuan} onBerubah={load} />
 
       <div className="card">
         <p style={{ fontSize: 14, fontWeight: 600, marginBottom: 3 }}>Isi brief</p>

@@ -1216,6 +1216,135 @@ h1, h2, h3, h4, p { margin: 0; }
   section { padding-top: 52px !important; padding-bottom: 52px !important; }
 }
 
+/* ============================================================
+   Grid pratinjau feed
+   ------------------------------------------------------------
+   Tiga kolom dan kotak persegi, karena itu bentuk feed Instagram
+   dan seluruh gunanya halaman ini adalah menirukan bentuk itu.
+   Tiga kolom dipertahankan sampai lebar paling sempit — dua kolom
+   akan terlihat seperti feed orang lain, bukan feed mereka.
+   ============================================================ */
+
+.ig-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.ig-sel {
+  /* aspect-ratio menjaga kotaknya persegi tanpa perlu menghitung
+     tinggi dari lebar kolom yang berubah-ubah. */
+  aspect-ratio: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 9px;
+  border: 1.5px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  overflow: hidden;
+  transition: border-color 0.14s ease, transform 0.1s ease;
+}
+
+.ig-sel.terpilih {
+  /* Kotak terpilih harus terlihat jelas bahkan di antara delapan kotak
+     lain yang berwarna. Garis tepi tebal plus bayangan halus. */
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+  transform: scale(0.97);
+}
+
+.ig-sel-atas {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.ig-sel-tanggal {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ig-sel-judul {
+  flex: 1;
+  min-height: 0;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--text-primary);
+  /* Dipotong setelah beberapa baris. Judul panjang kalau dibiarkan akan
+     mendorong baris status keluar dari kotak. */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ig-sel-bawah {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  font-size: 9.5px;
+}
+
+@media (max-width: 460px) {
+  .ig-grid { gap: 6px; }
+  .ig-sel { padding: 7px; border-radius: 10px; }
+  .ig-sel-judul { font-size: 10.5px; -webkit-line-clamp: 2; line-clamp: 2; }
+}
+
+/* ---------- Grid perpustakaan & set hashtag ---------- */
+
+.pustaka-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+@media (max-width: 700px) {
+  /* Dua kolom di lebar ponsel menyisakan sekitar 160 piksel per kartu,
+     dan teks CTA atau struktur formula tidak terbaca di lebar itu. */
+  .pustaka-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ============================================================
+   Halaman klien (/r/:token)
+   ------------------------------------------------------------
+   Halaman publik tanpa login dan tanpa AppShell: tidak ada sidebar,
+   tidak ada tab bar, tidak ada nama pengguna. Yang dilihat klien
+   hanya rencana kontennya dan brand pemilik workspace.
+
+   Lebarnya dijaga sempit karena isinya dibaca berurutan dari atas ke
+   bawah, dan baris teks yang terlalu panjang justru melelahkan.
+   ============================================================ */
+
+.klien-halaman {
+  min-height: 100vh;
+  background: var(--bg-page);
+  display: flex;
+  justify-content: center;
+  padding: 26px 16px 60px;
+}
+
+@media (max-width: 900px) {
+  .klien-halaman {
+    /* Area aman dihormati juga di sini. Klien bisa membuka tautan ini
+       dari iPhone, dan halaman ini tidak punya bilah atas yang
+       biasanya menangani jarak itu. */
+    padding: calc(env(safe-area-inset-top) + 18px) 14px
+             calc(env(safe-area-inset-bottom) + 40px);
+  }
+}
+
 /* ---------- Animasi ---------- */
 
 .spin { animation: spin 0.8s linear infinite; }

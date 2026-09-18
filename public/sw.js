@@ -50,6 +50,63 @@ self.addEventListener('activate', (event) => {
   )
 })
 
+// ============================================================
+// Pengingat jam tayang
+// ------------------------------------------------------------
+// Notifikasi dikirim Edge Function kirim-pengingat dan diterima di sini,
+// walaupun aplikasinya sedang tertutup. Inilah yang paling mendekati rasa
+// aplikasi asli dari seluruh pekerjaan PWA ini.
+//
+// Catatan untuk iPhone: notifikasi push hanya bekerja kalau aplikasinya
+// sudah dipasang ke home screen. Di dalam tab Safari biasa, Apple tidak
+// mengizinkannya sama sekali.
+// ============================================================
+
+self.addEventListener('push', (event) => {
+  let data = {}
+  try {
+    data = event.data ? event.data.json() : {}
+  } catch {
+    // Muatan yang tidak berbentuk JSON tetap ditampilkan daripada hilang
+    // diam-diam, karena notifikasi yang tidak muncul akan disalahartikan
+    // sebagai pengingat yang tidak terkirim.
+    data = { judul: 'plannersm.co', isi: event.data ? event.data.text() : '' }
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(data.judul || 'plannersm.co', {
+      body: data.isi || '',
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      // tag diisi id konten: pengingat untuk konten yang sama menimpa yang
+      // lama alih-alih menumpuk jadi beberapa notifikasi.
+      tag: data.tag || 'pengingat',
+      data: { tautan: data.tautan || '/dashboard' },
+      requireInteraction: false,
+    })
+  )
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const tujuan = event.notification.data?.tautan || '/dashboard'
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((daftar) => {
+      // Kalau aplikasinya sudah terbuka, jendela itu yang dipakai dan
+      // diarahkan. Membuka jendela baru setiap kali notifikasi diketuk
+      // akan meninggalkan tumpukan tab yang sama.
+      for (const klien of daftar) {
+        if ('focus' in klien) {
+          klien.navigate?.(tujuan)
+          return klien.focus()
+        }
+      }
+      return self.clients.openWindow(tujuan)
+    })
+  )
+})
+
 self.addEventListener('message', (event) => {
   // Dipakai halaman untuk meminta versi baru langsung dipakai tanpa
   // menunggu semua tab lama ditutup.
