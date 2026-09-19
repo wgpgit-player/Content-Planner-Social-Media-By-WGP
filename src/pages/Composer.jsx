@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import AppShell from '../components/AppShell'
 import Sheet from '../components/Sheet'
 import Icon from '../components/Icon'
+import TeleponMockup from '../components/TeleponMockup'
+import PratinjauInstagram from '../components/PratinjauInstagram'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import { useTenantContext } from '../context/TenantContext'
@@ -94,6 +96,10 @@ export default function Composer() {
   const [pesan, setPesan] = useState(null)
   const [filterPratinjau, setFilterPratinjau] = useState('semua') // semua | idea | terjadwal
   const [adaAkunTerhubung, setAdaAkunTerhubung] = useState(true) // optimistis sampai terbukti kosong, biar kartu ajakan tidak berkedip muncul sesaat
+  // Baris social_accounts untuk platform yang sedang dipratinjau. Kalau
+  // kolom angkanya sudah terisi (hasil sinkron dari platform), mockup
+  // telepon otomatis menampilkan Pengikut/Mengikuti alih-alih angka kita.
+  const [akunPlatform, setAkunPlatform] = useState(null)
 
   // Platform yang feed-nya ditampilkan di pratinjau. Kalau beberapa platform
   // dipilih sekaligus, yang pertama yang diperlihatkan — menampilkan feed
@@ -136,6 +142,22 @@ export default function Composer() {
       .then(({ count }) => { if (!batal) setAdaAkunTerhubung((count ?? 0) > 0) })
     return () => { batal = true }
   }, [tenantId])
+
+  // Angka profil platform yang sedang dipratinjau. Selama OAuth belum
+  // dipasang, semua kolom angkanya masih null dan mockup tetap memakai
+  // metrik kita sendiri — tidak ada angka pengikut yang dikarang.
+  useEffect(() => {
+    if (!supabase || !tenantId) return
+    let batal = false
+    supabase
+      .from('social_accounts')
+      .select('username,media_count,followers_count,follows_count,avatar_url,synced_at')
+      .eq('tenant_id', tenantId)
+      .eq('platform', platformPratinjau)
+      .maybeSingle()
+      .then(({ data }) => { if (!batal) setAkunPlatform(data ?? null) })
+    return () => { batal = true }
+  }, [tenantId, platformPratinjau])
 
   const jumlahHashtag = hitungHashtag(caption)
   const pillarById = useMemo(
@@ -336,74 +358,81 @@ export default function Composer() {
             </div>
           </div>
 
-          {/* Kanvas ala Plann: petak "+" untuk menautkan aset. BUKAN unggah
-              gambar sungguhan — cuma menyimpan tautan (Canva/Drive/Dropbox)
-              di kolom asset_url. Kalau tautannya kebetulan gambar langsung
-              (berakhiran .jpg/.png/dst), gambarnya ditampilkan; kalau tidak,
-              cukup ditampilkan sebagai kartu tautan. */}
-          <div className="compose-kanvas" onClick={() => document.getElementById('cmp-aset')?.focus()}>
-            {assetUrl.trim() ? (
-              /\.(jpe?g|png|webp|gif)(\?|$)/i.test(assetUrl) ? (
-                <div className="compose-kanvas-terisi">
-                  <img src={assetUrl} alt="" />
-                </div>
-              ) : (
-                <div className="compose-kanvas-tautan">
-                  <Icon name="link-outline" size={26} color="var(--accent)" />
-                  <p style={{ fontSize: 12, color: 'var(--text-secondary)', wordBreak: 'break-all' }}>
-                    {assetUrl.length > 46 ? assetUrl.slice(0, 46) + '…' : assetUrl}
-                  </p>
-                </div>
-              )
-            ) : (
-              <span className="compose-kanvas-plus">
-                <Icon name="add" size={22} />
-              </span>
-            )}
-          </div>
-          <input
-            id="cmp-aset"
-            className="input"
-            type="url"
-            value={assetUrl}
-            onChange={(e) => setAssetUrl(e.target.value)}
-            placeholder="Tempel tautan Canva, Drive, atau Dropbox untuk aset kontennya"
-            style={{ marginBottom: 16 }}
-          />
+          {/* Kanvas dan kotak tulis bersebelahan, seperti di Plann. Kanvasnya
+              dibatasi lebarnya lewat CSS — sebelumnya ia dibiarkan selebar
+              kolom, dan karena tingginya mengikuti perbandingan sisi, hasilnya
+              bidang kosong raksasa yang memenuhi layar. */}
+          <div className="compose-editor">
+            <div>
+              {/* BUKAN unggah gambar sungguhan — cuma menyimpan tautan
+                  (Canva/Drive/Dropbox) di kolom asset_url. Kalau tautannya
+                  kebetulan gambar langsung (berakhiran .jpg/.png/dst),
+                  gambarnya ditampilkan; kalau tidak, jadi kartu tautan. */}
+              <div className="compose-kanvas" onClick={() => document.getElementById('cmp-aset')?.focus()}>
+                {assetUrl.trim() ? (
+                  /\.(jpe?g|png|webp|gif)(\?|$)/i.test(assetUrl) ? (
+                    <div className="compose-kanvas-terisi">
+                      <img src={assetUrl} alt="" />
+                    </div>
+                  ) : (
+                    <div className="compose-kanvas-tautan">
+                      <Icon name="link-outline" size={24} color="var(--accent)" />
+                      <p style={{ fontSize: 11.5, color: 'var(--text-secondary)', wordBreak: 'break-all' }}>
+                        {assetUrl.length > 40 ? assetUrl.slice(0, 40) + '…' : assetUrl}
+                      </p>
+                    </div>
+                  )
+                ) : (
+                  <span className="compose-kanvas-plus">
+                    <Icon name="add" size={22} />
+                  </span>
+                )}
+              </div>
 
-          {/* Caption jadi elemen utama layar, bukan salah satu kartu di
-              antara yang lain — sejalan dengan bagaimana Plann menaruh
-              kotak tulis besar tepat di bawah baris ikon platform. */}
-          <textarea
-            id="cmp-caption"
-            className="textarea compose-caption-utama"
-            rows={6}
-            value={caption}
-            onChange={(e) => setCaption(e.target.value)}
-            placeholder={`Halo, tulis captionnya di sini${judul ? ` untuk "${judul}"` : ''}...`}
-          />
+              <input
+                id="cmp-aset"
+                className="input"
+                type="url"
+                value={assetUrl}
+                onChange={(e) => setAssetUrl(e.target.value)}
+                placeholder="Tautan Canva / Drive"
+                style={{ fontSize: 12 }}
+              />
+            </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 8, marginBottom: 18, flexWrap: 'wrap' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-              <Icon name="pricetag-outline" size={12} color="var(--text-muted)" />
-              <Penghitung nilai={jumlahHashtag} batas={BATAS_HASHTAG} label="Jumlah hashtag" />
-            </span>
-            <Penghitung nilai={caption.length} batas={BATAS_CAPTION} label="Jumlah karakter" />
+            <div>
+              <textarea
+                id="cmp-caption"
+                className="textarea compose-caption-utama"
+                rows={6}
+                value={caption}
+                onChange={(e) => setCaption(e.target.value)}
+                placeholder={`Halo, tulis captionnya di sini${judul ? ` untuk "${judul}"` : ''}...`}
+              />
 
-            {setHashtag.length > 0 && (
-              <button type="button" className="btn btn-sm btn-ghost" onClick={() => setPilihHashtag(true)}>
-                <Icon name="pricetags-outline" size={13} /> Sisipkan hashtag
-              </button>
-            )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 8 }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                  <Icon name="pricetag-outline" size={12} color="var(--text-muted)" />
+                  <Penghitung nilai={jumlahHashtag} batas={BATAS_HASHTAG} label="Jumlah hashtag" />
+                </span>
+                <Penghitung nilai={caption.length} batas={BATAS_CAPTION} label="Jumlah karakter" />
 
-            <input
-              id="cmp-judul"
-              className="input"
-              value={judul}
-              onChange={(e) => setJudul(e.target.value)}
-              placeholder="Judul singkat (dilihat tim, tidak tayang)"
-              style={{ marginLeft: 'auto', maxWidth: 260 }}
-            />
+                {setHashtag.length > 0 && (
+                  <button type="button" className="btn btn-sm btn-ghost" onClick={() => setPilihHashtag(true)}>
+                    <Icon name="pricetags-outline" size={13} /> Sisipkan hashtag
+                  </button>
+                )}
+              </div>
+
+              <input
+                id="cmp-judul"
+                className="input"
+                value={judul}
+                onChange={(e) => setJudul(e.target.value)}
+                placeholder="Judul singkat (dilihat tim, tidak ikut tayang)"
+                style={{ marginTop: 12 }}
+              />
+            </div>
           </div>
 
           {jumlahHashtag > BATAS_HASHTAG && (
@@ -418,50 +447,23 @@ export default function Composer() {
           )}
         </div>
 
-        {/* ---------- Kanan: pratinjau ---------- */}
+        {/* ---------- Kanan: pratinjau di mockup telepon ---------- */}
         <div className="compose-pratinjau">
-          <div className="telepon">
-            <div className="telepon-kepala">
-              <span className="telepon-takik" aria-hidden="true" />
-            </div>
-
-            <div className="telepon-isi">
-              <div className="telepon-profil">
-                {tenant?.logo_url ? (
-                  <img src={tenant.logo_url} alt="" className="telepon-avatar" />
-                ) : (
-                  <span className="telepon-avatar" style={{ background: 'var(--accent-bg)', color: 'var(--accent)' }}>
-                    {(tenant?.name ?? 'W').charAt(0).toUpperCase()}
-                  </span>
-                )}
-                <span className="telepon-handle">{handle}</span>
-              </div>
-
-              <div className="telepon-tab-filter">
-                <button type="button" className={filterPratinjau === 'semua' ? 'aktif' : ''} onClick={() => setFilterPratinjau('semua')}>
-                  Semua
-                </button>
-                <button type="button" className={filterPratinjau === 'idea' ? 'aktif' : ''} onClick={() => setFilterPratinjau('idea')}>
-                  Draf
-                </button>
-                <button type="button" className={filterPratinjau === 'terjadwal' ? 'aktif' : ''} onClick={() => setFilterPratinjau('terjadwal')}>
-                  Terjadwal
-                </button>
-              </div>
-
-              <div className="telepon-tab-jenis">
-                <span className="aktif">POSTINGAN</span>
-                <span className="nonaktif" title="Segera">STORY</span>
-                <span className="nonaktif" title="Segera">REEL</span>
-              </div>
-
-              <div style={{ padding: '9px 12px 3px' }}>
-                <p style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>
-                  Pratinjau {getPlatform(platformPratinjau).label} · terbaru di kiri atas
-                </p>
-              </div>
-
-              <div className="ig-grid" style={{ padding: '4px 2px 2px' }}>
+          <TeleponMockup lebar={290}>
+            <PratinjauInstagram
+              handle={handle}
+              nama={tenant?.name ?? 'Workspace'}
+              bio={`Pratinjau ${getPlatform(platformPratinjau).label} · terbaru di kiri atas`}
+              logoUrl={tenant?.logo_url}
+              warnaAksen={tenant?.brand_color || 'var(--accent)'}
+              jumlahKonten={feed.length}
+              jumlahTerjadwal={feed.filter((f) => f.status !== 'idea').length}
+              jumlahDraf={feed.filter((f) => f.status === 'idea').length}
+              akunAsli={akunPlatform}
+              filter={filterPratinjau}
+              onFilter={setFilterPratinjau}
+            >
+              <div className="ig-grid">
                 {feedDenganDraf.slice(0, 12).map((item) => {
                   const p = pillarById[item.pillar_id]
                   const warna = p?.color ?? 'var(--border-strong)'
@@ -477,9 +479,9 @@ export default function Composer() {
                       }}
                     >
                       <span className="ig-sel-atas">
-                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: warna, flexShrink: 0 }} />
+                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: warna, flexShrink: 0 }} />
                         {item.draf && (
-                          <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--accent)' }}>BARU</span>
+                          <span style={{ fontSize: 8.5, fontWeight: 700, color: 'var(--accent)' }}>BARU</span>
                         )}
                       </span>
                       <span className="ig-sel-judul">{item.title}</span>
@@ -489,24 +491,24 @@ export default function Composer() {
               </div>
 
               {!adaAkunTerhubung && (
-                <div className="telepon-cta">
+                <div className="ig-cta">
                   <p>Sambungkan akun sosial supaya jadwal ini benar-benar siap tayang.</p>
-                  <div className="telepon-cta-ikon-baris">
+                  <div className="ig-cta-ikon">
                     {PLATFORMS.map((p) => (
                       <span key={p.key} style={{ background: p.bg, color: p.color }}>
-                        <Icon name={p.icon} size={12} />
+                        <Icon name={p.icon} size={11} />
                       </span>
                     ))}
                   </div>
-                  <button type="button" className="btn btn-sm btn-block" onClick={() => navigate('/settings?tab=sosial')}>
+                  <button type="button" onClick={() => navigate('/settings?tab=sosial')}>
                     Sambungkan akun
                   </button>
                 </div>
               )}
-            </div>
-          </div>
+            </PratinjauInstagram>
+          </TeleponMockup>
 
-          <p style={{ fontSize: 11.5, color: 'var(--text-muted)', textAlign: 'center', marginTop: 12, lineHeight: 1.6 }}>
+          <p style={{ fontSize: 11.5, color: 'var(--text-muted)', textAlign: 'center', marginTop: 14, lineHeight: 1.6, maxWidth: 290 }}>
             Kotak bergaris putus-putus adalah konten yang sedang kamu susun.
             Warnanya mengikuti content pillar.
           </p>

@@ -372,7 +372,11 @@ h1, h2, h3, h4, p { margin: 0; }
 
 .app-shell {
   background: var(--bg-page);
-  height: 100vh;
+  /* 100% (bukan 100vh) — mewarisi tinggi dari html/body yang sudah
+     dikunci. Saat layar di-zoom, 100vh dan tinggi sesungguhnya bisa
+     berbeda di sebagian peramban, dan selisih itulah yang bikin isinya
+     bergeser. Mewarisi lewat rantai html > body > #root selalu tepat. */
+  height: 100%;
   overflow: hidden;
   padding: 16px;
   display: grid;
@@ -407,7 +411,15 @@ h1, h2, h3, h4, p { margin: 0; }
   border-radius: 16px;
   padding: 10px 16px;
   box-shadow: var(--shadow-sm);
+  /* Tingginya harus tetap satu baris. Kalau isinya dibiarkan membungkus
+     saat layar di-zoom, bilah ini tumbuh ke bawah dan memakan tinggi
+     baris isi di bawahnya — itulah yang bikin semuanya terlihat
+     bergeser. Lebih baik digulir mendatar daripada mendorong layout. */
+  overflow-x: auto;
+  scrollbar-width: none;
 }
+
+.topbar-desktop::-webkit-scrollbar { display: none; }
 
 .topbar-brand {
   display: flex;
@@ -511,7 +523,7 @@ h1, h2, h3, h4, p { margin: 0; }
    ============================================================ */
 .app-shell-bare {
   background: var(--bg-page);
-  height: 100vh;
+  height: 100%;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -718,11 +730,29 @@ h1, h2, h3, h4, p { margin: 0; }
   pointer-events: none;
 }
 
-/* Kotak kanvas ala Plann: petak besar dengan "+" di tengah untuk menautkan
+/* Editor di kolom kiri dibelah dua seperti Plann: kanvas aset di kiri,
+   kotak tulis di kanan. Kanvasnya PUNYA BATAS LEBAR — tanpa itu ia ikut
+   melebar sampai memenuhi layar dan tingginya (dari aspect-ratio) ikut
+   membengkak, yang justru jadi bidang kosong raksasa. */
+.compose-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 1100px) {
+  .compose-editor { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Kotak kanvas ala Plann: petak dengan "+" di tengah untuk menautkan
    aset. Bukan unggah sungguhan (lihat komentar di komponennya) — begitu
    tautan diisi, isi kotak berubah jadi kartu tautan. */
 .compose-kanvas {
-  aspect-ratio: 4 / 3;
+  width: 100%;
+  max-width: 300px;
+  aspect-ratio: 4 / 5;
   border: 1.5px dashed var(--border-strong);
   border-radius: 20px;
   background: var(--surface-1);
@@ -730,7 +760,7 @@ h1, h2, h3, h4, p { margin: 0; }
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 
@@ -773,154 +803,382 @@ h1, h2, h3, h4, p { margin: 0; }
   text-align: center;
 }
 
-/* Bungkus telepon di kanan halaman Composer. */
-.compose-pratinjau {
-  position: sticky;
-  top: 84px;
+/* ============================================================
+   MOCKUP TELEPON (components/TeleponMockup.jsx)
+   ------------------------------------------------------------
+   SATU ANGKA, SISANYA TURUNAN.
+
+   Hanya --hp-w yang berupa piksel; radius sudut, tebal bingkai, ukuran
+   pulau, tinggi status bar, sampai lebar tombol sisi semuanya dihitung
+   sebagai kelipatan darinya. Itu yang membuat mockup ini tidak pernah
+   "bergeser sendiri" saat layar di-zoom atau lebarnya berubah — yang
+   berubah cuma satu angka, dan semua bagian ikut dengan perbandingan
+   yang sama persis.
+
+   Perbandingan bodi 393 : 852 mengikuti layar iPhone modern.
+   ============================================================ */
+.hp {
+  --hp-w: 290px;
+  --hp-r: calc(var(--hp-w) * 0.155);   /* radius sudut bodi */
+  --hp-bezel: calc(var(--hp-w) * 0.028); /* tebal bingkai hitam */
+
+  position: relative;
+  width: var(--hp-w);
+  aspect-ratio: 393 / 852;
+  flex-shrink: 0;
+  border-radius: var(--hp-r);
+  padding: var(--hp-bezel);
+
+  /* Tepi logam: gradien miring supaya ada kesan pantulan cahaya di sisi
+     kiri dan kanan, seperti rangka titanium. */
+  background:
+    linear-gradient(150deg, #5B5B63 0%, #1A1A1F 14%, #35353C 30%,
+                            #121216 52%, #3E3E46 74%, #17171B 90%, #4A4A52 100%);
+  box-shadow:
+    0 calc(var(--hp-w) * 0.05) calc(var(--hp-w) * 0.11) rgba(16, 16, 22, 0.22),
+    0 calc(var(--hp-w) * 0.012) calc(var(--hp-w) * 0.03) rgba(16, 16, 22, 0.14);
 }
 
-.telepon {
+/* Tombol fisik di sisi bodi. */
+.hp-tombol {
+  position: absolute;
+  background: linear-gradient(90deg, #26262C, #4A4A53 55%, #1E1E23);
+  border-radius: calc(var(--hp-w) * 0.008);
+}
+
+.hp-senyap {
+  left: calc(var(--hp-w) * -0.006);
+  top: 17%;
+  width: calc(var(--hp-w) * 0.011);
+  height: 3.4%;
+}
+
+.hp-vol-naik {
+  left: calc(var(--hp-w) * -0.007);
+  top: 24%;
+  width: calc(var(--hp-w) * 0.012);
+  height: 6.4%;
+}
+
+.hp-vol-turun {
+  left: calc(var(--hp-w) * -0.007);
+  top: 33%;
+  width: calc(var(--hp-w) * 0.012);
+  height: 6.4%;
+}
+
+.hp-daya {
+  right: calc(var(--hp-w) * -0.007);
+  top: 27%;
+  width: calc(var(--hp-w) * 0.012);
+  height: 9.5%;
+}
+
+/* Layar. */
+.hp-layar {
+  position: relative;
   width: 100%;
-  max-width: 300px;
-  margin: 0 auto;
-  background: #0E0E12;
-  border-radius: 34px;
-  padding: 10px;
-  box-shadow: var(--shadow-md);
-}
-
-.telepon-kepala {
-  display: flex;
-  justify-content: center;
-  padding: 6px 0 4px;
-}
-
-.telepon-takik {
-  width: 70px;
-  height: 16px;
-  border-radius: 999px;
-  background: #0E0E12;
-  display: block;
-}
-
-.telepon-isi {
+  height: 100%;
+  border-radius: calc(var(--hp-r) - var(--hp-bezel) * 0.72);
   background: var(--surface-2);
-  border-radius: 24px;
   overflow: hidden;
-  min-height: 420px;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Header profil di dalam mockup telepon — avatar + handle ala Plann. */
-.telepon-profil {
+/* Dynamic Island — melayang di atas isi layar, bukan mendorongnya. */
+.hp-pulau {
+  position: absolute;
+  top: calc(var(--hp-w) * 0.031);
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(var(--hp-w) * 0.30);
+  height: calc(var(--hp-w) * 0.088);
+  border-radius: 999px;
+  background: #08080A;
+  z-index: 6;
+}
+
+/* Status bar: jam di kiri, ikon di kanan, pulau di tengah. */
+.hp-status {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 14px 14px 10px;
+  justify-content: space-between;
+  height: calc(var(--hp-w) * 0.15);
+  padding: 0 calc(var(--hp-w) * 0.055);
+  flex-shrink: 0;
+  color: var(--text-primary);
 }
 
-.telepon-avatar {
-  width: 38px;
-  height: 38px;
+.hp-jam {
+  font-size: calc(var(--hp-w) * 0.042);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.hp-status-ikon {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--hp-w) * 0.018);
+}
+
+/* Batang sinyal — empat batang yang makin tinggi. */
+.hp-sinyal {
+  display: flex;
+  align-items: flex-end;
+  gap: calc(var(--hp-w) * 0.005);
+  height: calc(var(--hp-w) * 0.034);
+}
+
+.hp-sinyal i {
+  display: block;
+  width: calc(var(--hp-w) * 0.009);
+  background: var(--text-primary);
+  border-radius: calc(var(--hp-w) * 0.003);
+}
+
+/* Wifi: seperempat lingkaran dari dua border. */
+.hp-wifi {
+  width: calc(var(--hp-w) * 0.038);
+  height: calc(var(--hp-w) * 0.038);
+  border: calc(var(--hp-w) * 0.009) solid var(--text-primary);
+  border-radius: 50%;
+  clip-path: polygon(0 55%, 100% 55%, 50% 100%);
+}
+
+.hp-baterai {
+  position: relative;
+  width: calc(var(--hp-w) * 0.075);
+  height: calc(var(--hp-w) * 0.037);
+  border: calc(var(--hp-w) * 0.005) solid var(--text-primary);
+  border-radius: calc(var(--hp-w) * 0.012);
+  padding: calc(var(--hp-w) * 0.004);
+  opacity: 0.85;
+}
+
+.hp-baterai::after {
+  content: '';
+  position: absolute;
+  right: calc(var(--hp-w) * -0.012);
+  top: 50%;
+  transform: translateY(-50%);
+  width: calc(var(--hp-w) * 0.006);
+  height: calc(var(--hp-w) * 0.013);
+  border-radius: 0 calc(var(--hp-w) * 0.004) calc(var(--hp-w) * 0.004) 0;
+  background: var(--text-primary);
+  opacity: 0.6;
+}
+
+.hp-baterai i {
+  display: block;
+  width: 72%;
+  height: 100%;
+  border-radius: calc(var(--hp-w) * 0.005);
+  background: var(--text-primary);
+}
+
+/* Isi layar: satu-satunya bagian yang menggulir. */
+.hp-isi {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.hp-isi::-webkit-scrollbar { display: none; }
+
+/* Garis beranda di bawah layar. */
+.hp-garis-beranda {
+  position: absolute;
+  bottom: calc(var(--hp-w) * 0.022);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 34%;
+  height: calc(var(--hp-w) * 0.014);
+  border-radius: 999px;
+  background: var(--text-primary);
+  opacity: 0.28;
+  z-index: 6;
+}
+
+/* ============================================================
+   ISI LAYAR: profil ala Instagram (components/PratinjauInstagram.jsx)
+   Ukurannya ikut --hp-w juga, supaya sebangun berapa pun mockupnya.
+   ============================================================ */
+.ig-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(var(--hp-w) * 0.02) calc(var(--hp-w) * 0.045) calc(var(--hp-w) * 0.03);
+  color: var(--text-primary);
+}
+
+.ig-nav-handle {
+  font-size: calc(var(--hp-w) * 0.046);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 68%;
+}
+
+.ig-profil {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--hp-w) * 0.04);
+  padding: 0 calc(var(--hp-w) * 0.045) calc(var(--hp-w) * 0.035);
+}
+
+.ig-avatar {
+  width: calc(var(--hp-w) * 0.2);
+  height: calc(var(--hp-w) * 0.2);
   border-radius: 50%;
   flex-shrink: 0;
   object-fit: cover;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: calc(var(--hp-w) * 0.08);
   font-weight: 700;
-  font-size: 14px;
 }
 
-.telepon-handle {
-  font-size: 13px;
+.ig-stat-baris {
+  display: flex;
+  flex: 1;
+  justify-content: space-around;
+}
+
+.ig-stat { text-align: center; }
+
+.ig-stat-angka {
+  display: block;
+  font-size: calc(var(--hp-w) * 0.048);
   font-weight: 700;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  color: var(--text-primary);
+  line-height: 1.2;
 }
 
-/* Baris filter Semua/Draf/Terjadwal — betulan menyaring grid di bawahnya,
-   bukan sekadar hiasan. */
-.telepon-tab-filter {
-  display: flex;
-  gap: 4px;
-  padding: 0 10px 10px;
+.ig-stat-label {
+  display: block;
+  font-size: calc(var(--hp-w) * 0.033);
+  color: var(--text-secondary);
 }
 
-.telepon-tab-filter button {
+.ig-bio { padding: 0 calc(var(--hp-w) * 0.045) calc(var(--hp-w) * 0.035); }
+
+.ig-bio-nama {
+  font-size: calc(var(--hp-w) * 0.042);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.ig-bio-teks {
+  font-size: calc(var(--hp-w) * 0.037);
+  color: var(--text-secondary);
+  line-height: 1.45;
+  margin-top: calc(var(--hp-w) * 0.008);
+}
+
+.ig-tombol-baris {
   display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 5px 9px;
-  border-radius: 999px;
+  gap: calc(var(--hp-w) * 0.02);
+  padding: 0 calc(var(--hp-w) * 0.045) calc(var(--hp-w) * 0.038);
+}
+
+.ig-tombol {
+  flex: 1;
+  padding: calc(var(--hp-w) * 0.022) 0;
+  border-radius: calc(var(--hp-w) * 0.028);
   border: none;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 10.5px;
-  font-weight: 600;
+  background: var(--surface-1);
+  color: var(--text-secondary);
   font-family: inherit;
+  font-size: calc(var(--hp-w) * 0.035);
+  font-weight: 600;
   cursor: pointer;
 }
 
-.telepon-tab-filter button.aktif {
-  background: var(--accent-bg);
-  color: var(--accent);
-}
+.ig-tombol.aktif { background: var(--accent); color: var(--accent-text); }
 
-/* Baris jenis konten Postingan/Story/Reel. Story dan Reel belum ada
-   fiturnya, jadi ditampilkan redup dan tidak bisa diklik — sama seperti
-   pola badge "Segera" di Sidebar, bukan tombol yang pura-pura aktif. */
-.telepon-tab-jenis {
+.ig-tab {
   display: flex;
-  gap: 14px;
-  padding: 8px 14px;
   border-top: 0.5px solid var(--border);
-  border-bottom: 0.5px solid var(--border);
 }
 
-.telepon-tab-jenis span {
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+.ig-tab-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--hp-w) * 0.028) 0;
   color: var(--text-muted);
+  border-bottom: 1.5px solid transparent;
 }
 
-.telepon-tab-jenis span.aktif { color: var(--text-primary); }
-.telepon-tab-jenis span.nonaktif { opacity: 0.4; cursor: default; }
+.ig-tab-item.aktif {
+  color: var(--text-primary);
+  border-bottom-color: var(--text-primary);
+}
 
-/* Kartu ajakan menyambungkan akun sosial, melayang di bagian bawah isi
-   telepon — hilang otomatis begitu ada satu akun yang ditandai terhubung
-   di Pengaturan (lihat Composer.jsx). */
-.telepon-cta {
-  margin: 10px;
-  padding: 12px;
-  border-radius: 14px;
+.ig-tab-item.mati { opacity: 0.32; cursor: default; }
+
+/* Kartu ajakan menyambungkan akun sosial, di bagian bawah isi telepon —
+   hilang otomatis begitu ada satu akun yang ditandai terhubung di
+   Pengaturan (lihat Composer.jsx). */
+.ig-cta {
+  margin: calc(var(--hp-w) * 0.035);
+  padding: calc(var(--hp-w) * 0.04);
+  border-radius: calc(var(--hp-w) * 0.045);
   background: var(--surface-1);
   border: 0.5px solid var(--border);
   text-align: center;
 }
 
-.telepon-cta p {
-  font-size: 10.5px;
+.ig-cta p {
+  font-size: calc(var(--hp-w) * 0.036);
   color: var(--text-secondary);
-  margin-bottom: 8px;
   line-height: 1.5;
+  margin-bottom: calc(var(--hp-w) * 0.03);
 }
 
-.telepon-cta-ikon-baris {
+.ig-cta-ikon {
   display: flex;
   justify-content: center;
-  gap: 5px;
-  margin-bottom: 9px;
+  gap: calc(var(--hp-w) * 0.018);
+  margin-bottom: calc(var(--hp-w) * 0.032);
 }
 
-.telepon-cta-ikon-baris span {
-  width: 22px;
-  height: 22px;
+.ig-cta-ikon span {
+  width: calc(var(--hp-w) * 0.076);
+  height: calc(var(--hp-w) * 0.076);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.ig-cta button {
+  width: 100%;
+  padding: calc(var(--hp-w) * 0.026) 0;
+  border-radius: 999px;
+  border: none;
+  background: var(--accent);
+  color: var(--accent-text);
+  font-family: inherit;
+  font-size: calc(var(--hp-w) * 0.036);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Bungkus telepon di kanan halaman Composer. */
+.compose-pratinjau {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 /* Grid ala Instagram, dipakai di GridPreview.jsx dan pratinjau Composer. */
@@ -930,8 +1188,21 @@ h1, h2, h3, h4, p { margin: 0; }
   gap: 2px;
 }
 
+/* Di dalam mockup telepon, ukuran sel dan teksnya ikut --hp-w — bukan
+   angka piksel tetap. Tanpa ini, grid yang sama akan terlihat benar di
+   satu ukuran mockup lalu kacau di ukuran lain. */
+.hp-isi .ig-grid { gap: calc(var(--hp-w) * 0.006); padding: calc(var(--hp-w) * 0.006); }
+.hp-isi .ig-sel { border-radius: calc(var(--hp-w) * 0.008); padding: calc(var(--hp-w) * 0.018); }
+.hp-isi .ig-sel-judul { font-size: calc(var(--hp-w) * 0.034); }
+.hp-isi .ig-sel-tanggal { font-size: calc(var(--hp-w) * 0.03); }
+
 .ig-sel {
-  aspect-ratio: 1;
+  /* 4:5, bukan persegi. Grid profil Instagram memakai potongan potret
+     4:5, jadi pratinjau yang persegi akan menipu: konten yang di sini
+     terlihat pas bisa terpotong atas-bawahnya saat benar-benar tayang.
+     Angka yang sama dipakai kanvas aset di Composer (.compose-kanvas),
+     supaya bidang yang disiapkan dan bidang yang dipratinjau sama. */
+  aspect-ratio: 4 / 5;
   border-radius: 3px;
   border: 1.5px solid transparent;
   background: var(--surface-1);
