@@ -6,6 +6,7 @@ import Sheet from '../components/Sheet'
 import { getPlatform } from '../config/platforms'
 import { getApproval } from '../config/approval'
 import { parseIsoDate } from '../lib/dates'
+import { urlMateriKlien } from '../lib/materi'
 
 // Halaman yang dilihat klien, tanpa akun dan tanpa login.
 //
@@ -39,7 +40,7 @@ function formatRentang(mulai, selesai) {
   return `${a.getDate()} ${BULAN[a.getMonth()].slice(0, 3)} – ${b.getDate()} ${BULAN[b.getMonth()].slice(0, 3)} ${b.getFullYear()}`
 }
 
-function KartuKonten({ item, bisaPutuskan, onPutuskan }) {
+function KartuKonten({ item, token, bisaPutuskan, onPutuskan }) {
   const p = getPlatform(item.platform)
   const a = getApproval(item.approval_state)
   const [terbuka, setTerbuka] = useState(false)
@@ -119,6 +120,26 @@ function KartuKonten({ item, bisaPutuskan, onPutuskan }) {
         </div>
       )}
 
+      {/* Materi ditampilkan langsung, bukan ditautkan. Klien yang harus
+          membuka sembilan tab untuk menilai sembilan konten tidak akan
+          melakukannya, lalu menyetujui tanpa melihat.
+
+          Bucket-nya privat, jadi alamat ini menunjuk ke Edge Function yang
+          memeriksa token tautan lebih dulu, baru mengalihkan ke URL
+          bertanda tangan berumur pendek. */}
+      {item.punya_materi && (
+        <img
+          src={urlMateriKlien(token, item.id)}
+          alt={`Materi untuk ${item.title}`}
+          loading="lazy"
+          style={{
+            width: '100%', maxHeight: 420, objectFit: 'contain', borderRadius: 12,
+            background: 'var(--surface-1)', border: '0.5px solid var(--border)',
+            marginTop: 12, display: 'block',
+          }}
+        />
+      )}
+
       {item.asset_url && (
         <a
           href={item.asset_url}
@@ -127,7 +148,7 @@ function KartuKonten({ item, bisaPutuskan, onPutuskan }) {
           className="btn btn-sm"
           style={{ textDecoration: 'none', marginTop: 10 }}
         >
-          <Icon name="image-outline" size={14} /> {item.asset_label || 'Lihat materinya'}
+          <Icon name="open-outline" size={14} /> {item.asset_label || 'Buka materi di Canva atau Drive'}
         </a>
       )}
 
@@ -338,6 +359,7 @@ export default function ClientView() {
               <KartuKonten
                 key={item.id}
                 item={item}
+                token={token}
                 bisaPutuskan={data.can_decide}
                 onPutuskan={(it, jenis) => {
                   setPesan(null)

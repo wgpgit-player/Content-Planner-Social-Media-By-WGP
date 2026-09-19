@@ -1050,509 +1050,718 @@ h1, h2, h3, h4, p { margin: 0; }
 }
 
 /* ============================================================
-   Halaman depan publik (Landing.jsx)
+   Halaman depan publik (Landing)
    ------------------------------------------------------------
-   Dipisah dari gaya aplikasi karena keperluannya berbeda: halaman ini dibaca
-   orang yang belum kenal produknya, jadi tipografinya lebih besar dan ruang
-   kosongnya lebih lega daripada di dalam aplikasi.
+   Dipisah dari gaya aplikasi karena keperluannya berbeda: halaman
+   ini dibaca orang yang belum kenal produknya, jadi tipografinya
+   jauh lebih besar dan ruang kosongnya lebih lega.
+
+   Ritmenya gelap–terang berselang, dengan judul besar dan tombol
+   berbentuk pil. Pola itu umum dipakai situs agensi dan memang
+   efektif: bagian gelap memberi jeda, dan mata berhenti di setiap
+   pergantian.
+
+   Warna aksennya tetap ungu plannersm.co. Aplikasi ini white-label,
+   dan halaman depan berwarna lain akan terasa seperti produk
+   berbeda begitu orang masuk ke dalamnya.
    ============================================================ */
+
+.lp {
+  --lp-hitam: #121214;
+  --lp-gelap: #1D1D20;
+  --lp-gelap-2: #282830;
+  --lp-abu: #F2F2F5;
+  --lp-garis-gelap: rgba(255, 255, 255, 0.12);
+
+  background: #fff;
+  color: #1A1A1F;
+  /* Inter Tight untuk judul besar, Inter untuk teks. Dimuat di
+     index.html; kalau gagal dimuat, jatuh ke font sistem yang
+     bentuknya paling mendekati. */
+  font-family: Inter, -apple-system, 'Segoe UI', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.lp-wadah {
+  max-width: 1180px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.lp-wadah-sempit { max-width: 760px; }
+
+/* ---------- Navigasi ---------- */
 
 .lp-nav {
   position: sticky;
   top: 0;
-  z-index: 50;
-  background: color-mix(in srgb, var(--surface-2) 88%, transparent);
-  backdrop-filter: blur(10px);
-  border-bottom: 0.5px solid var(--border);
-  padding: 13px 22px;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 16px 30px;
+  background: color-mix(in srgb, var(--lp-hitam) 88%, transparent);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+  backdrop-filter: saturate(180%) blur(18px);
+  border-bottom: 1px solid var(--lp-garis-gelap);
 }
+
+.lp-logo {
+  font-family: 'Inter Tight', Inter, sans-serif;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  color: #fff;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.lp-logo span { color: var(--accent); }
 
 .lp-nav-links {
   display: flex;
-  gap: 22px;
-  margin-left: 28px;
+  gap: 26px;
+  margin-left: auto;
 }
 
 .lp-nav-links a {
-  font-size: 13px;
-  color: var(--text-secondary);
+  font-size: 13.5px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.62);
   text-decoration: none;
-  transition: color 0.14s ease;
+  transition: color 0.15s ease;
 }
 
-.lp-nav-links a:hover { color: var(--text-primary); }
+.lp-nav-links a:hover { color: #fff; }
 
 .lp-nav-cta {
-  margin-left: auto;
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: 12px;
 }
 
-.lp-nav-cta .btn { text-decoration: none; }
+.lp-nav-masuk {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: none;
+}
 
 .lp-nav-toggle {
   display: none;
-  margin-left: auto;
-  border: 0.5px solid var(--border-strong);
-  background: var(--surface-2);
-  border-radius: 9px;
-  padding: 6px 8px;
+  border: none;
+  background: transparent;
+  color: #fff;
   cursor: pointer;
-  color: var(--text-primary);
+  margin-left: auto;
+  padding: 4px;
 }
 
 .lp-nav-mobile {
   display: none;
   flex-direction: column;
-  gap: 14px;
-  padding: 18px 2px 6px;
+  gap: 4px;
+  padding: 14px 24px 22px;
+  background: var(--lp-hitam);
+  border-bottom: 1px solid var(--lp-garis-gelap);
 }
 
 .lp-nav-mobile a {
-  font-size: 14px;
-  color: var(--text-primary);
+  padding: 11px 0;
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.82);
   text-decoration: none;
+  border-bottom: 1px solid var(--lp-garis-gelap);
 }
 
-.lp-nav-mobile .btn { text-decoration: none; justify-content: center; }
+.lp-nav-mobile > .lp-pil { margin-top: 12px; text-align: center; }
 
-.lp-title {
-  font-size: 40px;
-  font-weight: 700;
-  letter-spacing: -0.035em;
-  line-height: 1.12;
+/* ---------- Tombol pil ---------- */
+/* Bentuk pil dipakai konsisten di seluruh halaman. Radius besar dan
+   padding lega membuatnya terbaca sebagai ajakan, bukan kontrol
+   antarmuka biasa seperti tombol di dalam aplikasi. */
+
+.lp-pil {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 64px;
+  border: 1px solid transparent;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.12s ease, background 0.16s ease, opacity 0.16s ease;
+}
+
+.lp-pil:active { transform: scale(0.97); }
+
+.lp-pil-besar { padding: 15px 30px; font-size: 15px; }
+
+/* Di atas latar gelap. */
+.lp-pil-terang { background: #fff; color: var(--lp-hitam); }
+.lp-pil-terang:hover { background: rgba(255, 255, 255, 0.88); }
+
+/* Di atas latar terang. */
+.lp-pil-gelap { background: #303030; color: #fff; }
+.lp-pil-gelap:hover { background: #1A1A1A; }
+
+.lp-pil-garis {
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #fff;
+  background: transparent;
+}
+.lp-pil-garis:hover { border-color: rgba(255, 255, 255, 0.55); }
+
+/* ---------- Tipografi ---------- */
+
+.lp-mata {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
   margin-bottom: 18px;
 }
 
-.lp-sub {
-  font-size: 15.5px;
-  color: var(--text-secondary);
-  line-height: 1.65;
-  max-width: 620px;
-  margin: 0 auto;
+.lp-mata-gelap { color: var(--accent); }
+
+.lp-judul-besar {
+  font-family: 'Inter Tight', Inter, sans-serif;
+  /* clamp supaya judulnya benar-benar besar di desktop tanpa
+     meluber di ponsel. Ini yang paling menentukan rasa halamannya. */
+  font-size: clamp(38px, 6.2vw, 78px);
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: -0.042em;
+  margin: 0;
 }
 
 .lp-h2 {
-  font-size: 27px;
+  font-family: 'Inter Tight', Inter, sans-serif;
+  font-size: clamp(28px, 3.6vw, 46px);
   font-weight: 700;
-  letter-spacing: -0.025em;
-  line-height: 1.2;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+  margin: 0 0 16px;
 }
 
 .lp-h2-sub {
-  font-size: 14px;
-  color: var(--text-secondary);
-  line-height: 1.6;
-  margin-top: 10px;
-  max-width: 540px;
-  margin-left: auto;
-  margin-right: auto;
+  font-size: 16px;
+  line-height: 1.7;
+  color: inherit;
+  opacity: 0.72;
+  max-width: 620px;
+  margin: 0 0 18px;
 }
 
-.lp-grid-3 {
+/* ---------- Bagian ---------- */
+
+.lp-seksi { padding: 104px 30px; }
+
+.lp-terang { background: #fff; color: #1A1A1F; }
+.lp-abu { background: var(--lp-abu); color: #1A1A1F; }
+
+.lp-gelap {
+  background: var(--lp-gelap);
+  color: #fff;
+}
+
+.lp-kepala { margin-bottom: 52px; }
+
+/* ---------- Hero ---------- */
+
+.lp-hero {
+  position: relative;
+  background: var(--lp-hitam);
+  color: #fff;
+  padding: 96px 30px 0;
+  overflow: hidden;
+}
+
+/* Foto besar di belakang judul. Diberi lapisan gelap supaya teks
+   tetap terbaca apa pun foto yang nanti dipasang — itu tidak bisa
+   diketahui sekarang, jadi kontrasnya dijamin dari sini. */
+.lp-hero-foto {
+  position: absolute;
+  inset: 0;
+  opacity: 0.22;
+}
+
+.lp-hero-foto::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(18,18,20,0.35), var(--lp-hitam));
+}
+
+.lp-hero-isi {
+  position: relative;
+  z-index: 1;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-bottom: 76px;
+}
+
+.lp-hero-sub {
+  font-size: 17px;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.72);
+  max-width: 560px;
+  margin: 26px 0 32px;
+}
+
+.lp-hero-aksi {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.lp-hero-nota {
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.45);
+  margin-top: 18px;
+}
+
+/* ---------- Pita angka ---------- */
+
+.lp-angka {
+  position: relative;
+  z-index: 1;
+  max-width: 1180px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid var(--lp-garis-gelap);
+}
+
+.lp-angka-sel {
+  padding: 34px 26px 44px;
+  border-left: 1px solid var(--lp-garis-gelap);
+}
+
+.lp-angka-sel:first-child { border-left: none; padding-left: 0; }
+
+.lp-angka-nilai {
+  font-family: 'Inter Tight', Inter, sans-serif;
+  font-size: clamp(34px, 4.4vw, 54px);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: #fff;
+}
+
+.lp-angka-label {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.55);
+  margin-top: 10px;
+  line-height: 1.5;
+}
+
+/* ---------- Teks berjalan ---------- */
+
+.lp-pita {
+  background: var(--accent);
+  color: #fff;
+  overflow: hidden;
+  padding: 15px 0;
+  white-space: nowrap;
+}
+
+.lp-pita-jalan {
+  display: inline-block;
+  animation: lp-jalan 38s linear infinite;
+  font-family: 'Inter Tight', Inter, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+}
+
+.lp-pita-titik { padding: 0 22px; opacity: 0.55; }
+
+@keyframes lp-jalan {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* ---------- Kotak penanda foto ---------- */
+
+.lp-foto {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  border-radius: 16px;
+  border: 1.5px dashed currentColor;
+  opacity: 0.32;
+  font-size: 12px;
+  text-align: center;
+  padding: 18px;
+}
+
+.lp-hero-foto .lp-foto { border-radius: 0; border: none; opacity: 0.5; }
+
+/* ---------- Kartu masalah ---------- */
+
+.lp-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.lp-kartu-masalah {
+  display: flex;
+  gap: 16px;
+  padding: 28px;
+  border-radius: 18px;
+  background: var(--lp-abu);
+}
+
+.lp-kartu-masalah h3 {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  margin-bottom: 7px;
+}
+
+.lp-kartu-masalah p {
+  font-size: 14.5px;
+  line-height: 1.65;
+  opacity: 0.68;
+}
+
+.lp-kartu-ikon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #fff;
+  color: var(--lp-hitam);
+}
+
+.lp-kartu-ikon-ungu { background: var(--accent); color: #fff; }
+
+/* ---------- Dua jalur ---------- */
+
+.lp-jalur {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.lp-jalur-kartu {
+  background: var(--lp-gelap-2);
+  border-radius: 22px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.lp-jalur-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 22px 0 10px;
+}
+
+.lp-jalur-kartu h3 {
+  font-family: 'Inter Tight', Inter, sans-serif;
+  font-size: 25px;
+  font-weight: 700;
+  line-height: 1.18;
+  letter-spacing: -0.03em;
+  margin-bottom: 12px;
+}
+
+.lp-jalur-isi {
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.68);
+  margin-bottom: 18px;
+}
+
+.lp-jalur-poin {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.lp-jalur-poin li {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13.5px;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.lp-jalur-poin li ion-icon { color: var(--accent); }
+
+/* ---------- Fitur ---------- */
+
+.lp-fitur-utama { margin-bottom: 44px; }
+
+.lp-grid-fitur {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.lp-kartu-fitur {
+  padding: 26px 22px;
+  border-radius: 18px;
+  border: 1px solid #E8E8EE;
+  background: #fff;
+  transition: border-color 0.16s ease, transform 0.16s ease;
+}
+
+.lp-kartu-fitur:hover {
+  border-color: var(--accent);
+  transform: translateY(-3px);
+}
+
+.lp-kartu-fitur h3 {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  margin: 16px 0 8px;
+}
+
+.lp-kartu-fitur p {
+  font-size: 13.5px;
+  line-height: 1.65;
+  opacity: 0.66;
+}
+
+/* ---------- Pembeda lokal ---------- */
+
+.lp-lokal {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+  gap: 56px;
+  align-items: start;
+}
+
+.lp-lokal-kartu {
+  background: var(--lp-gelap-2);
+  border-radius: 22px;
+  padding: 12px;
+}
+
+.lp-hari {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 14px;
+  border-bottom: 1px solid var(--lp-garis-gelap);
+}
+
+.lp-hari:last-of-type { border-bottom: none; }
+
+.lp-hari-titik {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.lp-hari-tgl {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.52);
+  min-width: 52px;
+}
+
+.lp-hari-nama { font-size: 14.5px; }
+
+.lp-hari-nota {
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 16px 14px 8px;
+  border-top: 1px solid var(--lp-garis-gelap);
+  margin-top: 6px;
+}
+
+/* ---------- Langkah ---------- */
+
+.lp-langkah {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.lp-langkah-sel { border-top: 2px solid var(--accent); padding-top: 22px; }
+
+.lp-langkah-nomor {
+  font-family: 'Inter Tight', Inter, sans-serif;
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  color: var(--accent);
+  line-height: 1;
+  margin-bottom: 14px;
+}
+
+.lp-langkah-sel h3 {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin-bottom: 9px;
+}
+
+.lp-langkah-sel p { font-size: 14.5px; line-height: 1.7; opacity: 0.68; }
+
+/* ---------- Yang belum ada ---------- */
+
+.lp-belum {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
 }
 
-.lp-board {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 10px;
+.lp-belum-sel {
+  display: flex;
+  gap: 13px;
+  padding: 24px;
+  background: #fff;
+  border-radius: 18px;
 }
 
-.lp-faq {
-  border: 0.5px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface-2);
-  overflow: hidden;
-}
+.lp-belum-sel ion-icon { color: #A33333; flex-shrink: 0; margin-top: 2px; }
+.lp-belum-sel h3 { font-size: 15.5px; font-weight: 600; margin-bottom: 7px; }
+.lp-belum-sel p { font-size: 13.5px; line-height: 1.65; opacity: 0.66; }
 
-.lp-faq summary {
+/* ---------- Tanya jawab ---------- */
+
+.lp-faq { border-top: 1px solid #E8E8EE; }
+
+.lp-faq-sel { border-bottom: 1px solid #E8E8EE; }
+
+.lp-faq-sel button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 15px 17px;
-  font-size: 13.5px;
+  gap: 16px;
+  width: 100%;
+  padding: 22px 2px;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 17px;
   font-weight: 500;
+  letter-spacing: -0.015em;
+  color: inherit;
+  text-align: left;
   cursor: pointer;
-  list-style: none;
 }
 
-.lp-faq summary::-webkit-details-marker { display: none; }
+.lp-faq-sel p {
+  font-size: 14.5px;
+  line-height: 1.75;
+  opacity: 0.7;
+  padding: 0 2px 24px;
+  max-width: 660px;
+}
 
-.lp-faq[open] summary ion-icon { transform: rotate(180deg); }
+/* ---------- Penutup & kaki ---------- */
 
-.lp-faq summary ion-icon { transition: transform 0.16s ease; }
+.lp-tutup {
+  background: var(--lp-hitam);
+  color: #fff;
+  padding: 110px 30px;
+  text-align: center;
+}
 
-.lp-faq p {
-  padding: 0 17px 16px;
+.lp-tutup .lp-h2-sub { margin: 22px auto 34px; }
+
+.lp-kaki {
+  background: var(--lp-hitam);
+  color: rgba(255, 255, 255, 0.55);
+  padding: 34px 30px 46px;
+  border-top: 1px solid var(--lp-garis-gelap);
+}
+
+.lp-kaki-isi {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
   font-size: 13px;
-  color: var(--text-secondary);
-  line-height: 1.65;
 }
 
-@media (max-width: 900px) {
-  .lp-grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .lp-board { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .lp-board > div:nth-child(n + 4) { display: none; }
+.lp-kaki-tautan { margin-left: auto; display: flex; gap: 18px; }
+.lp-kaki-tautan a { color: rgba(255, 255, 255, 0.72); text-decoration: none; }
+.lp-kaki-tautan a:hover { color: #fff; }
+
+/* ---------- Layar sedang ---------- */
+
+@media (max-width: 1000px) {
+  .lp-grid-fitur { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lp-lokal { grid-template-columns: minmax(0, 1fr); gap: 34px; }
+  .lp-belum { grid-template-columns: minmax(0, 1fr); }
 }
 
-@media (max-width: 720px) {
-  .lp-nav { padding: 11px 16px; }
+/* ---------- Ponsel ---------- */
+
+@media (max-width: 760px) {
+  .lp-nav { padding: 13px 18px; }
   .lp-nav-links, .lp-nav-cta { display: none; }
   .lp-nav-toggle { display: block; }
   .lp-nav-mobile { display: flex; }
 
-  .lp-title { font-size: 29px; letter-spacing: -0.03em; }
-  .lp-sub { font-size: 14px; }
-  .lp-h2 { font-size: 22px; }
+  .lp-seksi { padding: 66px 18px; }
+  .lp-hero { padding: 62px 18px 0; }
+  .lp-hero-isi { padding-bottom: 46px; }
+  .lp-tutup { padding: 72px 18px; }
+  .lp-kepala { margin-bottom: 34px; }
 
-  .lp-grid-3 { grid-template-columns: 1fr; gap: 14px; }
-  .lp-board { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .lp-board > div:nth-child(n + 3) { display: none; }
+  .lp-hero-sub { font-size: 15.5px; margin: 20px 0 26px; }
+  .lp-h2-sub { font-size: 15px; }
 
-  section { padding-top: 52px !important; padding-bottom: 52px !important; }
-}
+  /* Tombol melebar penuh supaya terjangkau jempol tanpa membidik. */
+  .lp-hero-aksi { flex-direction: column; align-items: stretch; }
+  .lp-hero-aksi .lp-pil { width: 100%; }
 
-/* ============================================================
-   Composer: menyusun di kiri, pratinjau feed di kanan
-   ------------------------------------------------------------
-   Dua kolom dengan pratinjau yang menempel saat digulir, supaya
-   feed tetap terlihat sementara caption panjang diketik di kiri.
-   Di layar sempit keduanya menumpuk dan pratinjau pindah ke
-   bawah — berdampingan pada lebar ponsel berarti keduanya
-   terlalu sempit untuk berguna.
-   ============================================================ */
-
-.compose-dua {
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
-  gap: 16px;
-  align-items: start;
-}
-
-.compose-pratinjau { position: sticky; top: 16px; }
-
-@media (max-width: 900px) {
-  .compose-dua { grid-template-columns: minmax(0, 1fr); }
-  /* Menempel tidak ada gunanya saat elemennya sudah menumpuk. */
-  .compose-pratinjau { position: static; }
-}
-
-/* Bingkai telepon. Bukan hiasan: konteks "ini akan dilihat di layar
-   kecil" mengubah cara orang menilai komposisinya. */
-.telepon {
-  background: var(--surface-2);
-  border: 0.5px solid var(--border-strong);
-  border-radius: 26px;
-  overflow: hidden;
-  box-shadow: var(--shadow-md);
-  max-width: 320px;
-  margin: 0 auto;
-}
-
-.telepon-kepala {
-  height: 26px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--surface-1);
-  border-bottom: 0.5px solid var(--border);
-}
-
-.telepon-takik {
-  width: 58px;
-  height: 5px;
-  border-radius: 99px;
-  background: var(--border-strong);
-}
-
-.telepon-isi { padding: 2px 0 0; }
-
-/* ============================================================
-   Baris agenda di atas kalender
-   ------------------------------------------------------------
-   Hari penting dan kegiatan workspace duduk di satu baris tanpa
-   sumbu jam, karena keduanya berlaku sepanjang hari. Tingginya
-   dibiarkan tumbuh mengikuti isi — memotongnya berarti hari
-   tersibuk justru yang paling tersembunyi.
-   ============================================================ */
-
-.agenda-baris {
-  border-bottom: 0.5px solid var(--border);
-  background: var(--surface-1);
-}
-
-.agenda-label {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  justify-content: flex-end;
-  padding: 7px 6px;
-  font-size: 9.5px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: var(--text-muted);
-  text-transform: uppercase;
-}
-
-.agenda-tambah {
-  display: flex;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  color: var(--text-muted);
-  padding: 1px;
-  border-radius: 5px;
-}
-
-.agenda-tambah:hover { color: var(--accent); background: var(--accent-bg); }
-
-.agenda-sel {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-height: 30px;
-  padding: 5px 4px;
-  border-left: 0.5px solid var(--border);
-}
-
-.agenda-pil {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  width: 100%;
-  padding: 3px 6px;
-  border: none;
-  border-radius: 6px;
-  font-family: inherit;
-  font-size: 9.5px;
-  font-weight: 600;
-  line-height: 1.3;
-  text-align: left;
-  cursor: pointer;
-}
-
-.agenda-pil-teks {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Tombol tambah yang hanya muncul saat kolomnya disorot. Selalu terlihat
-   membuat baris ini penuh tanda plus dan ramai tanpa guna. */
-.agenda-kosong {
-  border: none;
-  background: transparent;
-  color: transparent;
-  cursor: pointer;
-  font-size: 13px;
-  line-height: 1;
-  padding: 3px;
-  border-radius: 5px;
-}
-
-.agenda-sel:hover .agenda-kosong { color: var(--text-muted); }
-
-/* Halaman strategi: daftar pillar di kiri, pola di kanan. Polanya
-   diberi porsi lebih besar karena di situlah pekerjaannya. */
-.strategi-dua {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
-  gap: 14px;
-  align-items: start;
-}
-
-@media (max-width: 860px) {
-  .strategi-dua { grid-template-columns: minmax(0, 1fr); }
-}
-
-/* ---------- Baris hari di composer ---------- */
-
-.strip-hari {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 5px;
-}
-
-.strip-hari-sel {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 8px 2px;
-  border: 0.5px solid var(--border);
-  border-radius: 11px;
-  background: var(--surface-2);
-  cursor: pointer;
-  font-family: inherit;
-  transition: background 0.14s ease, border-color 0.14s ease;
-}
-
-.strip-hari-sel.aktif {
-  background: var(--accent);
-  border-color: var(--accent);
-}
-
-.strip-hari-nama {
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--text-muted);
-}
-
-.strip-hari-angka {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.strip-hari-sel.aktif .strip-hari-nama,
-.strip-hari-sel.aktif .strip-hari-angka { color: var(--accent-text); }
-
-/* Titik penanda hari ini. Tanpa ini, baris tanggal kehilangan
-   jangkarnya begitu pengguna menggeser ke minggu lain. */
-.strip-hari-titik {
-  position: absolute;
-  bottom: 4px;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--accent);
-}
-
-.strip-hari-sel.aktif .strip-hari-titik { background: var(--accent-text); }
-
-/* ============================================================
-   Grid pratinjau feed
-   ------------------------------------------------------------
-   Tiga kolom dan kotak persegi, karena itu bentuk feed Instagram
-   dan seluruh gunanya halaman ini adalah menirukan bentuk itu.
-   Tiga kolom dipertahankan sampai lebar paling sempit — dua kolom
-   akan terlihat seperti feed orang lain, bukan feed mereka.
-   ============================================================ */
-
-.ig-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.ig-sel {
-  /* aspect-ratio menjaga kotaknya persegi tanpa perlu menghitung
-     tinggi dari lebar kolom yang berubah-ubah. */
-  aspect-ratio: 1 / 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 4px;
-  padding: 9px;
-  border: 1.5px solid transparent;
-  border-radius: 12px;
-  cursor: pointer;
-  font-family: inherit;
-  text-align: left;
-  overflow: hidden;
-  transition: border-color 0.14s ease, transform 0.1s ease;
-}
-
-.ig-sel.terpilih {
-  /* Kotak terpilih harus terlihat jelas bahkan di antara delapan kotak
-     lain yang berwarna. Garis tepi tebal plus bayangan halus. */
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
-  transform: scale(0.97);
-}
-
-.ig-sel-atas {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  flex-shrink: 0;
-}
-
-.ig-sel-tanggal {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.ig-sel-judul {
-  flex: 1;
-  min-height: 0;
-  font-size: 11.5px;
-  line-height: 1.4;
-  color: var(--text-primary);
-  /* Dipotong setelah beberapa baris. Judul panjang kalau dibiarkan akan
-     mendorong baris status keluar dari kotak. */
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.ig-sel-bawah {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-  font-size: 9.5px;
-}
-
-@media (max-width: 460px) {
-  .ig-grid { gap: 6px; }
-  .ig-sel { padding: 7px; border-radius: 10px; }
-  .ig-sel-judul { font-size: 10.5px; -webkit-line-clamp: 2; line-clamp: 2; }
-}
-
-/* ---------- Grid perpustakaan & set hashtag ---------- */
-
-.pustaka-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  align-items: start;
-}
-
-@media (max-width: 700px) {
-  /* Dua kolom di lebar ponsel menyisakan sekitar 160 piksel per kartu,
-     dan teks CTA atau struktur formula tidak terbaca di lebar itu. */
-  .pustaka-grid { grid-template-columns: minmax(0, 1fr); }
-}
-
-/* ============================================================
-   Halaman klien (/r/:token)
-   ------------------------------------------------------------
-   Halaman publik tanpa login dan tanpa AppShell: tidak ada sidebar,
-   tidak ada tab bar, tidak ada nama pengguna. Yang dilihat klien
-   hanya rencana kontennya dan brand pemilik workspace.
-
-   Lebarnya dijaga sempit karena isinya dibaca berurutan dari atas ke
-   bawah, dan baris teks yang terlalu panjang justru melelahkan.
-   ============================================================ */
-
-.klien-halaman {
-  min-height: 100vh;
-  background: var(--bg-page);
-  display: flex;
-  justify-content: center;
-  padding: 26px 16px 60px;
-}
-
-@media (max-width: 900px) {
-  .klien-halaman {
-    /* Area aman dihormati juga di sini. Klien bisa membuka tautan ini
-       dari iPhone, dan halaman ini tidak punya bilah atas yang
-       biasanya menangani jarak itu. */
-    padding: calc(env(safe-area-inset-top) + 18px) 14px
-             calc(env(safe-area-inset-bottom) + 40px);
+  /* Tiga kolom angka di lebar ponsel menyisakan sekitar 100 piksel
+     per kolom, dan labelnya jadi tiga baris patah-patah. */
+  .lp-angka { grid-template-columns: minmax(0, 1fr); }
+  .lp-angka-sel {
+    border-left: none;
+    border-top: 1px solid var(--lp-garis-gelap);
+    padding: 22px 0;
   }
+  .lp-angka-sel:first-child { border-top: none; }
+
+  .lp-grid-2,
+  .lp-jalur,
+  .lp-grid-fitur,
+  .lp-langkah { grid-template-columns: minmax(0, 1fr); }
+
+  .lp-kartu-masalah { padding: 22px; }
+  .lp-faq-sel button { font-size: 15.5px; padding: 18px 2px; }
+  .lp-kaki-tautan { margin-left: 0; }
+}
+
+/* Animasi teks berjalan dimatikan buat yang memintanya. Gerakan
+   menyamping terus-menerus termasuk yang paling memicu pusing. */
+@media (prefers-reduced-motion: reduce) {
+  .lp-pita-jalan { animation: none; }
+  .lp-kartu-fitur:hover { transform: none; }
 }
 
 /* ---------- Animasi ---------- */

@@ -38,6 +38,20 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
 
+    <!-- Inter dan Inter Tight untuk halaman depan publik.
+         Inter Tight khusus judul besar: hurufnya lebih rapat, jadi judul
+         setinggi 78 piksel tidak terlihat renggang. Aplikasi di dalamnya
+         tetap memakai font sistem, yang lebih cepat dan tidak perlu
+         menunggu unduhan.
+         display=swap supaya teks langsung terbaca memakai font sistem
+         sambil fontnya dimuat, bukan halaman kosong dulu. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+
     <!-- Ionicons v7 (https://ionic.io/ionicons). Dipakai lewat web component
          <ion-icon name="..."> — dibungkus komponen src/components/Icon.jsx
          supaya penulisannya seragam di seluruh aplikasi. -->

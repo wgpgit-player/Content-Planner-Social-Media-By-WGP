@@ -11,6 +11,7 @@ import AppShell from '../components/AppShell'
 import Icon from '../components/Icon'
 import PanelPersetujuan from '../components/PanelPersetujuan'
 import Komentar from '../components/Komentar'
+import LampiranMateri from '../components/LampiranMateri'
 
 // Halaman brief konten.
 //
@@ -78,7 +79,6 @@ const KOSONG = {
   scheduled_date: '', scheduled_time: '',
   brief: '', objective: '', target_audience: '', key_message: '',
   caption: '', cta: '', hashtags: '', reference_url: '', production_notes: '',
-  asset_url: '', asset_label: '',
 }
 
 function Field({ label, children, hint }) {
@@ -110,6 +110,7 @@ export default function ContentDetail() {
   // tindakan tersendiri dengan aturannya sendiri di database, bukan efek
   // samping dari menyimpan teks brief.
   const [persetujuan, setPersetujuan] = useState(null)
+  const [lampiran, setLampiran] = useState(null)
 
   const load = useCallback(async () => {
     if (!supabase || !tenantId) return
@@ -136,6 +137,16 @@ export default function ContentDetail() {
         approval_state: row.approval_state ?? 'none',
         approved_by: row.approved_by ?? null,
         approved_at: row.approved_at ?? null,
+      })
+      // Lampiran disimpan terpisah dari form. LampiranMateri menulis
+      // sendiri ke database saat berkasnya naik, jadi kalau ikut masuk ke
+      // form ia akan tertimpa nilai lama begitu tombol "Simpan brief"
+      // ditekan.
+      setLampiran({
+        asset_path: row.asset_path ?? null,
+        asset_url: row.asset_url ?? null,
+        asset_mime: row.asset_mime ?? null,
+        asset_size: row.asset_size ?? null,
       })
     }
     setLoading(false)
@@ -315,7 +326,9 @@ export default function ContentDetail() {
         </div>
       </div>
 
-      <PanelPersetujuan contentId={id} nilai={persetujuan} onBerubah={load} />
+      <LampiranMateri contentId={id} nilai={lampiran} onBerubah={load} />
+
+      <PanelPersetujuan contentId={id} nilai={persetujuan} lampiran={lampiran} onBerubah={load} />
 
       <div className="card">
         <p style={{ fontSize: 14, fontWeight: 600, marginBottom: 3 }}>Isi brief</p>
@@ -335,33 +348,6 @@ export default function ContentDetail() {
             />
           </Field>
         ))}
-
-        {/* Aset disimpan sebagai tautan, bukan berkas. Aplikasi ini tidak
-            punya penyimpanan media, dan itu keputusan sadar: hampir semua
-            tim sudah menaruh asetnya di Drive atau Canva, jadi menyimpan
-            tautannya menyelesaikan pertanyaan "di mana filenya" tanpa
-            ongkos penyimpanan sama sekali. */}
-        <Field label="Tautan aset" hint="Google Drive, Canva, Dropbox — di mana pun materinya sekarang berada.">
-          <input
-            className="input"
-            type="url"
-            value={form.asset_url ?? ''}
-            onChange={(e) => ubah('asset_url', e.target.value)}
-            placeholder="https://"
-            style={{ marginBottom: 8 }}
-          />
-          {form.asset_url && (
-            <a
-              href={form.asset_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-sm"
-              style={{ textDecoration: 'none' }}
-            >
-              <Icon name="open-outline" size={14} /> Buka aset
-            </a>
-          )}
-        </Field>
 
         <Field label="Tautan referensi" hint="Contoh konten serupa atau sumber data.">
           <input

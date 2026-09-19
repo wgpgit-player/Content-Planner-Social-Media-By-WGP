@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import { useTenantContext } from '../context/TenantContext'
 import { PLATFORMS, getPlatform } from '../config/platforms'
-import { isoDate, parseIsoDate, addDays, startOfWeek, buildWeekDates, todayIso } from '../lib/dates'
+import { isoDate, addDays, startOfWeek, buildWeekDates, todayIso } from '../lib/dates'
 
 // Composer: menyusun konten sambil melihat feed-nya.
 //
@@ -172,7 +172,6 @@ export default function Composer() {
   }
 
   const tanggalMinggu = buildWeekDates(awalMinggu)
-  const tglTerpilih = tanggal ? parseIsoDate(tanggal) : null
 
   // Konten yang sedang disusun ikut tampil di pratinjau, di posisi teratas,
   // supaya terlihat bagaimana ia duduk di antara yang lain.
@@ -323,8 +322,10 @@ export default function Composer() {
               placeholder="Tempel tautan Google Drive, Canva, atau Dropbox"
             />
             <p className="field-hint">
-              Aplikasi ini tidak menyimpan berkas. Materinya tetap di tempat
-              kamu menyimpannya sekarang, yang disimpan di sini tautannya.
+              Untuk materi yang tinggal di Canva atau Drive. Kalau gambarnya
+              perlu <strong>dilihat saat ditinjau</strong>, unggah di halaman
+              briefnya setelah konten ini dibuat — tautan Canva tidak bisa
+              ditampilkan sebagai gambar.
             </p>
           </div>
 

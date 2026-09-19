@@ -17,11 +17,10 @@ import { parseIsoDate, todayIso } from '../lib/dates'
 //
 // DUA HAL YANG PERLU DIJELASKAN
 //
-// 1. Tidak ada gambar di sini, dan itu bukan kelalaian. Aplikasi ini belum
-//    punya perpustakaan media, jadi tidak ada aset yang bisa ditampilkan.
-//    Yang dipakai sebagai pengganti adalah warna pillar-nya, yang justru
-//    berguna: ketimpangan komposisi tema langsung terlihat sebagai blok
-//    warna yang menumpuk di satu sisi.
+// 1. Kotak menampilkan materi yang sudah diunggah. Yang belum punya materi
+//    jatuh kembali ke warna content pillar-nya — dan itu tetap berguna:
+//    ketimpangan komposisi tema langsung terlihat sebagai blok warna yang
+//    menumpuk di satu sisi.
 //
 // 2. Mengatur ulang urutan berarti MENUKAR JADWAL. Urutan feed diturunkan
 //    dari tanggal dan jam tayang, bukan dari kolom urutan tersendiri. Satu
@@ -53,6 +52,7 @@ export default function GridPreview() {
   const [galat, setGalat] = useState(null)
   const [dipilih, setDipilih] = useState(null)
   const [sibuk, setSibuk] = useState(false)
+  const [gambar, setGambar] = useState({})
 
   const muat = useCallback(async () => {
     if (!supabase || !tenantId) { setLoading(false); return }
@@ -61,7 +61,7 @@ export default function GridPreview() {
 
     const [a, b] = await Promise.all([
       supabase.from('content_items')
-        .select('id,title,platform,status,pillar_id,scheduled_date,scheduled_time,approval_state')
+        .select('id,title,platform,status,pillar_id,scheduled_date,scheduled_time,approval_state,asset_path')
         .eq('tenant_id', tenantId)
         .eq('platform', platform)
         .not('scheduled_date', 'is', null)
@@ -79,6 +79,29 @@ export default function GridPreview() {
   }, [tenantId, platform])
 
   useEffect(() => { muat() }, [muat])
+
+  // URL bertanda tangan dibuat SEKALIGUS untuk semua gambar yang terlihat,
+  // bukan satu per satu. Grid bisa berisi enam puluh kotak, dan enam puluh
+  // permintaan terpisah membuat halaman ini terasa berat tanpa alasan.
+  useEffect(() => {
+    let batal = false
+    const paths = items.map((i) => i.asset_path).filter(Boolean)
+    if (paths.length === 0) { setGambar({}); return }
+
+    supabase.storage.from('materi').createSignedUrls(paths, 3600).then(({ data }) => {
+      if (batal || !data) return
+      const peta = {}
+      for (const d of data) {
+        // signedUrl bisa kosong kalau berkasnya sudah tidak ada. Dilewati,
+        // supaya kotaknya kembali menampilkan warna pillar alih-alih
+        // gambar yang rusak.
+        if (d.path && d.signedUrl) peta[d.path] = d.signedUrl
+      }
+      setGambar(peta)
+    })
+
+    return () => { batal = true }
+  }, [items])
 
   // Ganti platform, pilihan sebelumnya tidak berlaku lagi.
   useEffect(() => { setDipilih(null) }, [platform])
@@ -145,8 +168,8 @@ export default function GridPreview() {
           <Icon name="information-circle-outline" size={17} color="var(--text-secondary)" />
           <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.65 }}>
             Ketuk satu kotak, lalu ketuk kotak lain untuk <strong>menukar jadwal tayangnya</strong>.
-            Warna kotak mengikuti content pillar — belum ada gambar karena
-            aplikasi ini belum punya perpustakaan media.
+            Kotak yang materinya sudah diunggah menampilkan gambarnya; yang
+            belum memakai warna content pillar.
           </p>
         </div>
       </div>
@@ -213,6 +236,15 @@ export default function GridPreview() {
                   }}
                   title={`${item.title} — ${tanggalPendek(item.scheduled_date)}`}
                 >
+                  {gambar[item.asset_path] && (
+                    <img
+                      src={gambar[item.asset_path]}
+                      alt=""
+                      loading="lazy"
+                      className="ig-sel-gambar"
+                    />
+                  )}
+
                   <span className="ig-sel-atas">
                     <span
                       style={{

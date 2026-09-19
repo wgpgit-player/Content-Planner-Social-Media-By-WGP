@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useTenantContext } from '../context/TenantContext'
 import { useTenantMembers, namaAnggota } from '../lib/useTenantMembers'
 import { getApproval, KEPUTUSAN_LABEL } from '../config/approval'
+import { urlMateri } from '../lib/materi'
 import Icon from './Icon'
 
 // Panel persetujuan di halaman brief.
@@ -59,7 +60,7 @@ function Baris({ review, members }) {
   )
 }
 
-export default function PanelPersetujuan({ contentId, nilai, onBerubah }) {
+export default function PanelPersetujuan({ contentId, nilai, lampiran, onBerubah }) {
   const { tenantId, isAdmin } = useTenantContext()
   const { members } = useTenantMembers()
 
@@ -68,6 +69,7 @@ export default function PanelPersetujuan({ contentId, nilai, onBerubah }) {
   const [isiCatatan, setIsiCatatan] = useState(false)
   const [sibuk, setSibuk] = useState(false)
   const [galat, setGalat] = useState(null)
+  const [gambar, setGambar] = useState(null)
 
   const muatRiwayat = useCallback(async () => {
     if (!supabase || !contentId) return
@@ -80,6 +82,16 @@ export default function PanelPersetujuan({ contentId, nilai, onBerubah }) {
   }, [contentId])
 
   useEffect(() => { muatRiwayat() }, [muatRiwayat])
+
+  // Materi ditampilkan DI DALAM panel ini, bukan sekadar ditautkan.
+  // Menyetujui sesuatu yang harus dibuka di tab lain berarti sebagian orang
+  // tidak akan membukanya, lalu menyetujui tanpa melihat.
+  useEffect(() => {
+    let batal = false
+    if (!lampiran?.asset_path) { setGambar(null); return }
+    urlMateri(lampiran.asset_path).then((u) => { if (!batal) setGambar(u) })
+    return () => { batal = true }
+  }, [lampiran?.asset_path])
 
   const a = getApproval(nilai?.approval_state)
 
@@ -155,9 +167,50 @@ export default function PanelPersetujuan({ contentId, nilai, onBerubah }) {
 
       {galat && <p className="alert alert-error" style={{ marginBottom: 12 }}>{galat}</p>}
 
+      {gambar ? (
+        <img
+          src={gambar}
+          alt="Materi yang ditinjau"
+          style={{
+            width: '100%', maxHeight: 300, objectFit: 'contain', borderRadius: 12,
+            background: 'var(--surface-1)', border: '0.5px solid var(--border)',
+            marginBottom: 12,
+          }}
+        />
+      ) : lampiran?.asset_url ? (
+        <a
+          href={lampiran.asset_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn btn-sm"
+          style={{ textDecoration: 'none', marginBottom: 12 }}
+        >
+          <Icon name="open-outline" size={14} /> Buka materi di tab lain
+        </a>
+      ) : (
+        // Peringatan, bukan larangan. Sebagian konten memang hanya caption
+        // atau teks. Tapi yang menyetujui harus sadar ia sedang memutuskan
+        // tanpa melihat apa pun.
+        <p className="alert alert-info" style={{ marginBottom: 12 }}>
+          Belum ada materi yang dilampirkan. Kalau kamu menyetujui sekarang,
+          yang disetujui hanya judul dan briefnya.
+        </p>
+      )}
+
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         {nilai?.approval_state !== 'pending' && nilai?.approval_state !== 'approved' && (
-          <button type="button" className="btn btn-primary btn-sm" disabled={sibuk} onClick={() => putuskan('pending')}>
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            disabled={sibuk}
+            onClick={() => {
+              const kosong = !lampiran?.asset_path && !lampiran?.asset_url
+              if (kosong && !window.confirm(
+                'Belum ada materi yang dilampirkan. Yang meninjau hanya akan melihat judul dan brief. Tetap ajukan?'
+              )) return
+              putuskan('pending')
+            }}
+          >
             <Icon name="paper-plane-outline" size={14} /> Ajukan untuk ditinjau
           </button>
         )}
