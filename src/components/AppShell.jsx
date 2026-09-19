@@ -1,6 +1,8 @@
+import { useNavigate } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import Topbar from './Topbar'
 import BottomNav from './BottomNav'
+import Icon from './Icon'
 import { useTenantContext } from '../context/TenantContext'
 import { TenantAvatar } from './TenantSwitcher'
 
@@ -20,8 +22,38 @@ import { TenantAvatar } from './TenantSwitcher'
 //
 // Laci hamburger yang dulu ada di sini sudah dilepas. Alasannya ada di
 // BottomNav.jsx.
-export default function AppShell({ title, description, actions, children, maxWidth = 860 }) {
+//
+// MODE `bare`
+//
+// Beberapa halaman — Composer adalah yang pertama — perlu jadi ruang kerja
+// yang fokus penuh: tanpa sidebar, tanpa daftar menu di kiri, supaya layar
+// yang tersedia dipakai untuk menyusun dan melihat pratinjau, bukan
+// navigasi. Plann melakukan ini juga di halaman Create-nya. `bare` menukar
+// sidebar+topbar dengan satu bilah tipis berisi tombol kembali dan nama
+// ruang kerja saja — bukan halaman terpisah, supaya AppShell tetap satu-
+// satunya kerangka dan tidak ada CSS yang harus diduplikasi.
+export default function AppShell({ title, description, actions, children, maxWidth = 860, bare = false }) {
   const { tenant } = useTenantContext()
+  const navigate = useNavigate()
+
+  if (bare) {
+    return (
+      <div className="app-shell-bare">
+        <div className="bare-topbar">
+          <button type="button" className="bare-kembali" onClick={() => navigate(-1)} aria-label="Kembali">
+            <Icon name="chevron-back-outline" size={18} />
+          </button>
+          <div className="bare-judul">
+            {title && <p className="bare-judul-teks">{title}</p>}
+            {description && <p className="bare-judul-sub">{description}</p>}
+          </div>
+          <div className="bare-aksi">{actions}</div>
+        </div>
+        <div className="bare-main">{children}</div>
+        <BottomNav />
+      </div>
+    )
+  }
 
   return (
     <div className="app-shell">

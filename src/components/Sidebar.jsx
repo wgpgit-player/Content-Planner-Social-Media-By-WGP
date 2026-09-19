@@ -27,6 +27,7 @@ export const NAV_GROUPS = [
   {
     label: 'Utama',
     items: [
+      { icon: 'home-outline', label: 'Home', path: '/home', diBilahAtas: true },
       { icon: 'grid-outline', label: 'Dashboard', path: '/dashboard', diBilahAtas: true },
       { icon: 'create-outline', label: 'Susun konten', path: '/compose', diBilahAtas: true },
       { icon: 'calendar-outline', label: 'Content calendar', path: '/content-calendar', diBilahAtas: true },

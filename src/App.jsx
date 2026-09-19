@@ -6,6 +6,7 @@ import { isMisconfiguredDeployment } from './lib/supabaseClient'
 import SetupNeeded from './pages/SetupNeeded.jsx'
 
 import Landing from './pages/Landing.jsx'
+import HomePage from './pages/Home.jsx'
 import Login from './pages/Login.jsx'
 import Signup from './pages/Signup.jsx'
 import Onboarding from './pages/Onboarding.jsx'
@@ -85,6 +86,7 @@ export default function App() {
             {/* Root adalah halaman publik. Pengunjung yang sudah login tidak perlu
                 melihat halaman jualan lagi, jadi dialihkan ke dashboard. */}
             <Route path="/" element={<BerandaPublik />} />
+            <Route path="/home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/kanban" element={<ProtectedRoute><KanbanBoard /></ProtectedRoute>} />
             <Route path="/content-bank" element={<ProtectedRoute><ContentBank /></ProtectedRoute>} />

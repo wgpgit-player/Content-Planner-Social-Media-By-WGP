@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { useAuth } from '../context/AuthContext'
 import { useTenantContext } from '../context/TenantContext'
 import { PILLAR_COLOR_CHOICES } from '../config/pillarTemplates'
+import { PLATFORMS } from '../config/platforms'
 import AppShell from '../components/AppShell'
 import Icon from '../components/Icon'
 
@@ -43,8 +45,240 @@ function Section({ title, description, children }) {
   )
 }
 
+// Tab "Akun sosial" — diadaptasi dari tab "Your Brands" di Settings Plann.
+//
+// INI BELUM MENYAMBUNG KE AKUN SUNGGUHAN. Menekan "Hubungkan" hanya mencatat
+// niat tersambung di tabel social_accounts (lihat migrasi
+// akun_sosial_placeholder) supaya tim bisa melihat platform mana yang sudah
+// direncanakan dipakai. OAuth sungguhan ke tiap platform mensyaratkan aplikasi
+// developer terdaftar dan verifikasi bisnis yang hanya bisa dilakukan pemilik
+// akunnya sendiri — itu keputusan yang sudah disepakati untuk ditunda
+// ("UI dulu saja"), bukan sesuatu yang lupa dikerjakan.
+function TabAkunSosial({ tenantId }) {
+  const [akun, setAkun] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [busyKey, setBusyKey] = useState(null)
+
+  useEffect(() => {
+    if (!supabase || !tenantId) { setLoading(false); return }
+    let batal = false
+    supabase
+      .from('social_accounts')
+      .select('platform,status,label,connected_at')
+      .eq('tenant_id', tenantId)
+      .then(({ data }) => { if (!batal) { setAkun(data ?? []); setLoading(false) } })
+    return () => { batal = true }
+  }, [tenantId])
+
+  function statusUntuk(key) {
+    return akun.find((a) => a.platform === key)?.status ?? 'belum'
+  }
+
+  async function toggle(key) {
+    if (!supabase || !tenantId) return
+    const sedang = statusUntuk(key)
+    const statusBaru = sedang === 'terhubung' ? 'belum' : 'terhubung'
+
+    setBusyKey(key)
+    const { error } = await supabase.from('social_accounts').upsert(
+      {
+        tenant_id: tenantId,
+        platform: key,
+        status: statusBaru,
+        connected_at: statusBaru === 'terhubung' ? new Date().toISOString() : null,
+      },
+      { onConflict: 'tenant_id,platform' }
+    )
+    setBusyKey(null)
+    if (error) return
+
+    setAkun((prev) => {
+      const tanpaIni = prev.filter((a) => a.platform !== key)
+      return [...tanpaIni, { platform: key, status: statusBaru }]
+    })
+  }
+
+  if (loading) return <p className="page-subtitle">Memuat...</p>
+
+  return (
+    <Section
+      title="Akun sosial"
+      description="Tandai platform yang dipakai workspace ini. Belum menyambung ke akun sungguhan — ini catatan rencana, bukan login OAuth."
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {PLATFORMS.map((p) => {
+          const status = statusUntuk(p.key)
+          const terhubung = status === 'terhubung'
+          return (
+            <div
+              key={p.key}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 12, padding: '11px 4px',
+                borderBottom: '0.5px solid var(--border)',
+              }}
+            >
+              <span
+                style={{
+                  width: 34, height: 34, borderRadius: 9, background: p.bg, color: p.color,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                }}
+              >
+                <Icon name={p.icon} size={17} />
+              </span>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: 13, fontWeight: 500 }}>{p.label}</p>
+                <p style={{ fontSize: 11, color: terhubung ? 'var(--accent)' : 'var(--text-muted)' }}>
+                  {terhubung ? 'Ditandai terhubung' : 'Belum terhubung'}
+                </p>
+              </div>
+              <button
+                type="button"
+                className={`btn btn-sm${terhubung ? '' : ' btn-primary'}`}
+                onClick={() => toggle(p.key)}
+                disabled={busyKey === p.key}
+              >
+                {busyKey === p.key ? 'Menyimpan...' : terhubung ? 'Putuskan' : 'Hubungkan'}
+              </button>
+            </div>
+          )
+        })}
+      </div>
+    </Section>
+  )
+}
+
+// Tab "Akun saya" — diadaptasi dari "YOUR INFORMATION" dan "SET PASSWORD" di
+// Settings Plann. Nama disimpan lewat RPC update_my_name (lihat migrasi
+// rpc_update_my_name) karena full_name tersimpan per baris tenant_members,
+// bukan satu profil global, dan hanya admin yang boleh UPDATE baris anggota
+// lain — RPC ini sengaja membatasi diri hanya menulis baris milik pemanggil
+// sendiri, di semua workspace sekaligus, supaya namanya konsisten di mana pun.
+function TabAkunSaya() {
+  const { user } = useAuth()
+  const { tenantId } = useTenantContext()
+  const [nama, setNama] = useState('')
+  const [busyNama, setBusyNama] = useState(false)
+  const [pesanNama, setPesanNama] = useState(null)
+
+  useEffect(() => {
+    if (!supabase || !tenantId || !user?.id) return
+    let batal = false
+    supabase
+      .from('tenant_members')
+      .select('full_name')
+      .eq('tenant_id', tenantId)
+      .eq('user_id', user.id)
+      .maybeSingle()
+      .then(({ data }) => { if (!batal && data?.full_name) setNama(data.full_name) })
+    return () => { batal = true }
+  }, [tenantId, user?.id])
+
+  const [sandiBaru, setSandiBaru] = useState('')
+  const [sandiUlang, setSandiUlang] = useState('')
+  const [busySandi, setBusySandi] = useState(false)
+  const [pesanSandi, setPesanSandi] = useState(null)
+
+  async function simpanNama() {
+    const trimmed = nama.trim()
+    if (trimmed.length < 2) { setPesanNama({ type: 'error', text: 'Nama minimal 2 karakter.' }); return }
+
+    setBusyNama(true)
+    setPesanNama(null)
+    const { error } = await supabase.rpc('update_my_name', { p_full_name: trimmed })
+    setBusyNama(false)
+
+    if (error) { setPesanNama({ type: 'error', text: error.message }); return }
+    setPesanNama({ type: 'success', text: 'Nama tersimpan. Mungkin perlu muat ulang halaman lain untuk melihatnya berubah.' })
+  }
+
+  async function gantiSandi() {
+    if (sandiBaru.length < 6) { setPesanSandi({ type: 'error', text: 'Sandi minimal 6 karakter.' }); return }
+    if (sandiBaru !== sandiUlang) { setPesanSandi({ type: 'error', text: 'Konfirmasi sandi tidak cocok.' }); return }
+
+    setBusySandi(true)
+    setPesanSandi(null)
+    const { error } = await supabase.auth.updateUser({ password: sandiBaru })
+    setBusySandi(false)
+
+    if (error) { setPesanSandi({ type: 'error', text: error.message }); return }
+    setSandiBaru('')
+    setSandiUlang('')
+    setPesanSandi({ type: 'success', text: 'Sandi berhasil diganti.' })
+  }
+
+  return (
+    <>
+      <Section title="Informasi kamu" description="Nama ini yang tampil sebagai penanggung jawab di brief dan kartu Kanban.">
+        <label className="field-label" htmlFor="akun-email">Email</label>
+        <input id="akun-email" className="input" value={user?.email ?? ''} disabled style={{ marginBottom: 12, opacity: 0.6 }} />
+
+        <label className="field-label" htmlFor="akun-nama">Nama tampilan</label>
+        <input
+          id="akun-nama"
+          className="input"
+          value={nama}
+          maxLength={80}
+          placeholder="Nama kamu"
+          onChange={(e) => setNama(e.target.value)}
+        />
+
+        {pesanNama && (
+          <p className={`alert alert-${pesanNama.type === 'error' ? 'error' : 'success'}`} style={{ marginTop: 10 }}>
+            {pesanNama.text}
+          </p>
+        )}
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+          <button type="button" className="btn btn-primary btn-sm" onClick={simpanNama} disabled={busyNama}>
+            {busyNama ? 'Menyimpan...' : 'Simpan nama'}
+          </button>
+        </div>
+      </Section>
+
+      <Section title="Ganti sandi" description="Berlaku untuk masuk ke plannersm.co, bukan sandi email.">
+        <label className="field-label" htmlFor="akun-sandi-baru">Sandi baru</label>
+        <input
+          id="akun-sandi-baru"
+          type="password"
+          className="input"
+          value={sandiBaru}
+          onChange={(e) => setSandiBaru(e.target.value)}
+          style={{ marginBottom: 12 }}
+        />
+        <label className="field-label" htmlFor="akun-sandi-ulang">Ulangi sandi baru</label>
+        <input
+          id="akun-sandi-ulang"
+          type="password"
+          className="input"
+          value={sandiUlang}
+          onChange={(e) => setSandiUlang(e.target.value)}
+        />
+
+        {pesanSandi && (
+          <p className={`alert alert-${pesanSandi.type === 'error' ? 'error' : 'success'}`} style={{ marginTop: 10 }}>
+            {pesanSandi.text}
+          </p>
+        )}
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+          <button type="button" className="btn btn-primary btn-sm" onClick={gantiSandi} disabled={busySandi}>
+            {busySandi ? 'Menyimpan...' : 'Ganti sandi'}
+          </button>
+        </div>
+      </Section>
+    </>
+  )
+}
+
+const TABS = [
+  { key: 'workspace', label: 'Ruang kerja', icon: 'business-outline' },
+  { key: 'sosial', label: 'Akun sosial', icon: 'share-social-outline' },
+  { key: 'saya', label: 'Akun saya', icon: 'person-circle-outline' },
+]
+
 export default function Settings() {
   const { tenant, tenantId, isAdmin, patchActiveTenant } = useTenantContext()
+  const [tab, setTab] = useState('workspace')
 
   const [name, setName] = useState('')
   const [accent, setAccent] = useState('#6B5EE0')
@@ -165,9 +399,53 @@ export default function Settings() {
     return <AppShell title="Pengaturan"><p className="page-subtitle">Memuat workspace...</p></AppShell>
   }
 
+  // Tab bar tampil untuk semua orang — "Akun sosial" dan "Akun saya" bukan
+  // milik admin. Hanya ISI tab "Ruang kerja" yang dibatasi ke admin, sama
+  // seperti sebelumnya.
+  const tabBar = (
+    <div style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: '0.5px solid var(--border)' }}>
+      {TABS.map((t) => (
+        <button
+          key={t.key}
+          type="button"
+          onClick={() => setTab(t.key)}
+          className="row-link"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6, padding: '9px 12px', border: 'none',
+            background: 'transparent', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 500,
+            borderBottom: tab === t.key ? '2px solid var(--accent)' : '2px solid transparent',
+            color: tab === t.key ? 'var(--accent)' : 'var(--text-secondary)', marginBottom: -1,
+          }}
+        >
+          <Icon name={t.icon} size={14} />
+          {t.label}
+        </button>
+      ))}
+    </div>
+  )
+
+  if (tab === 'sosial') {
+    return (
+      <AppShell title="Pengaturan" description="Kelola akun dan identitas workspace ini." maxWidth={680}>
+        {tabBar}
+        <TabAkunSosial tenantId={tenantId} />
+      </AppShell>
+    )
+  }
+
+  if (tab === 'saya') {
+    return (
+      <AppShell title="Pengaturan" description="Kelola akun dan identitas workspace ini." maxWidth={680}>
+        {tabBar}
+        <TabAkunSaya />
+      </AppShell>
+    )
+  }
+
   if (!isAdmin) {
     return (
-      <AppShell title="Pengaturan" description="Pengaturan workspace hanya bisa diubah oleh admin.">
+      <AppShell title="Pengaturan" description="Kelola akun dan identitas workspace ini." maxWidth={680}>
+        {tabBar}
         <div className="card">
           <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
             Kamu terdaftar sebagai staff di workspace ini. Minta admin untuk mengubah nama, logo, atau warna brand.
@@ -179,10 +457,12 @@ export default function Settings() {
 
   return (
     <AppShell
-      title="Pengaturan workspace"
-      description="Atur identitas workspace ini. Perubahan berlaku untuk semua anggota tim."
+      title="Pengaturan"
+      description="Kelola akun dan identitas workspace ini."
       maxWidth={680}
     >
+      {tabBar}
+
       {message && (
         <p className={`alert alert-${message.type === 'error' ? 'error' : 'success'}`} style={{ marginBottom: 14 }}>
           {message.text}

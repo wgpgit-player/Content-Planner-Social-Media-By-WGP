@@ -49,12 +49,26 @@
 
 * { box-sizing: border-box; }
 
+/* Layar lebar: HALAMAN TIDAK PERNAH IKUT BERGULIR.
+   ------------------------------------------------------------
+   Sebelumnya <body> yang bergulir, dan sidebar cuma "sticky" — cara itu
+   gampang berantakan begitu ada halaman yang lebih tinggi dari layar
+   (persis yang dilaporkan: bilah atas dan sidebar ikut hilang saat
+   scroll). Diperbaiki dengan pola aplikasi yang lebih tegas: <html> dan
+   <body> dikunci setinggi viewport, dan HANYA panel isi (.app-main /
+   .bare-main / .app-sidebar) yang punya scroll sendiri-sendiri. Bilah
+   atas dan sidebar jadi benar-benar diam, bukan sekadar "sticky".
+   Di ponsel (lihat media query di bawah) polanya beda dan tetap dipakai
+   body yang bergulir, karena bilah atas/tab bar di sana position:fixed. */
+html, body, #root { height: 100%; }
+
 body {
   margin: 0;
   background: var(--bg-page);
   color: var(--text-primary);
   font-size: 14px;
   line-height: 1.5;
+  overflow: hidden;
 }
 
 h1, h2, h3, h4, p { margin: 0; }
@@ -341,18 +355,28 @@ h1, h2, h3, h4, p { margin: 0; }
 
 .app-shell {
   background: var(--bg-page);
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   padding: 16px;
   display: grid;
   grid-template-columns: 190px minmax(0, 1fr);
   /* Baris pertama untuk bilah atas (membentang dua kolom), baris kedua
-     sidebar + konten seperti sebelumnya. */
-  grid-template-rows: auto 1fr;
+     sidebar + konten. Kedua baris dikunci (bukan align-items: start lagi)
+     supaya baris kedua benar-benar dapat tinggi 1fr yang pasti, dan isinya
+     (.app-sidebar, .app-main) bisa menggulir sendiri di dalam tinggi itu. */
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 16px;
-  align-items: start;
 }
 
 .topbar-desktop-wrap { grid-column: 1 / -1; }
+
+.app-sidebar-wrap { min-height: 0; height: 100%; }
+
+.app-main {
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
 
 /* ---------- Bilah navigasi atas (layar lebar) ----------
    Diadaptasi dari pola Plann: tab tujuan yang paling sering dibuka ada di
@@ -444,9 +468,7 @@ h1, h2, h3, h4, p { margin: 0; }
   border-radius: 16px;
   padding: 16px 12px;
   width: 190px;
-  position: sticky;
-  top: 16px;
-  max-height: calc(100vh - 32px);
+  height: 100%;
   overflow-y: auto;
   overscroll-behavior: contain;
   display: flex;
@@ -460,6 +482,301 @@ h1, h2, h3, h4, p { margin: 0; }
   gap: 14px;
   margin-bottom: 18px;
   padding: 4px 2px;
+}
+
+/* ============================================================
+   MODE BARE — halaman fokus penuh tanpa sidebar (Composer)
+   ------------------------------------------------------------
+   Dipakai lewat <AppShell bare>. Satu bilah tipis di atas (tombol
+   kembali + judul + aksi), sisanya milik halaman sepenuhnya —
+   ala Plann Create, yang sengaja tidak menaruh navigasi di sekitar
+   ruang menyusun konten.
+   ============================================================ */
+.app-shell-bare {
+  background: var(--bg-page);
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.bare-topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: var(--surface-2);
+  border-bottom: 0.5px solid var(--border);
+  flex-shrink: 0;
+}
+
+.bare-kembali {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 0.5px solid var(--border);
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.bare-kembali:hover { background: var(--accent-bg); color: var(--accent); }
+
+.bare-judul { flex: 1; min-width: 0; }
+.bare-judul-teks { font-size: 14.5px; font-weight: 600; }
+.bare-judul-sub { font-size: 11.5px; color: var(--text-muted); margin-top: 1px; }
+.bare-aksi { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+.bare-main {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 18px 20px 32px;
+}
+
+@media (max-width: 900px) {
+  .app-shell-bare { height: auto; overflow: visible; }
+  .bare-main { height: auto; overflow-y: visible; padding: 14px 14px 90px; }
+}
+
+/* ============================================================
+   Composer — susun sambil melihat pratinjau
+   ============================================================ */
+
+/* Strip tanggal satu minggu di atas Composer. */
+.strip-hari {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+}
+
+.strip-hari-sel {
+  flex: 1;
+  min-width: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 4px;
+  border-radius: 11px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  font-family: inherit;
+}
+
+.strip-hari-sel:hover { background: var(--surface-1); }
+
+.strip-hari-sel.aktif {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.strip-hari-nama { font-size: 10px; color: var(--text-muted); }
+.strip-hari-sel.aktif .strip-hari-nama { color: var(--accent-text); opacity: 0.85; }
+
+.strip-hari-angka { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.strip-hari-sel.aktif .strip-hari-angka { color: var(--accent-text); }
+
+.strip-hari-titik {
+  position: absolute;
+  bottom: 3px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.strip-hari-sel.aktif .strip-hari-titik { background: var(--accent-text); }
+
+/* Baris ikon platform bulat, ala baris "Connect" di Plann — bukan chip
+   berlabel, supaya ringkas dan familiar (satu ikon = satu jejaring). */
+.platform-ikon-baris {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.platform-ikon-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.12s ease;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.platform-ikon-btn:hover { transform: translateY(-1px); }
+
+.platform-ikon-btn.aktif {
+  border-color: var(--platform-warna, var(--accent));
+  background: var(--platform-latar, var(--accent-bg));
+  color: var(--platform-warna, var(--accent));
+}
+
+.platform-ikon-centang {
+  position: absolute;
+  bottom: -3px;
+  right: -3px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--surface-2);
+}
+
+.compose-caption-utama {
+  width: 100%;
+  min-height: 190px;
+  border: 0.5px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  font-size: 14px;
+  line-height: 1.6;
+  background: var(--surface-2);
+  resize: vertical;
+}
+
+.compose-caption-utama:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* Bungkus telepon di kanan halaman Composer. */
+.compose-pratinjau {
+  position: sticky;
+  top: 84px;
+}
+
+.telepon {
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto;
+  background: #0E0E12;
+  border-radius: 34px;
+  padding: 10px;
+  box-shadow: var(--shadow-md);
+}
+
+.telepon-kepala {
+  display: flex;
+  justify-content: center;
+  padding: 6px 0 4px;
+}
+
+.telepon-takik {
+  width: 70px;
+  height: 16px;
+  border-radius: 999px;
+  background: #0E0E12;
+  display: block;
+}
+
+.telepon-isi {
+  background: var(--surface-2);
+  border-radius: 24px;
+  overflow: hidden;
+  min-height: 420px;
+}
+
+/* Grid ala Instagram, dipakai di GridPreview.jsx dan pratinjau Composer. */
+.ig-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2px;
+}
+
+.ig-sel {
+  aspect-ratio: 1;
+  border-radius: 3px;
+  border: 1.5px solid transparent;
+  background: var(--surface-1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  position: relative;
+  cursor: grab;
+  text-align: left;
+  font-family: inherit;
+  padding: 5px;
+}
+
+.ig-sel.terpilih { box-shadow: 0 0 0 2px var(--accent); }
+
+.ig-sel-gambar {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+
+.ig-sel-atas {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 1;
+  position: relative;
+}
+
+.ig-sel-tanggal {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--surface-2) 80%, transparent);
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+.ig-sel-judul {
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.3;
+  z-index: 1;
+  position: relative;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ig-sel-bawah {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9px;
+  z-index: 1;
+  position: relative;
+}
+
+.bar-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-1);
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 999px;
 }
 
 /* ============================================================
@@ -498,6 +815,12 @@ h1, h2, h3, h4, p { margin: 0; }
   }
 
   body {
+    /* Di ponsel polanya kebalikan dari layar lebar: bilah atas dan tab bar
+       memakai position:fixed (lihat di bawah), jadi justru <body>-lah yang
+       harus bergulir seperti halaman biasa supaya isinya lewat di BAWAH
+       elemen yang fixed itu. */
+    overflow: auto;
+
     /* Sorotan abu-abu saat mengetuk tautan langsung membocorkan bahwa
        ini halaman web. Dimatikan, dan digantikan umpan balik tekan
        sendiri di bawah — kalau tidak ada penggantinya, aplikasi justru
@@ -507,6 +830,8 @@ h1, h2, h3, h4, p { margin: 0; }
        termasuk tab bar yang seharusnya menempel di bawah. */
     overscroll-behavior-y: none;
   }
+
+  .app-shell { height: auto; overflow: visible; }
 
   /* Navigasi bukan teks bacaan. Tanpa ini, menekan agak lama pada
      label tab memunculkan gagang seleksi teks. */
@@ -570,6 +895,12 @@ h1, h2, h3, h4, p { margin: 0; }
   /* ---------- Isi halaman & judul besar ---------- */
 
   .app-main {
+    /* Di layar lebar .app-main punya tinggi terkunci dan scroll sendiri
+       (lihat aturan dasarnya). Di ponsel body-lah yang bergulir (lihat
+       komentar di bilah atas di atas), jadi kuncian itu dilepas lagi. */
+    height: auto;
+    overflow-y: visible;
+
     /* Bilah atas dan tab bar keduanya melayang di atas halaman, jadi isi
        halaman harus diberi jarak sendiri di kedua ujung. Tanpa itu, baris
        pertama tersembunyi di balik bilah atas dan baris terakhir tertutup
@@ -1110,6 +1441,70 @@ h1, h2, h3, h4, p { margin: 0; }
   .compose-dua,
   .strategi-dua,
   .media-dua { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Home.jsx: tiga kartu pintasan ala Plann. */
+.home-kartu-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+@media (max-width: 900px) {
+  .home-kartu-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+.home-kartu {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  gap: 8px;
+  padding: 18px;
+  border: 0.5px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-0);
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.home-kartu:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.home-kartu-ikon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.home-kartu-judul {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.home-kartu-deskripsi {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  flex: 1;
+}
+
+.home-kartu-aksi {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--accent);
+  margin-top: 4px;
 }
 
 @media (max-width: 900px) {

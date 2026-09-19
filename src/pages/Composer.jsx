@@ -190,9 +190,9 @@ export default function Composer() {
 
   return (
     <AppShell
+      bare
       title="Susun konten"
-      description="Menyusun sambil melihat bagaimana feed-nya nanti."
-      maxWidth={1100}
+      description={`${BULAN[awalMinggu.getMonth()]} ${awalMinggu.getFullYear()}`}
       actions={
         <button type="button" className="btn btn-primary btn-sm" onClick={simpan} disabled={sibuk}>
           <Icon name="checkmark-outline" size={15} />
@@ -209,33 +209,20 @@ export default function Composer() {
       <div className="compose-dua">
         {/* ---------- Kiri: menyusun ---------- */}
         <div>
-          {/* Pemilih tanggal berupa satu baris minggu. Kalender penuh terlalu
-              besar untuk keputusan yang hampir selalu "minggu ini atau
-              minggu depan". */}
-          <div className="card" style={{ marginBottom: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-              <button
-                type="button"
-                className="btn btn-sm btn-ghost"
-                onClick={() => setAwalMinggu((d) => addDays(d, -7))}
-                aria-label="Minggu sebelumnya"
-              >
-                <Icon name="chevron-back-outline" size={15} />
-              </button>
-              <p style={{ fontSize: 13, fontWeight: 600, flex: 1, textAlign: 'center' }}>
-                {BULAN[awalMinggu.getMonth()]} {awalMinggu.getFullYear()}
-              </p>
-              <button
-                type="button"
-                className="btn btn-sm btn-ghost"
-                onClick={() => setAwalMinggu((d) => addDays(d, 7))}
-                aria-label="Minggu berikutnya"
-              >
-                <Icon name="chevron-forward" size={15} />
-              </button>
-            </div>
-
-            <div className="strip-hari">
+          {/* Strip tanggal satu minggu — tanpa bungkus kartu, supaya jadi
+              bagian dari alur, bukan formulir terpisah. Ketuk panah untuk
+              pindah minggu, ketuk tanggal untuk memilihnya. */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14 }}>
+            <button
+              type="button"
+              className="btn btn-sm btn-ghost"
+              onClick={() => setAwalMinggu((d) => addDays(d, -7))}
+              aria-label="Minggu sebelumnya"
+              style={{ flexShrink: 0 }}
+            >
+              <Icon name="chevron-back-outline" size={15} />
+            </button>
+            <div className="strip-hari" style={{ flex: 1 }}>
               {tanggalMinggu.map((d) => {
                 const iso = isoDate(d)
                 const aktif = iso === tanggal
@@ -254,29 +241,23 @@ export default function Composer() {
                 )
               })}
             </div>
-
-            <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <label className="field-label" htmlFor="cmp-tanggal">Tanggal tayang</label>
-                <input id="cmp-tanggal" className="input" type="date" value={tanggal}
-                  onChange={(e) => setTanggal(e.target.value)} />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <label className="field-label" htmlFor="cmp-jam">Jam</label>
-                <input id="cmp-jam" className="input" type="time" value={jam}
-                  onChange={(e) => setJam(e.target.value)} />
-              </div>
-            </div>
+            <button
+              type="button"
+              className="btn btn-sm btn-ghost"
+              onClick={() => setAwalMinggu((d) => addDays(d, 7))}
+              aria-label="Minggu berikutnya"
+              style={{ flexShrink: 0 }}
+            >
+              <Icon name="chevron-forward" size={15} />
+            </button>
           </div>
 
-          <div className="card" style={{ marginBottom: 12 }}>
-            <label className="field-label">Platform</label>
-            <p className="field-hint" style={{ marginTop: -2, marginBottom: 9 }}>
-              Pilih lebih dari satu kalau kontennya juga akan tayang di sana.
-              Tiap platform jadi konten tersendiri supaya caption dan jamnya
-              bisa berbeda.
-            </p>
-            <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
+          {/* Baris ikon platform bulat ala Plann: satu ketukan = satu
+              jejaring, warna aslinya jadi penanda aktif/nonaktif. Jam dan
+              tanggal ada di sebelahnya supaya "kapan" dan "ke mana" dilihat
+              sekali pandang, sebelum mulai menulis caption. */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16, flexWrap: 'wrap' }}>
+            <div className="platform-ikon-baris">
               {PLATFORMS.map((p) => {
                 const aktif = platformTerpilih.includes(p.key)
                 return (
@@ -284,25 +265,83 @@ export default function Composer() {
                     key={p.key}
                     type="button"
                     onClick={() => togglePlatform(p.key)}
-                    className="chip"
-                    style={{
-                      cursor: 'pointer',
-                      border: `1px solid ${aktif ? p.color : 'var(--border)'}`,
-                      background: aktif ? p.bg : 'var(--surface-2)',
-                      color: aktif ? p.color : 'var(--text-secondary)',
-                      fontFamily: 'inherit',
-                      padding: '6px 11px',
-                    }}
+                    className={`platform-ikon-btn${aktif ? ' aktif' : ''}`}
+                    style={{ '--platform-warna': p.color, '--platform-latar': p.bg }}
                     aria-pressed={aktif}
+                    title={p.label}
                   >
-                    <Icon name={p.icon} size={14} /> {p.label}
+                    <Icon name={p.icon} size={18} />
+                    {aktif && (
+                      <span className="platform-ikon-centang">
+                        <Icon name="checkmark" size={9} />
+                      </span>
+                    )}
                   </button>
                 )
               })}
             </div>
+
+            <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
+              <input
+                aria-label="Tanggal tayang"
+                className="input"
+                type="date"
+                value={tanggal}
+                onChange={(e) => setTanggal(e.target.value)}
+                style={{ width: 138 }}
+              />
+              <input
+                aria-label="Jam tayang"
+                className="input"
+                type="time"
+                value={jam}
+                onChange={(e) => setJam(e.target.value)}
+                style={{ width: 100 }}
+              />
+            </div>
           </div>
 
-          <div className="card" style={{ marginBottom: 12 }}>
+          {/* Caption jadi elemen utama layar, bukan salah satu kartu di
+              antara yang lain — sejalan dengan bagaimana Plann menaruh
+              kotak tulis besar tepat di bawah baris ikon platform. */}
+          <textarea
+            id="cmp-caption"
+            className="textarea compose-caption-utama"
+            rows={9}
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+            placeholder={`Halo, tulis captionnya di sini${judul ? ` untuk "${judul}"` : ''}...`}
+          />
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 8, marginBottom: 18 }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+              <Icon name="pricetag-outline" size={12} color="var(--text-muted)" />
+              <Penghitung nilai={jumlahHashtag} batas={BATAS_HASHTAG} label="Jumlah hashtag" />
+            </span>
+            <Penghitung nilai={caption.length} batas={BATAS_CAPTION} label="Jumlah karakter" />
+
+            {setHashtag.length > 0 && (
+              <button type="button" className="btn btn-sm btn-ghost" onClick={() => setPilihHashtag(true)}>
+                <Icon name="pricetags-outline" size={13} /> Sisipkan hashtag
+              </button>
+            )}
+          </div>
+
+          {jumlahHashtag > BATAS_HASHTAG && (
+            <p className="alert alert-error" style={{ marginBottom: 12 }}>
+              Instagram hanya membaca 30 hashtag pertama. Sisanya diabaikan tanpa peringatan apa pun.
+            </p>
+          )}
+          {caption.length > BATAS_CAPTION && (
+            <p className="alert alert-error" style={{ marginBottom: 12 }}>
+              Caption Instagram terpotong di 2.200 karakter.
+            </p>
+          )}
+
+          {/* Detail yang tidak setiap kali diisi disatukan di satu kartu
+              ringkas paling bawah, bukan tiga kartu terpisah — jelas ada di
+              sana kalau dibutuhkan, tidak merebut perhatian kalau tidak. */}
+          <div className="card">
             <label className="field-label" htmlFor="cmp-judul">Judul</label>
             <input
               id="cmp-judul"
@@ -313,70 +352,27 @@ export default function Composer() {
               style={{ marginBottom: 12 }}
             />
 
-            <label className="field-label" htmlFor="cmp-pillar">Content pillar</label>
-            <select id="cmp-pillar" className="select" value={pillarId}
-              onChange={(e) => setPillarId(e.target.value)} style={{ marginBottom: 12 }}>
-              <option value="">Belum dipilih</option>
-              {pillars.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-
-            <label className="field-label" htmlFor="cmp-aset">Tautan aset</label>
-            <input
-              id="cmp-aset"
-              className="input"
-              type="url"
-              value={assetUrl}
-              onChange={(e) => setAssetUrl(e.target.value)}
-              placeholder="Tempel tautan Google Drive, Canva, atau Dropbox"
-            />
-            <p className="field-hint">
-              Untuk materi yang tinggal di Canva atau Drive. Kalau gambarnya
-              perlu <strong>dilihat saat ditinjau</strong>, unggah di halaman
-              briefnya setelah konten ini dibuat — tautan Canva tidak bisa
-              ditampilkan sebagai gambar.
-            </p>
-          </div>
-
-          <div className="card">
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 5 }}>
-              <label className="field-label" htmlFor="cmp-caption" style={{ marginBottom: 0 }}>Caption</label>
-              <span style={{ marginLeft: 'auto', display: 'flex', gap: 10, alignItems: 'center' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                  <Icon name="pricetag-outline" size={12} color="var(--text-muted)" />
-                  <Penghitung nilai={jumlahHashtag} batas={BATAS_HASHTAG} label="Jumlah hashtag" />
-                </span>
-                <Penghitung nilai={caption.length} batas={BATAS_CAPTION} label="Jumlah karakter" />
-              </span>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <label className="field-label" htmlFor="cmp-pillar">Content pillar</label>
+                <select id="cmp-pillar" className="select" value={pillarId}
+                  onChange={(e) => setPillarId(e.target.value)}>
+                  <option value="">Belum dipilih</option>
+                  {pillars.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <label className="field-label" htmlFor="cmp-aset">Tautan aset</label>
+                <input
+                  id="cmp-aset"
+                  className="input"
+                  type="url"
+                  value={assetUrl}
+                  onChange={(e) => setAssetUrl(e.target.value)}
+                  placeholder="Canva / Drive / Dropbox"
+                />
+              </div>
             </div>
-
-            <textarea
-              id="cmp-caption"
-              className="textarea"
-              rows={8}
-              value={caption}
-              onChange={(e) => setCaption(e.target.value)}
-              placeholder="Tulis captionnya di sini. Boleh diisi belakangan."
-              style={{ minHeight: 150 }}
-            />
-
-            {jumlahHashtag > BATAS_HASHTAG && (
-              <p className="alert alert-error" style={{ marginTop: 9 }}>
-                Instagram hanya membaca 30 hashtag pertama. Sisanya diabaikan
-                tanpa peringatan apa pun.
-              </p>
-            )}
-            {caption.length > BATAS_CAPTION && (
-              <p className="alert alert-error" style={{ marginTop: 9 }}>
-                Caption Instagram terpotong di 2.200 karakter.
-              </p>
-            )}
-
-            {setHashtag.length > 0 && (
-              <button type="button" className="btn btn-sm" style={{ marginTop: 10 }}
-                onClick={() => setPilihHashtag(true)}>
-                <Icon name="pricetags-outline" size={14} /> Sisipkan set hashtag
-              </button>
-            )}
           </div>
         </div>
 
@@ -388,7 +384,7 @@ export default function Composer() {
             </div>
 
             <div className="telepon-isi">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px 12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 12px 10px' }}>
                 <div
                   style={{
                     width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
@@ -409,7 +405,7 @@ export default function Composer() {
                 </div>
               </div>
 
-              <div className="ig-grid" style={{ gap: 3, padding: '0 3px 10px' }}>
+              <div className="ig-grid" style={{ padding: '0 2px 2px' }}>
                 {feedDenganDraf.slice(0, 12).map((item) => {
                   const p = pillarById[item.pillar_id]
                   const warna = p?.color ?? 'var(--border-strong)'
@@ -419,9 +415,9 @@ export default function Composer() {
                       className="ig-sel"
                       style={{
                         background: `color-mix(in srgb, ${warna} 16%, #fff)`,
-                        border: item.draf ? '1.5px dashed var(--accent)' : '1.5px solid transparent',
+                        borderColor: item.draf ? 'var(--accent)' : 'transparent',
+                        borderStyle: item.draf ? 'dashed' : 'solid',
                         cursor: 'default',
-                        padding: 6,
                       }}
                     >
                       <span className="ig-sel-atas">
@@ -430,7 +426,7 @@ export default function Composer() {
                           <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--accent)' }}>BARU</span>
                         )}
                       </span>
-                      <span className="ig-sel-judul" style={{ fontSize: 10 }}>{item.title}</span>
+                      <span className="ig-sel-judul">{item.title}</span>
                     </div>
                   )
                 })}
