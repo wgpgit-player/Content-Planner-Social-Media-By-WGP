@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import AppShell from '../components/AppShell'
 import Sheet from '../components/Sheet'
 import Icon from '../components/Icon'
@@ -64,12 +64,20 @@ export default function Composer() {
   const { user } = useAuth()
   const { tenantId } = useTenantContext()
 
-  const [awalMinggu, setAwalMinggu] = useState(() => startOfWeek())
-  const [tanggal, setTanggal] = useState(() => todayIso())
+  // Dipakai saat datang dari klik "ide konten harian" di kalender
+  // (BarisAgenda.jsx): ?ide=teks nya&tanggal=YYYY-MM-DD. Dibaca sekali saja
+  // saat halaman terbuka, bukan disinkron terus-menerus — begitu orang mulai
+  // mengetik sendiri, prefill ini tidak boleh menimpanya lagi.
+  const [searchParams] = useSearchParams()
+  const ideAwal = searchParams.get('ide')
+  const tanggalAwal = searchParams.get('tanggal')
+
+  const [awalMinggu, setAwalMinggu] = useState(() => startOfWeek(tanggalAwal ? new Date(`${tanggalAwal}T00:00:00`) : undefined))
+  const [tanggal, setTanggal] = useState(() => tanggalAwal || todayIso())
   const [jam, setJam] = useState('')
   const [platformTerpilih, setPlatformTerpilih] = useState(['instagram'])
   const [pillarId, setPillarId] = useState('')
-  const [judul, setJudul] = useState('')
+  const [judul, setJudul] = useState(() => ideAwal || '')
   const [caption, setCaption] = useState('')
   const [assetUrl, setAssetUrl] = useState('')
 

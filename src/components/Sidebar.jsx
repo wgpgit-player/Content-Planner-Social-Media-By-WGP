@@ -11,6 +11,11 @@ import Icon from './Icon'
 // kelihatan arah roadmap-nya) tapi tidak bisa diklik dan diredupkan.
 // `adminOnly: true` berarti item hanya muncul untuk anggota ber-role admin
 // di workspace yang sedang aktif.
+// `diBilahAtas: true` berarti item ini dipindah ke bilah navigasi atas
+// (components/Topbar.jsx) di layar lebar — pola yang dipakai Plann, di mana
+// tujuan yang paling sering dibuka (Home, Create, Calendar, dst) ada di
+// bilah horizontal atas, dan sidebar kiri isinya alat-alat pendukung saja.
+// Di ponsel penanda ini diabaikan; BottomNav.jsx punya daftar tab sendiri.
 //
 // Ikon memakai penamaan Ionicons v7 (https://ionic.io/ionicons).
 
@@ -22,12 +27,12 @@ export const NAV_GROUPS = [
   {
     label: 'Utama',
     items: [
-      { icon: 'grid-outline', label: 'Dashboard', path: '/dashboard' },
-      { icon: 'create-outline', label: 'Susun konten', path: '/compose' },
+      { icon: 'grid-outline', label: 'Dashboard', path: '/dashboard', diBilahAtas: true },
+      { icon: 'create-outline', label: 'Susun konten', path: '/compose', diBilahAtas: true },
+      { icon: 'calendar-outline', label: 'Content calendar', path: '/content-calendar', diBilahAtas: true },
+      { icon: 'apps-outline', label: 'Grid pratinjau', path: '/grid', diBilahAtas: true },
+      { icon: 'shield-checkmark-outline', label: 'Persetujuan', path: '/approvals', diBilahAtas: true },
       { icon: 'albums-outline', label: 'Project tracker', path: '/kanban' },
-      { icon: 'calendar-outline', label: 'Content calendar', path: '/content-calendar' },
-      { icon: 'apps-outline', label: 'Grid pratinjau', path: '/grid' },
-      { icon: 'shield-checkmark-outline', label: 'Persetujuan', path: '/approvals' },
     ],
   },
   {
@@ -40,6 +45,7 @@ export const NAV_GROUPS = [
       { icon: 'fish-outline', label: 'Hook library', path: '/hook-library' },
       { icon: 'megaphone-outline', label: 'CTA library', path: '/cta-library' },
       { icon: 'pricetags-outline', label: 'Set hashtag', path: '/hashtag-sets' },
+      { icon: 'images-outline', label: 'Media Collections', path: '/media' },
     ],
   },
   {
@@ -91,7 +97,10 @@ export default function Sidebar() {
       <TenantSwitcher />
 
       {NAV_GROUPS.map((group) => {
-        const items = group.items.filter((i) => !i.adminOnly || isAdmin)
+        // Item bertanda diBilahAtas sudah tampil di Topbar (layar lebar),
+        // jadi tidak diulang di sini — sidebar jadi murni "alat", seperti
+        // grup TOOLS di Plann, bukan daftar dua kali untuk halaman yang sama.
+        const items = group.items.filter((i) => !i.adminOnly || isAdmin).filter((i) => !i.diBilahAtas)
         if (items.length === 0) return null
 
         return (

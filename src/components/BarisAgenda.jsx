@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Sheet from './Sheet'
 import Icon from './Icon'
 import { supabase } from '../lib/supabaseClient'
@@ -26,6 +27,7 @@ import { isoDate } from '../lib/dates'
 export default function BarisAgenda({ tanggalTerlihat, agendaPerTanggal, onBerubah }) {
   const { user } = useAuth()
   const { tenantId } = useTenantContext()
+  const navigate = useNavigate()
 
   const [detail, setDetail] = useState(null)
   const [formTerbuka, setFormTerbuka] = useState(false)
@@ -116,15 +118,27 @@ export default function BarisAgenda({ tanggalTerlihat, agendaPerTanggal, onBerub
                   <button
                     key={a.id}
                     type="button"
-                    className="agenda-pil"
-                    onClick={() => setDetail(a)}
+                    className={`agenda-pil${a.saran ? ' agenda-pil-saran' : ''}`}
+                    onClick={() => {
+                      // Ide konten harian bukan sesuatu untuk "dilihat detailnya"
+                      // seperti hari penting atau kegiatan — satu-satunya hal
+                      // yang masuk akal dilakukan dengan ide adalah memakainya,
+                      // jadi langsung ke Susun konten dengan judul dan tanggal
+                      // sudah terisi, bukan membuka sheet.
+                      if (a.saran) {
+                        navigate(`/compose?ide=${encodeURIComponent(a.judul)}&tanggal=${iso}`)
+                        return
+                      }
+                      setDetail(a)
+                    }}
                     style={{
                       background: `color-mix(in srgb, ${a.warna} 13%, #fff)`,
                       color: a.warna,
                     }}
-                    title={a.judul}
+                    title={a.saran ? `Ide konten: ${a.judul} — klik untuk memakainya` : a.judul}
                   >
                     {a.jenis === 'event' && <Icon name={a.icon} size={10} color={a.warna} />}
+                    {a.saran && <Icon name="bulb-outline" size={10} color={a.warna} />}
                     <span className="agenda-pil-teks">{a.judul}</span>
                   </button>
                 ))

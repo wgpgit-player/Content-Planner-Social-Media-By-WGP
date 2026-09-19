@@ -1,4 +1,5 @@
 import Sidebar from './Sidebar'
+import Topbar from './Topbar'
 import BottomNav from './BottomNav'
 import { useTenantContext } from '../context/TenantContext'
 import { TenantAvatar } from './TenantSwitcher'
@@ -31,6 +32,12 @@ export default function AppShell({ title, description, actions, children, maxWid
       <div className="app-topbar">
         <TenantAvatar tenant={tenant} size={26} />
         <span className="app-topbar-nama">{tenant?.name ?? 'plannersm.co'}</span>
+      </div>
+
+      {/* Hanya tampil di layar lebar — lihat komentar di Topbar.jsx. Di
+          ponsel bilah atas yang dipakai tetap yang di atas (.app-topbar). */}
+      <div className="topbar-desktop-wrap">
+        <Topbar />
       </div>
 
       <div className="app-sidebar-wrap">

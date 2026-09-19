@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabaseClient'
 import { useTenantContext } from '../context/TenantContext'
-import { isoDate } from './dates'
+import { isoDate, dayOfYear } from './dates'
 
 // Agenda: hari penting dan kegiatan workspace, digabung per tanggal.
 //
@@ -39,6 +39,7 @@ export function useAgenda(tanggalTerlihat) {
 
   const [hariPenting, setHariPenting] = useState([])
   const [events, setEvents] = useState([])
+  const [ideHarian, setIdeHarian] = useState([])
   const [loading, setLoading] = useState(true)
 
   // Rentang dihitung dari tanggal yang terlihat. Dipisah jadi dua nilai
@@ -51,7 +52,7 @@ export function useAgenda(tanggalTerlihat) {
     if (!supabase || !tenantId || !mulai) { setLoading(false); return }
     setLoading(true)
 
-    const [a, b] = await Promise.all([
+    const [a, b, c] = await Promise.all([
       supabase.from('hari_penting').select('id,nama,kategori,bulan,tanggal,tanggal_pasti,perkiraan,warna,catatan'),
       supabase.from('calendar_events')
         .select('id,title,event_type,event_date,end_date,note')
@@ -60,10 +61,16 @@ export function useAgenda(tanggalTerlihat) {
         // Kegiatan yang membentang beberapa hari tetap ikut walau tanggal
         // mulainya sebelum rentang yang terlihat.
         .or(`end_date.gte.${mulai},and(end_date.is.null,event_date.gte.${mulai})`),
+      // Katalog kecil (30 baris), sama untuk semua workspace. Diambil ulang
+      // tiap kali rentang tanggal berubah sama seperti hari_penting — cukup
+      // murah untuk tabel sekecil ini, dan lebih sederhana daripada menyimpan
+      // cache-nya sendiri di sini.
+      supabase.from('ide_konten_harian').select('id,teks,urutan').order('urutan'),
     ])
 
     setHariPenting(a.data ?? [])
     setEvents(b.data ?? [])
+    setIdeHarian(c.data ?? [])
     setLoading(false)
   }, [tenantId, mulai, selesai])
 
@@ -114,10 +121,29 @@ export function useAgenda(tanggalTerlihat) {
           })
         }
       }
+
+      // Kalau hari itu belum punya apa-apa (bukan hari penting, bukan
+      // kegiatan), isi dengan satu ide konten harian — dipilih deterministik
+      // dari hari-ke-berapa-dalam-setahun, supaya tanggal yang sama selalu
+      // menunjukkan ide yang sama, dan idenya berbeda dari hari ke hari.
+      // Ini yang membuat kalender "tidak pernah kosong" ala Plann, tapi
+      // ditandai jelas sebagai SARAN (redup, ikon bohlam) — bukan kegiatan
+      // sungguhan, supaya tidak tertukar dengan agenda asli.
+      if (!peta[iso] && ideHarian.length > 0) {
+        const idx = dayOfYear(d) % ideHarian.length
+        const ide = ideHarian[idx]
+        tambah(iso, {
+          id: `i-${ide.id}-${iso}`,
+          jenis: 'ide',
+          judul: ide.teks,
+          warna: '#8A8A93',
+          saran: true,
+        })
+      }
     }
 
     return peta
-  }, [tanggalTerlihat, hariPenting, events])
+  }, [tanggalTerlihat, hariPenting, events, ideHarian])
 
   return { agendaPerTanggal, events, loading, reload: muat }
 }

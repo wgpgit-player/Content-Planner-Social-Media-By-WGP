@@ -24,6 +24,37 @@ import { isoDate, startOfWeek, todayIso } from '../lib/dates'
 // mencatat apa yang sedang diuji dan apa yang ternyata berhasil, supaya
 // keputusan bulan depan tidak diambil dari ingatan.
 
+// Template pola siap pakai, ala "Start with a template" di Plann.
+//
+// Disimpan sebagai URUTAN NAMA pillar, bukan urutan id — karena template ini
+// sama untuk semua workspace, sedangkan id pillar hanya ada setelah dibuat
+// di workspace masing-masing. Saat template dipakai, tiap nama dicocokkan
+// ke pillar yang sudah ada (tidak peka besar-kecil huruf); yang belum ada
+// dibuatkan otomatis dengan warna dari WARNA_TEMPLATE, supaya orang tidak
+// perlu bikin pillar satu-satu dulu sebelum bisa mencoba pola ini.
+const TEMPLATE_POLA = [
+  {
+    key: 'seimbang',
+    nama: 'Ritme mingguan seimbang',
+    deskripsi: 'Campuran rata: edukasi, produk, cerita, testimoni, komunitas.',
+    urutan: ['Edukasi', 'Produk', 'Cerita', 'Testimoni', 'Komunitas'],
+  },
+  {
+    key: 'jualan',
+    nama: 'Fokus jualan',
+    deskripsi: 'Lebih berat ke produk dan promosi, diselingi testimoni.',
+    urutan: ['Produk', 'Promosi', 'Testimoni', 'Produk', 'Edukasi', 'Promosi'],
+  },
+  {
+    key: 'kepercayaan',
+    nama: 'Bangun kepercayaan',
+    deskripsi: 'Lebih banyak edukasi dan di balik layar, promosi diperkecil.',
+    urutan: ['Edukasi', 'Dibalik Layar', 'Testimoni', 'Edukasi', 'Komunitas'],
+  },
+]
+
+const WARNA_TEMPLATE = ['#6B5EE0', '#2563A8', '#A33333', '#3E7C8C', '#B4467F', '#9A5B0E']
+
 function seninDariMinggu(d = new Date()) {
   // startOfWeek() memulai dari Minggu. Focus notes memakai Senin karena
   // itu yang orang maksud dengan "minggu ini" saat bicara kerja.
@@ -49,6 +80,8 @@ export default function Strategy() {
   const [pesan, setPesan] = useState(null)
   const [dipilih, setDipilih] = useState(null)
   const [formTanam, setFormTanam] = useState(false)
+  const [formTemplate, setFormTemplate] = useState(false)
+  const [menerapkanTemplate, setMenerapkanTemplate] = useState(null)
 
   const [mulai, setMulai] = useState(() => todayIso())
   const [jarak, setJarak] = useState(2)
@@ -126,6 +159,57 @@ export default function Strategy() {
       return baru
     })
     setDipilih(null)
+  }
+
+  // Menerapkan template: cocokkan tiap nama di urutan template ke pillar
+  // yang sudah ada (tidak peka besar-kecil huruf); yang belum ada dibuatkan
+  // langsung, supaya polanya bisa langsung diisi tanpa jeda bikin pillar
+  // satu-satu dulu. Pillar baru dimasukkan ke daftar pillars di layar tanpa
+  // perlu muat ulang semuanya.
+  async function pakaiTemplate(tpl) {
+    setMenerapkanTemplate(tpl.key)
+    setPesan(null)
+
+    let pillarSekarang = pillars
+    const polaBaru = []
+    let warnaIndeks = pillarSekarang.length
+
+    for (const namaIni of tpl.urutan) {
+      const cocok = pillarSekarang.find((p) => p.name.toLowerCase() === namaIni.toLowerCase())
+      if (cocok) {
+        polaBaru.push(cocok.id)
+        continue
+      }
+
+      const warna = WARNA_TEMPLATE[warnaIndeks % WARNA_TEMPLATE.length]
+      warnaIndeks += 1
+
+      const { data, error } = await supabase
+        .from('content_pillars')
+        .insert({ tenant_id: tenantId, name: namaIni, color: warna })
+        .select('id,name,color,description')
+        .single()
+
+      if (error) {
+        setPesan({ tipe: 'error', teks: `Gagal membuat pillar "${namaIni}": ${error.message}` })
+        setMenerapkanTemplate(null)
+        return
+      }
+
+      pillarSekarang = [...pillarSekarang, data]
+      polaBaru.push(data.id)
+    }
+
+    setPillars(pillarSekarang)
+    setPola(polaBaru)
+    setNama((n) => n.trim() ? n : tpl.nama)
+    setDipilih(null)
+    setMenerapkanTemplate(null)
+    setFormTemplate(false)
+    setPesan({
+      tipe: 'sukses',
+      teks: `Template "${tpl.nama}" diterapkan. Simpan dulu sebelum ditanam ke jadwal.`,
+    })
   }
 
   async function simpan() {
@@ -220,6 +304,9 @@ export default function Strategy() {
       maxWidth={900}
       actions={
         <div style={{ display: 'flex', gap: 8 }}>
+          <button type="button" className="btn btn-sm" onClick={() => setFormTemplate(true)}>
+            <Icon name="grid-outline" size={15} /> Templates
+          </button>
           <button type="button" className="btn btn-sm" onClick={simpan} disabled={sibuk}>
             {sibuk ? 'Menyimpan...' : 'Simpan'}
           </button>
@@ -433,6 +520,41 @@ export default function Strategy() {
             </button>
           </div>
         </>
+      )}
+
+      {formTemplate && (
+        <Sheet
+          open
+          onClose={() => setFormTemplate(false)}
+          title="Mulai dari template"
+          description="Pola siap pakai. Pillar yang belum ada di workspace-mu akan dibuatkan otomatis."
+          lebar={420}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {TEMPLATE_POLA.map((tpl) => (
+              <button
+                key={tpl.key}
+                type="button"
+                className="card"
+                onClick={() => pakaiTemplate(tpl)}
+                disabled={menerapkanTemplate !== null}
+                style={{ textAlign: 'left', cursor: 'pointer', border: '0.5px solid var(--border)' }}
+              >
+                <p style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 3 }}>
+                  {menerapkanTemplate === tpl.key ? 'Menerapkan...' : tpl.nama}
+                </p>
+                <p style={{ fontSize: 11.5, color: 'var(--text-secondary)', marginBottom: 9 }}>
+                  {tpl.deskripsi}
+                </p>
+                <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                  {tpl.urutan.map((n, i) => (
+                    <span key={i} className="chip" style={{ fontSize: 10.5 }}>{n}</span>
+                  ))}
+                </div>
+              </button>
+            ))}
+          </div>
+        </Sheet>
       )}
 
       {formTanam && (

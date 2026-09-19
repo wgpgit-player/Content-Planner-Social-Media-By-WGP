@@ -111,6 +111,45 @@ export async function unggahMateri({ file, tenantId, contentItemId }) {
   return { path, mime: siap.type, size: siap.size }
 }
 
+// Unggah ke Media Collections — perpustakaan media yang tidak terikat satu
+// konten tertentu (lihat migrasi perpustakaan_media_koleksi). Sengaja
+// dipisah dari unggahMateri() di atas walau mekanismenya mirip: fungsi itu
+// mensyaratkan contentItemId, sedangkan ini justru dipakai SEBELUM ada
+// konten yang membutuhkannya. Menyatukan keduanya lewat parameter opsional
+// hanya akan membuat pemanggilnya harus menghafal kombinasi mana yang valid.
+export async function unggahMediaPerpustakaan({ file, tenantId }) {
+  if (!supabase) return { error: 'Belum tersambung ke server.' }
+  if (!file) return { error: 'Tidak ada berkas yang dipilih.' }
+  if (!tenantId) return { error: 'Ruang kerja belum siap.' }
+
+  if (!file.type.startsWith('image/')) {
+    return { error: 'Untuk sekarang baru gambar yang bisa disimpan di perpustakaan.' }
+  }
+
+  if (file.size > BATAS_MENTAH) {
+    return { error: `Berkasnya ${ukuranTerbaca(file.size)}, terlalu besar. Batasnya 25 MB sebelum dikecilkan.` }
+  }
+
+  let siap
+  try {
+    siap = await kecilkan(file)
+  } catch (e) {
+    return { error: e.message }
+  }
+
+  const ext = (siap.name.split('.').pop() || 'jpg').toLowerCase()
+  const path = `${tenantId}/perpustakaan/${crypto.randomUUID()}.${ext}`
+
+  const { error } = await supabase.storage.from(BUCKET).upload(path, siap, {
+    contentType: siap.type,
+    upsert: false,
+  })
+
+  if (error) return { error: error.message }
+
+  return { path, mime: siap.type, size: siap.size }
+}
+
 // URL bertanda tangan untuk dipakai di dalam aplikasi. Tidak pernah
 // disimpan ke database karena selalu kedaluwarsa.
 export async function urlMateri(path, detik = 3600) {

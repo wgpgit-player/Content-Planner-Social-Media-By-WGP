@@ -387,7 +387,16 @@ export default function Landing() {
           </div>
 
           <div className="lp-fitur-utama">
-            <Foto label="Tangkapan layar — layar susun konten dengan pratinjau feed" rasio="16 / 9" />
+            {/* Tangkapan layar asli halaman Susun konten, diambil langsung dari
+                aplikasi yang sedang berjalan (bukan mockup rekaan) — sengaja
+                dipotong sebelum area yang berisi data uji coba, supaya yang
+                tampil ke pengunjung publik rapi. */}
+            <img
+              src="/landing/fitur-susun-konten.png"
+              alt="Tangkapan layar halaman Susun konten di plannersm.co"
+              className="lp-foto"
+              style={{ aspectRatio: '16 / 9', objectFit: 'cover', objectPosition: 'top' }}
+            />
           </div>
 
           <div className="lp-grid-fitur">

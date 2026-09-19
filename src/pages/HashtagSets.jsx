@@ -41,21 +41,28 @@ export default function HashtagSets() {
   const [tags, setTags] = useState('')
   const [pillarId, setPillarId] = useState('')
 
+  // Katalog saran — sama untuk semua workspace, dibaca sekali (kecil, cuma
+  // beberapa baris), tidak bergantung tenantId sama sekali.
+  const [saran, setSaran] = useState([])
+  const [pencarianSaran, setPencarianSaran] = useState('')
+
   const muat = useCallback(async () => {
     if (!supabase || !tenantId) { setLoading(false); return }
     setLoading(true)
     setGalat(null)
 
-    const [a, b] = await Promise.all([
+    const [a, b, s] = await Promise.all([
       supabase.from('hashtag_sets').select('id,name,tags,pillar_id,updated_at')
         .eq('tenant_id', tenantId).order('name'),
       supabase.from('content_pillars').select('id,name,color')
         .eq('tenant_id', tenantId).order('name'),
+      supabase.from('hashtag_saran').select('id,kategori,tags').order('urutan'),
     ])
 
     if (a.error) setGalat(a.error.message)
     setDaftar(a.data ?? [])
     setPillars(b.data ?? [])
+    setSaran(s.data ?? [])
     setLoading(false)
   }, [tenantId])
 
@@ -68,6 +75,22 @@ export default function HashtagSets() {
     setPillarId(set?.pillar_id ?? '')
     setFormTerbuka(true)
   }
+
+  // Dari kolom saran: buka form yang sama seperti "Set baru", tapi sudah
+  // terisi. Tetap dianggap "belum tersimpan" (sedangUbah null) — orang boleh
+  // ubah namanya, tambah pillar, atau edit hashtagnya dulu sebelum disimpan
+  // sebagai set miliknya sendiri. Katalog saran sendiri tidak pernah berubah.
+  function pakaiSaran(item) {
+    setSedangUbah(null)
+    setNama(item.kategori)
+    setTags(item.tags)
+    setPillarId('')
+    setFormTerbuka(true)
+  }
+
+  const saranTersaring = pencarianSaran.trim()
+    ? saran.filter((s) => s.kategori.toLowerCase().includes(pencarianSaran.trim().toLowerCase()))
+    : saran
 
   async function salin(set) {
     try {
@@ -130,6 +153,47 @@ export default function HashtagSets() {
 
       {loading && <p style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>Memuat...</p>}
 
+      {/* ---------- Saran hashtag ----------
+          Diadaptasi dari kolom "Suggested Hashtags" di Plann: kurasi siap
+          pakai, sama untuk semua workspace. Bedanya di sini bukan pencarian
+          bebas ke basis data besar — cukup beberapa kategori umum sebagai
+          titik awal, karena itu yang paling sering dibutuhkan: bukan hashtag
+          yang sempurna, tapi tidak mulai dari kolom kosong. */}
+      {!loading && saran.length > 0 && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+            <p style={{ fontSize: 13.5, fontWeight: 600 }}>Saran hashtag</p>
+            <span className="chip" style={{ fontSize: 10.5 }}>Kurasi</span>
+            <input
+              className="input"
+              value={pencarianSaran}
+              onChange={(e) => setPencarianSaran(e.target.value)}
+              placeholder="Cari kategori..."
+              style={{ marginLeft: 'auto', maxWidth: 200 }}
+            />
+          </div>
+
+          <div className="pustaka-grid">
+            {saranTersaring.map((s) => (
+              <div key={s.id} className="card" style={{ background: 'var(--surface-1)', border: '0.5px solid var(--border)' }}>
+                <p style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>{s.kategori}</p>
+                <p style={{ fontSize: 11.5, lineHeight: 1.6, color: 'var(--text-secondary)', marginBottom: 10, wordBreak: 'break-word' }}>
+                  {s.tags}
+                </p>
+                <button type="button" className="btn btn-sm" onClick={() => pakaiSaran(s)}>
+                  <Icon name="add-outline" size={14} /> Pakai sebagai set baru
+                </button>
+              </div>
+            ))}
+            {saranTersaring.length === 0 && (
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', padding: '8px 0' }}>
+                Tidak ada kategori yang cocok dengan "{pencarianSaran}".
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
       {!loading && daftar.length === 0 && (
         <div className="card" style={{ textAlign: 'center', padding: '32px 20px' }}>
           <div
@@ -152,6 +216,10 @@ export default function HashtagSets() {
       )}
 
       {daftar.length > 0 && (
+        <>
+        <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 8 }}>
+          SET MILIKMU
+        </p>
         <div className="pustaka-grid">
           {daftar.map((set) => {
             const p = pillarById[set.pillar_id]
@@ -212,6 +280,7 @@ export default function HashtagSets() {
             )
           })}
         </div>
+        </>
       )}
 
       {formTerbuka && (

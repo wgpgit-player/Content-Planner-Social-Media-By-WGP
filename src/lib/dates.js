@@ -57,3 +57,13 @@ export function buildWeekDates(start) {
 export function isSameDay(a, b) {
   return isoDate(a) === isoDate(b)
 }
+
+// Hari ke berapa dalam setahun (1-366), dihitung dari komponen tanggal
+// lokal — dipakai untuk memilih ide konten harian secara deterministik
+// (lihat useAgenda.js): tanggal yang sama selalu memilih ide yang sama,
+// tanpa perlu baris data per tanggal.
+export function dayOfYear(d) {
+  const awalTahun = new Date(d.getFullYear(), 0, 1)
+  const selisihMs = new Date(d.getFullYear(), d.getMonth(), d.getDate()) - awalTahun
+  return Math.floor(selisihMs / 86400000) + 1
+}

@@ -27,6 +27,7 @@ import Approvals from './pages/Approvals.jsx'
 import ClientLinks from './pages/ClientLinks.jsx'
 import ClientView from './pages/ClientView.jsx'
 import HashtagSets from './pages/HashtagSets.jsx'
+import MediaCollections from './pages/MediaCollections.jsx'
 import GridPreview from './pages/GridPreview.jsx'
 import Reminders from './pages/Reminders.jsx'
 import Composer from './pages/Composer.jsx'
@@ -93,6 +94,7 @@ export default function App() {
             <Route path="/grid" element={<ProtectedRoute><GridPreview /></ProtectedRoute>} />
             <Route path="/approvals" element={<ProtectedRoute><Approvals /></ProtectedRoute>} />
             <Route path="/hashtag-sets" element={<ProtectedRoute><HashtagSets /></ProtectedRoute>} />
+            <Route path="/media" element={<ProtectedRoute><MediaCollections /></ProtectedRoute>} />
             <Route path="/client-links" element={<ProtectedRoute><ClientLinks /></ProtectedRoute>} />
             <Route path="/reminders" element={<ProtectedRoute><Reminders /></ProtectedRoute>} />
             <Route path="/compose" element={<ProtectedRoute><Composer /></ProtectedRoute>} />
