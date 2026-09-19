@@ -4,6 +4,7 @@ import Sheet from '../components/Sheet'
 import Icon from '../components/Icon'
 import { supabase } from '../lib/supabaseClient'
 import { useTenantContext } from '../context/TenantContext'
+import { useConfirm } from '../lib/useConfirm'
 import { isoDate } from '../lib/dates'
 
 // Tautan baca-saja untuk klien.
@@ -130,6 +131,7 @@ function Tautan({ tautan, onCabut, onSalin, tersalin }) {
 
 export default function ClientLinks() {
   const { tenantId, isAdmin } = useTenantContext()
+  const tanya = useConfirm()
 
   const [daftar, setDaftar] = useState([])
   const [loading, setLoading] = useState(true)
@@ -241,9 +243,11 @@ export default function ClientLinks() {
   }
 
   async function cabut(tautan) {
-    const yakin = window.confirm(
-      `Cabut tautan "${tautan.label}"? Siapa pun yang memegang tautan ini langsung tidak bisa membukanya lagi.`
-    )
+    const yakin = await tanya.ask({
+      title: `Cabut tautan "${tautan.label}"?`,
+      description: 'Siapa pun yang memegang tautan ini langsung tidak bisa membukanya lagi.',
+      labelConfirm: 'Cabut',
+    })
     if (!yakin) return
 
     const { error } = await supabase
@@ -449,6 +453,8 @@ export default function ClientLinks() {
           </form>
         </Sheet>
       )}
+
+      {tanya.dialog}
     </AppShell>
   )
 }

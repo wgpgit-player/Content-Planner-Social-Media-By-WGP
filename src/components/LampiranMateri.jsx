@@ -3,6 +3,7 @@ import Icon from './Icon'
 import { supabase } from '../lib/supabaseClient'
 import { useTenantContext } from '../context/TenantContext'
 import { unggahMateri, urlMateri, hapusMateri, ukuranTerbaca, JENIS_DITERIMA } from '../lib/materi'
+import { useConfirm } from '../lib/useConfirm'
 
 // Lampiran materi di halaman brief.
 //
@@ -23,6 +24,7 @@ import { unggahMateri, urlMateri, hapusMateri, ukuranTerbaca, JENIS_DITERIMA } f
 
 export default function LampiranMateri({ contentId, nilai, onBerubah }) {
   const { tenantId } = useTenantContext()
+  const tanya = useConfirm()
   const inputRef = useRef(null)
 
   const [pratinjau, setPratinjau] = useState(null)
@@ -68,7 +70,7 @@ export default function LampiranMateri({ contentId, nilai, onBerubah }) {
   }
 
   async function lepasMateri() {
-    const yakin = window.confirm('Hapus materi yang terlampir?')
+    const yakin = await tanya.ask({ title: 'Hapus materi ini?', description: 'Gambar yang sudah diunggah akan dihapus dari penyimpanan.' })
     if (!yakin) return
 
     setSibuk(true)
@@ -221,6 +223,8 @@ export default function LampiranMateri({ contentId, nilai, onBerubah }) {
           ditinjau, unggah gambarnya di atas.
         </p>
       </div>
+
+      {tanya.dialog}
     </div>
   )
 }

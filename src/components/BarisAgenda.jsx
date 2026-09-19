@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext'
 import { useTenantContext } from '../context/TenantContext'
 import { JENIS_EVENT } from '../lib/useAgenda'
 import { isoDate } from '../lib/dates'
+import { useConfirm } from '../lib/useConfirm'
 
 // Baris agenda di atas kalender.
 //
@@ -28,6 +29,7 @@ export default function BarisAgenda({ tanggalTerlihat, agendaPerTanggal, onBerub
   const { user } = useAuth()
   const { tenantId } = useTenantContext()
   const navigate = useNavigate()
+  const tanya = useConfirm()
 
   const [detail, setDetail] = useState(null)
   const [formTerbuka, setFormTerbuka] = useState(false)
@@ -72,7 +74,7 @@ export default function BarisAgenda({ tanggalTerlihat, agendaPerTanggal, onBerub
   }
 
   async function hapusEvent(eventId) {
-    const yakin = window.confirm('Hapus kegiatan ini dari kalender?')
+    const yakin = await tanya.ask({ title: 'Hapus kegiatan ini?', description: 'Hilang dari kalender untuk semua anggota tim.' })
     if (!yakin) return
 
     const { error } = await supabase
@@ -248,6 +250,8 @@ export default function BarisAgenda({ tanggalTerlihat, agendaPerTanggal, onBerub
           </form>
         </Sheet>
       )}
+
+      {tanya.dialog}
     </>
   )
 }

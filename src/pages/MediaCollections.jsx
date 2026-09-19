@@ -4,6 +4,7 @@ import Sheet from '../components/Sheet'
 import Icon from '../components/Icon'
 import { supabase } from '../lib/supabaseClient'
 import { useTenantContext } from '../context/TenantContext'
+import { useConfirm } from '../lib/useConfirm'
 import { unggahMediaPerpustakaan, hapusMateri, ukuranTerbaca } from '../lib/materi'
 
 // Media Collections — perpustakaan media, diadaptasi dari Plann.
@@ -28,6 +29,7 @@ const FILTER_TANPA_KOLEKSI = '__tanpa__'
 
 export default function MediaCollections() {
   const { tenantId } = useTenantContext()
+  const tanya = useConfirm()
 
   const [koleksi, setKoleksi] = useState([])
   const [item, setItem] = useState([])
@@ -99,7 +101,10 @@ export default function MediaCollections() {
   }
 
   async function hapusKoleksi(k) {
-    const yakin = window.confirm(`Hapus koleksi "${k.name}"? Media di dalamnya tidak ikut terhapus, hanya jadi tanpa koleksi.`)
+    const yakin = await tanya.ask({
+      title: `Hapus koleksi "${k.name}"?`,
+      description: 'Media di dalamnya tidak ikut terhapus, hanya jadi tanpa koleksi.',
+    })
     if (!yakin) return
     const { error } = await supabase.from('media_collections').delete().eq('id', k.id).eq('tenant_id', tenantId)
     if (error) { setGalat(error.message); return }
@@ -142,7 +147,7 @@ export default function MediaCollections() {
   }
 
   async function hapusItem(i) {
-    const yakin = window.confirm('Hapus media ini dari perpustakaan?')
+    const yakin = await tanya.ask({ title: 'Hapus media ini?', description: 'Berkasnya dihapus juga dari penyimpanan, tidak cuma daftar ini.' })
     if (!yakin) return
 
     const { error } = await supabase.from('media_items').delete().eq('id', i.id).eq('tenant_id', tenantId)
@@ -368,6 +373,8 @@ export default function MediaCollections() {
           </form>
         </Sheet>
       )}
+
+      {tanya.dialog}
     </AppShell>
   )
 }

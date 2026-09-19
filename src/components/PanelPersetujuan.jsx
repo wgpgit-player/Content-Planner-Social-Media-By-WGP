@@ -4,6 +4,7 @@ import { useTenantContext } from '../context/TenantContext'
 import { useTenantMembers, namaAnggota } from '../lib/useTenantMembers'
 import { getApproval, KEPUTUSAN_LABEL } from '../config/approval'
 import { urlMateri } from '../lib/materi'
+import { useConfirm } from '../lib/useConfirm'
 import Icon from './Icon'
 
 // Panel persetujuan di halaman brief.
@@ -63,6 +64,7 @@ function Baris({ review, members }) {
 export default function PanelPersetujuan({ contentId, nilai, lampiran, onBerubah }) {
   const { tenantId, isAdmin } = useTenantContext()
   const { members } = useTenantMembers()
+  const tanya = useConfirm()
 
   const [riwayat, setRiwayat] = useState([])
   const [catatan, setCatatan] = useState('')
@@ -94,6 +96,20 @@ export default function PanelPersetujuan({ contentId, nilai, lampiran, onBerubah
   }, [lampiran?.asset_path])
 
   const a = getApproval(nilai?.approval_state)
+
+  async function ajukan() {
+    const kosong = !lampiran?.asset_path && !lampiran?.asset_url
+    if (kosong) {
+      const yakin = await tanya.ask({
+        title: 'Belum ada materi yang dilampirkan',
+        description: 'Yang meninjau hanya akan melihat judul dan brief. Tetap ajukan?',
+        labelConfirm: 'Tetap ajukan',
+        danger: false,
+      })
+      if (!yakin) return
+    }
+    putuskan('pending')
+  }
 
   async function putuskan(keputusan, catatanIni) {
     if (!supabase) return
@@ -203,13 +219,7 @@ export default function PanelPersetujuan({ contentId, nilai, lampiran, onBerubah
             type="button"
             className="btn btn-primary btn-sm"
             disabled={sibuk}
-            onClick={() => {
-              const kosong = !lampiran?.asset_path && !lampiran?.asset_url
-              if (kosong && !window.confirm(
-                'Belum ada materi yang dilampirkan. Yang meninjau hanya akan melihat judul dan brief. Tetap ajukan?'
-              )) return
-              putuskan('pending')
-            }}
+            onClick={ajukan}
           >
             <Icon name="paper-plane-outline" size={14} /> Ajukan untuk ditinjau
           </button>
@@ -274,6 +284,8 @@ export default function PanelPersetujuan({ contentId, nilai, lampiran, onBerubah
           {riwayat.map((r) => <Baris key={r.id} review={r} members={members} />)}
         </div>
       )}
+
+      {tanya.dialog}
     </div>
   )
 }

@@ -5,6 +5,7 @@ import Sheet from '../components/Sheet'
 import Icon from '../components/Icon'
 import { supabase } from '../lib/supabaseClient'
 import { useTenantContext } from '../context/TenantContext'
+import { useConfirm } from '../lib/useConfirm'
 import { PLATFORMS, getPlatform } from '../config/platforms'
 import { isoDate, startOfWeek, todayIso } from '../lib/dates'
 
@@ -67,6 +68,7 @@ function seninDariMinggu(d = new Date()) {
 export default function Strategy() {
   const navigate = useNavigate()
   const { tenantId } = useTenantContext()
+  const tanya = useConfirm()
 
   const [pillars, setPillars] = useState([])
   const [daftarStrategi, setDaftarStrategi] = useState([])
@@ -261,9 +263,11 @@ export default function Strategy() {
   }
 
   async function batalkanTanam() {
-    const yakin = window.confirm(
-      'Hapus semua konten yang lahir dari strategi ini? Konten yang sudah kamu isi briefnya ikut terhapus.'
-    )
+    const yakin = await tanya.ask({
+      title: `Hapus strategi "${nama || 'ini'}"?`,
+      description: 'Semua konten yang lahir dari strategi ini ikut terhapus dari kalender, termasuk yang sudah kamu isi briefnya. Tindakan ini tidak bisa dibatalkan.',
+      labelConfirm: 'Hapus',
+    })
     if (!yakin) return
 
     const { error } = await supabase
@@ -596,6 +600,8 @@ export default function Strategy() {
           </form>
         </Sheet>
       )}
+
+      {tanya.dialog}
     </AppShell>
   )
 }

@@ -4,6 +4,7 @@ import Sheet from '../components/Sheet'
 import Icon from '../components/Icon'
 import { supabase } from '../lib/supabaseClient'
 import { useTenantContext } from '../context/TenantContext'
+import { useConfirm } from '../lib/useConfirm'
 
 // Set hashtag.
 //
@@ -27,6 +28,7 @@ function hitungTag(teks) {
 
 export default function HashtagSets() {
   const { tenantId } = useTenantContext()
+  const tanya = useConfirm()
 
   const [daftar, setDaftar] = useState([])
   const [pillars, setPillars] = useState([])
@@ -128,7 +130,7 @@ export default function HashtagSets() {
   }
 
   async function hapus(set) {
-    const yakin = window.confirm(`Hapus set "${set.name}"?`)
+    const yakin = await tanya.ask({ title: `Hapus set "${set.name}"?`, description: 'Tindakan ini tidak bisa dibatalkan.' })
     if (!yakin) return
 
     const { error } = await supabase.from('hashtag_sets').delete().eq('id', set.id).eq('tenant_id', tenantId)
@@ -340,6 +342,8 @@ export default function HashtagSets() {
           </form>
         </Sheet>
       )}
+
+      {tanya.dialog}
     </AppShell>
   )
 }

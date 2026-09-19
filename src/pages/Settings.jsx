@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import { useTenantContext } from '../context/TenantContext'
@@ -278,7 +279,14 @@ const TABS = [
 
 export default function Settings() {
   const { tenant, tenantId, isAdmin, patchActiveTenant } = useTenantContext()
-  const [tab, setTab] = useState('workspace')
+  const [searchParams] = useSearchParams()
+  // Halaman lain (Composer, kartu ajakan di mockup telepon) menaut ke sini
+  // dengan ?tab=sosial supaya langsung membuka tab yang relevan, bukan
+  // selalu mendarat di "Ruang kerja". Dibaca sekali saat halaman terbuka.
+  const [tab, setTab] = useState(() => {
+    const dariUrl = searchParams.get('tab')
+    return TABS.some((t) => t.key === dariUrl) ? dariUrl : 'workspace'
+  })
 
   const [name, setName] = useState('')
   const [accent, setAccent] = useState('#6B5EE0')

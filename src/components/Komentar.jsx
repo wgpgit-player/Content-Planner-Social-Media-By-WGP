@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import { useTenantContext } from '../context/TenantContext'
 import { useTenantMembers, namaAnggota } from '../lib/useTenantMembers'
+import { useConfirm } from '../lib/useConfirm'
 
 // Diskusi per konten.
 //
@@ -34,6 +35,7 @@ export default function Komentar({ contentId }) {
   const { user } = useAuth()
   const { tenantId } = useTenantContext()
   const { members } = useTenantMembers()
+  const tanya = useConfirm()
 
   const [daftar, setDaftar] = useState([])
   const [teks, setTeks] = useState('')
@@ -89,7 +91,7 @@ export default function Komentar({ contentId }) {
     // tabel comments memberi akses ke seluruh anggota workspace, jadi
     // tombol ini kemudahan, bukan penjaga. Diskusi tim memang terbuka
     // untuk tim.
-    const yakin = window.confirm('Hapus komentar ini?')
+    const yakin = await tanya.ask({ title: 'Hapus komentar ini?' })
     if (!yakin) return
 
     const { error } = await supabase.from('comments').delete().eq('id', id).eq('tenant_id', tenantId)
@@ -167,6 +169,8 @@ export default function Komentar({ contentId }) {
           <Icon name="send-outline" size={14} /> {sibuk ? 'Mengirim...' : 'Kirim'}
         </button>
       </form>
+
+      {tanya.dialog}
     </div>
   )
 }

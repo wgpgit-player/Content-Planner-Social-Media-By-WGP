@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useTenantContext } from '../context/TenantContext'
 import { useAuth } from '../context/AuthContext'
 import { useTenantMembers, namaAnggota } from '../lib/useTenantMembers'
+import { useConfirm } from '../lib/useConfirm'
 import Avatar from '../components/Avatar'
 import { PLATFORMS, getPlatform } from '../config/platforms'
 import { STATUSES, getStatus } from '../config/statuses'
@@ -97,6 +98,7 @@ export default function ContentDetail() {
   const { tenantId, isAdmin } = useTenantContext()
   const { user } = useAuth()
   const { members } = useTenantMembers()
+  const tanya = useConfirm()
 
   const [form, setForm] = useState(KOSONG)
   const [pillars, setPillars] = useState([])
@@ -189,7 +191,10 @@ export default function ContentDetail() {
   }
 
   async function hapus() {
-    const yakin = window.confirm('Hapus konten ini beserta briefnya? Tindakan ini tidak bisa dibatalkan.')
+    const yakin = await tanya.ask({
+      title: 'Hapus konten ini?',
+      description: 'Briefnya ikut terhapus. Tindakan ini tidak bisa dibatalkan.',
+    })
     if (!yakin) return
 
     const { error } = await supabase.from('content_items').delete().eq('id', id).eq('tenant_id', tenantId)
@@ -370,6 +375,8 @@ export default function ContentDetail() {
           {saving ? 'Menyimpan...' : 'Simpan brief'}
         </button>
       </div>
+
+      {tanya.dialog}
     </AppShell>
   )
 }

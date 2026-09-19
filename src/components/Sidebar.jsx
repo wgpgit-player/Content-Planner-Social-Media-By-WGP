@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTenantContext } from '../context/TenantContext'
 import TenantSwitcher from './TenantSwitcher'
+import CreatePostModal from './CreatePostModal'
 import Icon from './Icon'
 
 // Navigasi utama. Dikelompokkan per kategori, bukan daftar datar, supaya
@@ -87,6 +89,7 @@ export default function Sidebar() {
   const { user, signOut, isMock } = useAuth()
   const { isAdmin, role } = useTenantContext()
   const navigate = useNavigate()
+  const [modalBuat, setModalBuat] = useState(false)
 
   async function handleLogout() {
     await signOut()
@@ -96,6 +99,16 @@ export default function Sidebar() {
   return (
     <div className="sidebar-scroll app-sidebar">
       <TenantSwitcher />
+
+      {/* Satu keputusan besar, satu tombol besar — ala Plann. Membuka
+          pop-in pemilih platform dulu (CreatePostModal), baru melempar ke
+          Composer, supaya orang tidak mendarat di halaman kosong. */}
+      <button type="button" className="btn btn-primary btn-block sidebar-tombol-buat" onClick={() => setModalBuat(true)}>
+        <Icon name="add-circle-outline" size={16} />
+        Buat konten
+      </button>
+
+      <CreatePostModal open={modalBuat} onClose={() => setModalBuat(false)} />
 
       {NAV_GROUPS.map((group) => {
         // Item bertanda diBilahAtas sudah tampil di Topbar (layar lebar),

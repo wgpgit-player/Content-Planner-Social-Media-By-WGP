@@ -37,8 +37,11 @@
   --pink: #D4537E;
   --pink-bg: #FDEFF3;
 
-  --radius: 10px;
-  --radius-lg: 16px;
+  /* Dibulatkan lebih lembut di seluruh aplikasi — sudut tajam terasa kaku,
+     dan tampilan yang dikejar di sini "minimalist tapi ramah", bukan
+     minimalist yang dingin. */
+  --radius: 14px;
+  --radius-lg: 22px;
   --shadow-sm: 0 1px 2px rgba(23, 23, 31, 0.04);
   --shadow-md: 0 4px 16px rgba(23, 23, 31, 0.06);
 
@@ -117,6 +120,14 @@ h1, h2, h3, h4, p { margin: 0; }
 }
 
 /* ---------- Sidebar ---------- */
+
+.sidebar-tombol-buat {
+  margin: 12px 0 10px;
+  border-radius: 999px;
+  font-weight: 600;
+  justify-content: center;
+  gap: 6px;
+}
 
 .sidebar-item {
   display: flex;
@@ -207,6 +218,12 @@ h1, h2, h3, h4, p { margin: 0; }
 
 .btn-danger { color: var(--danger); border-color: var(--border-strong); background: var(--surface-2); }
 .btn-danger:hover:not(:disabled) { background: var(--danger-bg); border-color: var(--danger-bg); }
+
+/* Tombol "Confirm" solid merah di ConfirmDialog — beda dari .btn-danger
+   (yang bergaris) karena di sini ia satu-satunya aksi yang tidak bisa
+   dibatalkan, jadi sengaja dibuat lebih tegas. */
+.btn-danger-solid { background: var(--danger); border-color: var(--danger); color: #fff; }
+.btn-danger-solid:hover:not(:disabled) { background: color-mix(in srgb, var(--danger) 85%, #000); }
 
 .btn-sm { padding: 6px 10px; font-size: 11.5px; border-radius: 8px; }
 .btn-block { width: 100%; }
@@ -626,6 +643,11 @@ h1, h2, h3, h4, p { margin: 0; }
   color: var(--platform-warna, var(--accent));
 }
 
+.platform-ikon-btn-besar {
+  width: 52px;
+  height: 52px;
+}
+
 .platform-ikon-centang {
   position: absolute;
   bottom: -3px;
@@ -643,7 +665,7 @@ h1, h2, h3, h4, p { margin: 0; }
 
 .compose-caption-utama {
   width: 100%;
-  min-height: 190px;
+  min-height: 140px;
   border: 0.5px solid var(--border);
   border-radius: 16px;
   padding: 16px;
@@ -656,6 +678,99 @@ h1, h2, h3, h4, p { margin: 0; }
 .compose-caption-utama:focus {
   outline: none;
   border-color: var(--accent);
+}
+
+/* Pil "Strategi" — <select> asli didandani jadi pil bulat, chevron
+   ditumpuk di atasnya lewat ::after. Tetap <select> sungguhan (bukan
+   tiruan) supaya menu buka-nya native, bisa dipakai keyboard, dan tidak
+   perlu javascript tambahan untuk urusan buka/tutup. */
+.pil-select-bungkus {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.pil-select {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  border-radius: 999px;
+  padding: 8px 30px 8px 14px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-primary);
+  font-family: inherit;
+  cursor: pointer;
+  max-width: 160px;
+  text-overflow: ellipsis;
+}
+
+.pil-select-bungkus::after {
+  content: '';
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid var(--text-muted);
+  border-bottom: 1.5px solid var(--text-muted);
+  transform: translateY(-65%) rotate(45deg);
+  pointer-events: none;
+}
+
+/* Kotak kanvas ala Plann: petak besar dengan "+" di tengah untuk menautkan
+   aset. Bukan unggah sungguhan (lihat komentar di komponennya) — begitu
+   tautan diisi, isi kotak berubah jadi kartu tautan. */
+.compose-kanvas {
+  aspect-ratio: 4 / 3;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: 20px;
+  background: var(--surface-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin-bottom: 14px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.compose-kanvas:hover { border-color: var(--accent); background: var(--accent-bg); }
+
+.compose-kanvas-plus {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 0.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.compose-kanvas:hover .compose-kanvas-plus { color: var(--accent); }
+
+.compose-kanvas-terisi {
+  width: 100%;
+  height: 100%;
+  border-radius: 18.5px;
+  overflow: hidden;
+  position: relative;
+}
+
+.compose-kanvas-terisi img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.compose-kanvas-tautan {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 20px;
+  text-align: center;
 }
 
 /* Bungkus telepon di kanan halaman Composer. */
@@ -693,6 +808,119 @@ h1, h2, h3, h4, p { margin: 0; }
   border-radius: 24px;
   overflow: hidden;
   min-height: 420px;
+}
+
+/* Header profil di dalam mockup telepon — avatar + handle ala Plann. */
+.telepon-profil {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 14px 10px;
+}
+
+.telepon-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.telepon-handle {
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Baris filter Semua/Draf/Terjadwal — betulan menyaring grid di bawahnya,
+   bukan sekadar hiasan. */
+.telepon-tab-filter {
+  display: flex;
+  gap: 4px;
+  padding: 0 10px 10px;
+}
+
+.telepon-tab-filter button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 10.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.telepon-tab-filter button.aktif {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+/* Baris jenis konten Postingan/Story/Reel. Story dan Reel belum ada
+   fiturnya, jadi ditampilkan redup dan tidak bisa diklik — sama seperti
+   pola badge "Segera" di Sidebar, bukan tombol yang pura-pura aktif. */
+.telepon-tab-jenis {
+  display: flex;
+  gap: 14px;
+  padding: 8px 14px;
+  border-top: 0.5px solid var(--border);
+  border-bottom: 0.5px solid var(--border);
+}
+
+.telepon-tab-jenis span {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+}
+
+.telepon-tab-jenis span.aktif { color: var(--text-primary); }
+.telepon-tab-jenis span.nonaktif { opacity: 0.4; cursor: default; }
+
+/* Kartu ajakan menyambungkan akun sosial, melayang di bagian bawah isi
+   telepon — hilang otomatis begitu ada satu akun yang ditandai terhubung
+   di Pengaturan (lihat Composer.jsx). */
+.telepon-cta {
+  margin: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--surface-1);
+  border: 0.5px solid var(--border);
+  text-align: center;
+}
+
+.telepon-cta p {
+  font-size: 10.5px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.telepon-cta-ikon-baris {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  margin-bottom: 9px;
+}
+
+.telepon-cta-ikon-baris span {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Grid ala Instagram, dipakai di GridPreview.jsx dan pratinjau Composer. */
@@ -1020,6 +1248,13 @@ h1, h2, h3, h4, p { margin: 0; }
   .btn-danger:hover:not(:disabled) { background: var(--surface-2); border-color: var(--border-strong); }
   .row-link:hover { background: transparent; }
 }
+
+/* Isi ConfirmDialog.jsx — teks rata tengah, lebih lapang dari sheet biasa. */
+.confirm-dialog { text-align: center; padding: 6px 4px 2px; }
+.confirm-dialog-judul { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+.confirm-dialog-teks { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 22px; }
+.confirm-dialog-aksi { display: flex; gap: 10px; }
+.confirm-dialog-aksi .btn { border-radius: 999px; padding: 10px 0; font-weight: 600; }
 
 /* ============================================================
    Sheet
@@ -1443,6 +1678,84 @@ h1, h2, h3, h4, p { margin: 0; }
   .media-dua { grid-template-columns: minmax(0, 1fr); }
 }
 
+/* Home.jsx: baris kepala — ikon platform, pil ide harian, dan navigasi
+   tanggal. Ide harian dan panahnya sungguhan berfungsi (lihat Home.jsx),
+   bukan sekadar hiasan header. */
+.home-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.home-header-platform {
+  display: flex;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.home-header-platform span {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.home-header-ide {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 0.5px solid var(--border);
+  background: var(--surface-2);
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  flex: 1;
+  min-width: 220px;
+  text-align: left;
+  font-family: inherit;
+}
+
+.home-header-ide:hover { border-color: var(--accent); }
+.home-header-ide strong { color: var(--text-primary); font-weight: 600; }
+
+.home-header-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.home-header-nav button {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: var(--surface-1);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.home-header-nav button:hover { background: var(--accent-bg); color: var(--accent); }
+.home-header-nav span { min-width: 64px; text-align: center; }
+
+.home-sapaan {
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
 /* Home.jsx: tiga kartu pintasan ala Plann. */
 .home-kartu-grid {
   display: grid;
@@ -1460,26 +1773,25 @@ h1, h2, h3, h4, p { margin: 0; }
   align-items: flex-start;
   text-align: left;
   gap: 8px;
-  padding: 18px;
-  border: 0.5px solid var(--border);
-  border-radius: 14px;
-  background: var(--surface-0);
+  padding: 20px;
+  border: none;
+  border-radius: 20px;
   cursor: pointer;
   font-family: inherit;
-  transition: border-color 0.15s ease, transform 0.15s ease;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .home-kartu:hover {
-  border-color: var(--accent);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .home-kartu-ikon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: var(--accent-bg);
-  color: var(--accent);
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: color-mix(in srgb, currentColor 14%, #fff);
   display: flex;
   align-items: center;
   justify-content: center;
