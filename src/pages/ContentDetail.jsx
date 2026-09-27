@@ -149,6 +149,7 @@ export default function ContentDetail() {
         asset_url: row.asset_url ?? null,
         asset_mime: row.asset_mime ?? null,
         asset_size: row.asset_size ?? null,
+        asset_poster_path: row.asset_poster_path ?? null,
       })
     }
     setLoading(false)

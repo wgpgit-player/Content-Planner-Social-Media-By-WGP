@@ -1,4 +1,5 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
+import PengumumanKlien from './PengumumanKlien'
 import Sidebar from './Sidebar'
 import Topbar from './Topbar'
 import BottomNav from './BottomNav'
@@ -32,9 +33,10 @@ import { TenantAvatar } from './TenantSwitcher'
 // sidebar+topbar dengan satu bilah tipis berisi tombol kembali dan nama
 // ruang kerja saja — bukan halaman terpisah, supaya AppShell tetap satu-
 // satunya kerangka dan tidak ada CSS yang harus diduplikasi.
-export default function AppShell({ title, description, actions, children, maxWidth = 860, bare = false }) {
+export default function AppShell({ title, description, actions, children, maxWidth = 1440, bare = false }) {
   const { tenant } = useTenantContext()
   const navigate = useNavigate()
+  const location = useLocation()
 
   if (bare) {
     return (
@@ -49,7 +51,7 @@ export default function AppShell({ title, description, actions, children, maxWid
           </div>
           <div className="bare-aksi">{actions}</div>
         </div>
-        <div className="bare-main">{children}</div>
+        <div key={location.pathname} className="bare-main">{children}</div>
         <BottomNav />
       </div>
     )
@@ -76,7 +78,7 @@ export default function AppShell({ title, description, actions, children, maxWid
         <Sidebar />
       </div>
 
-      <div className="app-main" style={{ maxWidth, width: '100%' }}>
+      <div key={location.pathname} className="app-main" style={{ maxWidth, width: '100%' }}>
         {(title || actions) && (
           <div className="app-head">
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -86,6 +88,7 @@ export default function AppShell({ title, description, actions, children, maxWid
             {actions}
           </div>
         )}
+        {location.pathname === '/dashboard' && <PengumumanKlien/>}
         {children}
       </div>
 

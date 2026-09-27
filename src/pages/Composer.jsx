@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import AppShell from '../components/AppShell'
 import Sheet from '../components/Sheet'
@@ -10,6 +10,7 @@ import { useAuth } from '../context/AuthContext'
 import { useTenantContext } from '../context/TenantContext'
 import { PLATFORMS, getPlatform } from '../config/platforms'
 import { isoDate, addDays, startOfWeek, buildWeekDates, todayIso } from '../lib/dates'
+import { unggahMediaPerpustakaan, urlMateri, jenisVideo, JENIS_DITERIMA } from '../lib/materi'
 
 // Composer: menyusun konten sambil melihat feed-nya.
 //
@@ -101,6 +102,16 @@ export default function Composer() {
   // telepon otomatis menampilkan Pengikut/Mengikuti alih-alih angka kita.
   const [akunPlatform, setAkunPlatform] = useState(null)
 
+  // Gambar yang diunggah ke kanvas. Disimpan lebih dulu ke penyimpanan
+  // (jalur perpustakaan, karena content_item-nya memang belum ada), lalu
+  // jalurnya ikut tertulis ke konten saat disimpan.
+  const [aset, setAset] = useState(null)       // { path, mime, size, posterPath }
+  const [asetUrl, setAsetUrl] = useState(null) // URL bertanda tangan untuk ditampilkan
+  const [posterUrl, setPosterUrl] = useState(null) // bingkai diam, hanya untuk video
+  const [mengunggah, setMengunggah] = useState(false)
+  const [seret, setSeret] = useState(false)
+  const inputBerkas = useRef(null)
+
   // Platform yang feed-nya ditampilkan di pratinjau. Kalau beberapa platform
   // dipilih sekaligus, yang pertama yang diperlihatkan — menampilkan feed
   // gabungan dari beberapa platform tidak berarti apa-apa.
@@ -180,6 +191,43 @@ export default function Composer() {
     setPilihHashtag(false)
   }
 
+  // Unggah gambar ke kanvas. Memakai jalur perpustakaan (lihat
+  // unggahMediaPerpustakaan di lib/materi.js) karena di layar ini kontennya
+  // memang belum ada — berkasnya naik dulu, jalurnya menyusul ke konten
+  // begitu tombol Buat konten ditekan.
+  async function terimaBerkas(file) {
+    if (!file) return
+    setMengunggah(true)
+    setPesan(null)
+
+    const hasil = await unggahMediaPerpustakaan({ file, tenantId })
+    if (hasil.error) {
+      setMengunggah(false)
+      setPesan({ tipe: 'error', teks: hasil.error })
+      return
+    }
+
+    setAset({ path: hasil.path, mime: hasil.mime, size: hasil.size, posterPath: hasil.posterPath })
+    setAsetUrl(await urlMateri(hasil.path))
+    setPosterUrl(hasil.posterPath ? await urlMateri(hasil.posterPath) : null)
+    setMengunggah(false)
+
+    if (jenisVideo(hasil.mime) && !hasil.posterPath) {
+      setPesan({
+        tipe: 'info',
+        teks: 'Video terunggah, tapi bingkai pratinjaunya gagal diambil — formatnya tidak bisa dibaca peramban ini. Videonya tetap tersimpan dan bisa diputar di halaman brief.',
+      })
+    }
+  }
+
+  function lepasAset() {
+    // Berkasnya sengaja tidak dihapus dari penyimpanan: ia sudah jadi bagian
+    // perpustakaan media workspace dan mungkin dipakai konten lain.
+    setAset(null)
+    setAsetUrl(null)
+    setPosterUrl(null)
+  }
+
   async function simpan() {
     if (!judul.trim()) {
       setPesan({ tipe: 'error', teks: 'Judul belum diisi. Ini yang dilihat tim di papan dan kalender.' })
@@ -199,6 +247,10 @@ export default function Composer() {
       scheduled_date: tanggal || null,
       scheduled_time: jam || null,
       asset_url: assetUrl.trim() || null,
+      asset_path: aset?.path ?? null,
+      asset_mime: aset?.mime ?? null,
+      asset_size: aset?.size ?? null,
+      asset_poster_path: aset?.posterPath ?? null,
       created_by: user?.id ?? null,
     }))
 
@@ -218,7 +270,7 @@ export default function Composer() {
       return
     }
 
-    setJudul(''); setCaption(''); setAssetUrl('')
+    setJudul(''); setCaption(''); setAssetUrl(''); lepasAset()
     setPesan({ tipe: 'sukses', teks: `${data.length} konten dibuat, satu untuk tiap platform.` })
     await muat()
   }
@@ -234,7 +286,19 @@ export default function Composer() {
     : feed.filter((it) => (filterPratinjau === 'idea' ? it.status === 'idea' : it.status !== 'idea'))
 
   const feedDenganDraf = [
-    { id: '__draf__', title: judul || 'Konten baru', pillar_id: pillarId, scheduled_date: tanggal, draf: true },
+    {
+      id: '__draf__',
+      title: judul || 'Konten baru',
+      pillar_id: pillarId,
+      scheduled_date: tanggal,
+      draf: true,
+      // Berkas yang baru diunggah langsung ikut terlihat di grid, supaya
+      // penilaian "cocok tidak dengan yang lain" bisa dilakukan sekarang,
+      // bukan setelah kontennya tersimpan. Untuk video yang dipakai bingkai
+      // diamnya — memuat video di dalam sel grid tidak ada gunanya.
+      gambar: jenisVideo(aset?.mime) ? posterUrl : asetUrl,
+      video: jenisVideo(aset?.mime),
+    },
     ...feedTersaring,
   ]
 
@@ -262,11 +326,11 @@ export default function Composer() {
 
       <div className="compose-dua">
         {/* ---------- Kiri: menyusun ---------- */}
-        <div>
+        <div className="compose-workspace">
           {/* Strip tanggal satu minggu — tanpa bungkus kartu, supaya jadi
               bagian dari alur, bukan formulir terpisah. Ketuk panah untuk
               pindah minggu, ketuk tanggal untuk memilihnya. */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14 }}>
+          <div className="compose-dates">
             <button
               type="button"
               className="btn btn-sm btn-ghost"
@@ -309,7 +373,8 @@ export default function Composer() {
           {/* Baris ikon platform bulat ala Plann di kiri, pil "Strategi"
               (content pillar) dan jam tayang di kanan — satu baris, semua
               keputusan cepat sebelum mulai menulis. */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+          <div className="compose-format"><span className="compose-format-active">Postingan</span><span className="compose-format-note">Media, caption & jadwal</span></div>
+          <div className="compose-controls">
             <div className="platform-ikon-baris">
               {PLATFORMS.map((p) => {
                 const aktif = platformTerpilih.includes(p.key)
@@ -364,44 +429,98 @@ export default function Composer() {
               bidang kosong raksasa yang memenuhi layar. */}
           <div className="compose-editor">
             <div>
-              {/* BUKAN unggah gambar sungguhan — cuma menyimpan tautan
-                  (Canva/Drive/Dropbox) di kolom asset_url. Kalau tautannya
-                  kebetulan gambar langsung (berakhiran .jpg/.png/dst),
-                  gambarnya ditampilkan; kalau tidak, jadi kartu tautan. */}
-              <div className="compose-kanvas" onClick={() => document.getElementById('cmp-aset')?.focus()}>
-                {assetUrl.trim() ? (
-                  /\.(jpe?g|png|webp|gif)(\?|$)/i.test(assetUrl) ? (
-                    <div className="compose-kanvas-terisi">
-                      <img src={assetUrl} alt="" />
-                    </div>
-                  ) : (
-                    <div className="compose-kanvas-tautan">
-                      <Icon name="link-outline" size={24} color="var(--accent)" />
-                      <p style={{ fontSize: 11.5, color: 'var(--text-secondary)', wordBreak: 'break-all' }}>
-                        {assetUrl.length > 40 ? assetUrl.slice(0, 40) + '…' : assetUrl}
-                      </p>
-                    </div>
-                  )
+              {/* Kanvas: unggah gambar sungguhan, bisa diseret-lepas.
+                  Berkasnya naik duluan ke penyimpanan lewat jalur
+                  perpustakaan, karena di layar ini kontennya memang belum
+                  dibuat — jalurnya baru ditempelkan ke konten saat disimpan.
+
+                  Kotak tautan di bawahnya untuk hal yang BERBEDA: materi yang
+                  memang tinggal di Canva atau Drive. Tautan Canva adalah
+                  halaman web, bukan berkas gambar, jadi tidak bisa
+                  ditampilkan sebagai gambar di mana pun — kalau desainnya
+                  perlu DILIHAT di sini dan di grid, ekspor dulu jadi
+                  JPG/PNG lalu unggah ke kanvas. */}
+              <div
+                className={`compose-kanvas${seret ? ' seret' : ''}`}
+                onClick={() => !aset && inputBerkas.current?.click()}
+                onDragOver={(e) => { e.preventDefault(); setSeret(true) }}
+                onDragLeave={() => setSeret(false)}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  setSeret(false)
+                  terimaBerkas(e.dataTransfer.files?.[0])
+                }}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !aset) { e.preventDefault(); inputBerkas.current?.click() } }}
+                title={aset ? 'Gambar konten' : 'Ketuk atau seret gambar ke sini'}
+              >
+                {asetUrl ? (
+                  <div className="compose-kanvas-terisi">
+                    {jenisVideo(aset?.mime) ? (
+                      // Video bisa diputar langsung di sini, jadi hasil
+                      // editnya bisa ditonton sebelum dijadwalkan.
+                      <video src={asetUrl} poster={posterUrl ?? undefined} controls playsInline />
+                    ) : (
+                      <img src={asetUrl} alt="Gambar konten" />
+                    )}
+                    <button
+                      type="button"
+                      className="compose-kanvas-ganti"
+                      onClick={(e) => { e.stopPropagation(); lepasAset() }}
+                      aria-label="Lepas berkas"
+                    >
+                      <Icon name="close" size={13} />
+                    </button>
+                  </div>
+                ) : mengunggah ? (
+                  <div className="compose-kanvas-tautan">
+                    <Icon name="reload-outline" size={24} className="spin" color="var(--accent)" />
+                    <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Mengunggah...</p>
+                  </div>
                 ) : (
-                  <span className="compose-kanvas-plus">
-                    <Icon name="add" size={22} />
-                  </span>
+                  <div className="compose-kanvas-tautan">
+                    <span className="compose-kanvas-plus">
+                      <Icon name="add" size={22} />
+                    </span>
+                    <p style={{ fontSize: 11.5, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                      Ketuk atau seret gambar ke sini
+                    </p>
+                  </div>
                 )}
               </div>
 
               <input
+                ref={inputBerkas}
+                type="file"
+                accept={JENIS_DITERIMA}
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  const f = e.target.files?.[0]
+                  e.target.value = ''
+                  terimaBerkas(f)
+                }}
+              />
+
+              <input
+                aria-label="Tautan materi Canva atau Drive"
                 id="cmp-aset"
                 className="input"
                 type="url"
                 value={assetUrl}
                 onChange={(e) => setAssetUrl(e.target.value)}
-                placeholder="Tautan Canva / Drive"
+                placeholder="Tautan Canva / Drive (opsional)"
                 style={{ fontSize: 12 }}
               />
+              <p className="field-hint" style={{ marginTop: 5 }}>
+                Tautan Canva tidak bisa tampil sebagai gambar. Supaya desainnya
+                terlihat di pratinjau, ekspor jadi JPG lalu unggah di atas.
+              </p>
             </div>
 
             <div>
               <textarea
+                aria-label="Caption konten"
                 id="cmp-caption"
                 className="textarea compose-caption-utama"
                 rows={6}
@@ -449,7 +568,8 @@ export default function Composer() {
 
         {/* ---------- Kanan: pratinjau di mockup telepon ---------- */}
         <div className="compose-pratinjau">
-          <TeleponMockup lebar={290}>
+          <p className="compose-preview-label">Pratinjau feed <span>Perubahan terlihat langsung</span></p>
+          <TeleponMockup lebar={390}>
             <PratinjauInstagram
               handle={handle}
               nama={tenant?.name ?? 'Workspace'}
@@ -478,13 +598,23 @@ export default function Composer() {
                         cursor: 'default',
                       }}
                     >
+                      {item.gambar && <img src={item.gambar} alt="" className="ig-sel-gambar" />}
+
                       <span className="ig-sel-atas">
                         <span style={{ width: 5, height: 5, borderRadius: '50%', background: warna, flexShrink: 0 }} />
                         {item.draf && (
                           <span style={{ fontSize: 8.5, fontWeight: 700, color: 'var(--accent)' }}>BARU</span>
                         )}
+                        {/* Penanda video, seperti di grid Instagram asli. */}
+                        {item.video && (
+                          <span style={{ marginLeft: 'auto', color: item.gambar ? '#fff' : 'var(--text-secondary)' }}>
+                            <Icon name="videocam" size={11} />
+                          </span>
+                        )}
                       </span>
-                      <span className="ig-sel-judul">{item.title}</span>
+                      {/* Judul disembunyikan kalau sudah ada gambar — di grid
+                          Instagram yang terlihat memang gambarnya saja. */}
+                      {!item.gambar && <span className="ig-sel-judul">{item.title}</span>}
                     </div>
                   )
                 })}

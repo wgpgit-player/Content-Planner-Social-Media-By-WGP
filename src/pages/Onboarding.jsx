@@ -1,3 +1,4 @@
+import { safeNext } from '../lib/checkout'
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams, Navigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
@@ -130,7 +131,7 @@ export default function Onboarding() {
     return <p style={{ padding: 24, fontSize: 13, color: 'var(--text-muted)' }}>Memuat...</p>
   }
   if (!sengajaBuatBaru && tenants.length > 0) {
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to={safeNext(params.get("next"))} replace />
   }
 
   async function buatWorkspace() {
@@ -164,7 +165,7 @@ export default function Onboarding() {
 
     await reloadTenants()
     if (data) switchTenant(data)
-    navigate('/dashboard')
+    navigate(safeNext(params.get('next')))
   }
 
   return (
@@ -321,7 +322,7 @@ export default function Onboarding() {
             </button>
           )}
           {tambahan && step === 0 && (
-            <button type="button" className="btn btn-ghost" onClick={() => navigate('/dashboard')} disabled={saving}>
+            <button type="button" className="btn btn-ghost" onClick={() => navigate(safeNext(params.get('next')))} disabled={saving}>
               Batal
             </button>
           )}

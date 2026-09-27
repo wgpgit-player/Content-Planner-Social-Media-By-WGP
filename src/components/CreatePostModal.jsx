@@ -26,11 +26,10 @@ export default function CreatePostModal({ open, onClose }) {
     onClose?.()
   }
 
-  if (!open) return null
 
   return (
     <Sheet
-      open
+      open={open}
       onClose={onClose}
       title="Mau buat konten untuk platform apa?"
       description="Bisa pilih lebih dari satu — nanti tiap platform jadi konten tersendiri."
@@ -41,7 +40,7 @@ export default function CreatePostModal({ open, onClose }) {
         </button>
       }
     >
-      <div className="platform-ikon-baris" style={{ justifyContent: 'center', flexWrap: 'wrap', gap: 12 }}>
+      <div className="platform-picker">
         {PLATFORMS.map((p) => {
           const aktif = dipilih.includes(p.key)
           return (
@@ -49,12 +48,12 @@ export default function CreatePostModal({ open, onClose }) {
               key={p.key}
               type="button"
               onClick={() => toggle(p.key)}
-              className={`platform-ikon-btn platform-ikon-btn-besar${aktif ? ' aktif' : ''}`}
+              className={`platform-choice${aktif ? ' aktif' : ''}`}
               style={{ '--platform-warna': p.color, '--platform-latar': p.bg }}
               aria-pressed={aktif}
               title={p.label}
             >
-              <Icon name={p.icon} size={22} />
+              <Icon name={p.icon} size={23} /><span>{p.label}</span>
               {aktif && (
                 <span className="platform-ikon-centang">
                   <Icon name="checkmark" size={9} />

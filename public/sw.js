@@ -20,7 +20,7 @@
       pada deploy berikutnya. Aset disimpan saat pertama kali diminta.
    ========================================================================== */
 
-const VERSI = 'plannersm-v1'
+const VERSI = 'plannersm-brand-v2'
 const KERANGKA = '/index.html'
 
 // Ionicons dilayani dari jsDelivr dengan nomor versi terkunci, jadi isinya

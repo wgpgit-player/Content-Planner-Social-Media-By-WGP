@@ -7,6 +7,7 @@ import SetupNeeded from './pages/SetupNeeded.jsx'
 
 import Landing from './pages/Landing.jsx'
 import HomePage from './pages/Home.jsx'
+import Operator from './pages/Operator.jsx'
 import Login from './pages/Login.jsx'
 import Signup from './pages/Signup.jsx'
 import Onboarding from './pages/Onboarding.jsx'
@@ -33,6 +34,7 @@ import GridPreview from './pages/GridPreview.jsx'
 import Reminders from './pages/Reminders.jsx'
 import Composer from './pages/Composer.jsx'
 import Strategy from './pages/Strategy.jsx'
+import Bayar from './pages/Bayar.jsx'
 
 // Struktur route:
 //   Publik           → /login, /signup, /invite/:token
@@ -86,6 +88,7 @@ export default function App() {
             {/* Root adalah halaman publik. Pengunjung yang sudah login tidak perlu
                 melihat halaman jualan lagi, jadi dialihkan ke dashboard. */}
             <Route path="/" element={<BerandaPublik />} />
+            <Route path="/tentang" element={<Landing />} />
             <Route path="/home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/kanban" element={<ProtectedRoute><KanbanBoard /></ProtectedRoute>} />
@@ -108,6 +111,11 @@ export default function App() {
             <Route path="/kpi" element={<ProtectedRoute><Kpi /></ProtectedRoute>} />
             <Route path="/team" element={<ProtectedRoute><Team /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            <Route path="/bayar" element={<ProtectedRoute><Bayar /></ProtectedRoute>} />
+
+            {/* Konsol operator platform. Penjaganya ada di database (RPC
+                menolak yang bukan operator); rute ini cuma pintunya. */}
+            <Route path="/operator" element={<RequireAuth><Operator /></RequireAuth>} />
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

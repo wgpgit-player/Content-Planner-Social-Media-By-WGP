@@ -1,0 +1,303 @@
+/* Visual workspace: pale blue surfaces, readable navy, content-first hierarchy.
+   Scoped to application shells so public/auth screens keep their own identity. */
+.app-shell, .app-shell-bare {
+  --bg-page:#f4f7fe; --surface-1:#f4f9fd; --surface-2:#fff;
+  --text-primary:#104b69; --text-secondary:#627797; --text-muted:#7184a3;
+  --border:#e3eaf5; --border-strong:#cbdbea;
+  --planner-blue:#81c7eb; --planner-blue-text:#124b69;
+  color:var(--text-primary); font-family:'Segoe UI',system-ui,sans-serif;
+}
+.app-shell a, .app-shell-bare a { text-underline-offset:3px; }
+.app-shell :focus-visible, .app-shell-bare :focus-visible {outline:3px solid #237faa;outline-offset:3px;}
+@media(min-width:901px) {
+  .app-shell {padding:0;gap:0;grid-template-columns:224px minmax(0,1fr);grid-template-rows:96px minmax(0,1fr);}
+  .app-sidebar-wrap {grid-column:1;grid-row:1 / -1;}
+  .topbar-desktop-wrap {grid-column:2;grid-row:1;padding:20px 32px 12px;min-width:0;}
+  .app-main {grid-column:2;grid-row:2;padding:12px 32px 40px;max-width:none!important;}
+}
+.app-sidebar {width:100%;padding:0 14px 20px;border:0;border-right:1px solid var(--border);border-radius:0;box-shadow:none;}
+.sidebar-brand {margin:0 -14px 23px;background:#8ac9e9;padding:22px 23px 20px;display:flex;flex-direction:column;gap:4px;}
+.sidebar-wordmark {font-size:25px;letter-spacing:-1.1px;font-weight:750;color:#164e6a;}
+.sidebar-wordmark>span {font-weight:400;color:#fff;}
+.sidebar-brand-caption {font-size:11px;color:#28566f;letter-spacing:.2px;}
+.sidebar-tombol-buat {min-height:43px!important;background:#eaf6fd!important;color:#226788!important;border:1px solid #d5eafb!important;box-shadow:none;margin:3px 0 14px;}
+.sidebar-group {border-top:1px solid #edf1f7;padding:9px 0;}
+.sidebar-group-label {text-transform:none;font-size:11px;letter-spacing:.3px;font-weight:650;color:#6b8099;margin:7px 12px;}
+.sidebar-item {min-height:41px;gap:11px;padding:10px 12px;border-radius:9px;font-size:12.5px;color:#607895;}
+.sidebar-item.active {background:#ecf7fd;color:#155c7e;box-shadow:inset 3px 0 #80c7ec;}
+.sidebar-item:hover {background:#f2f8fc;color:#164e6a;}
+.sidebar-group-toggle {list-style:none;display:flex;align-items:center;justify-content:space-between;padding:10px 12px;font-size:12px;font-weight:600;cursor:pointer;color:#57708e;}
+.sidebar-group-toggle::-webkit-details-marker {display:none;}
+.sidebar-group[open]>.sidebar-group-toggle ion-icon {transform:rotate(180deg);}
+.topbar-desktop {border:0;border-radius:0;background:transparent;box-shadow:none;gap:18px;padding:0;overflow:visible;height:60px;}
+.social-shortcuts {display:flex;gap:12px;align-items:center;flex-shrink:0;}
+.social-shortcut {display:flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:50%;background:white;text-decoration:none;border:1px solid transparent;transition:transform .15s,border-color .15s;}
+.social-shortcut:hover {transform:translateY(-2px);border-color:#91c8e5;}
+.topbar-inspiration {display:flex;align-items:center;gap:10px;padding:16px 18px;border-radius:10px;background:#fff;color:#426c87;font-size:12px;text-decoration:none;margin-left:auto;white-space:nowrap;}
+.topbar-ikon-bulat {width:46px;height:46px;background:#fff;color:#728bac;border:0;}
+.topbar-upload {background:var(--planner-blue);color:#144c6b;}
+.home-workspace {max-width:1350px;margin:0 auto;display:flex;flex-direction:column;}
+.home-header {order:1;min-height:42px;margin:2px 0 18px;gap:14px;}
+.home-sapaan {font-size:clamp(24px,2.35vw,35px);font-weight:650;letter-spacing:-1px;line-height:1.3;margin:2px 0 9px;}
+.home-workspace>.page-subtitle {color:#637998;font-size:14px;margin-bottom:12px!important;}
+.home-header-nav {margin-left:auto;gap:16px;font-size:13px;color:#255875;}
+.home-header-nav button {width:36px;height:36px;border-radius:8px;background:white;color:#225c80;}
+.home-header-ide {font-size:12px;background:white;padding:9px 13px;max-width:65%;}
+.home-kartu-grid {order:2;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;background:white;padding:22px;border-radius:20px;box-shadow:0 8px 32px #1b497008;}
+.home-kartu {background:#fff;border:1px solid #dfe7f5;border-radius:14px;padding:14px;text-align:left;display:flex;flex-direction:column;gap:0;min-height:395px;color:var(--text-primary);transition:border-color .15s,box-shadow .15s;}
+.home-kartu:hover {transform:none;border-color:#82bfe0;box-shadow:0 6px 20px #2755760b;}
+.home-kartu-judul {font-size:16px;font-weight:600;margin:20px 0 9px;line-height:1.4;}
+.home-kartu-deskripsi {font-size:13px;line-height:1.85;color:#65799a;margin-bottom:24px;}
+.home-kartu-aksi {display:flex;justify-content:center;align-items:center;gap:9px;margin-top:auto;min-height:38px;border:1px solid #d5e4f2;border-radius:7px;color:#236182;font-size:12px;font-weight:650;}
+.home-kartu:first-child .home-kartu-aksi {background:#86cbed;border-color:#86cbed;color:#134762;}
+.home-art {height:190px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;border-radius:10px;width:100%;background:#c5eafa;}
+.home-art-plan {background:#c7e8e5;}
+.home-art-create {background:#dfd2fb;}
+.art-orbit {position:absolute;width:195px;height:195px;border:1px solid #ffffff80;border-radius:50%;right:-35px;top:-40px;box-shadow:0 0 0 25px #ffffff20,0 0 0 50px #ffffff18;}
+.art-sheet {width:130px;height:160px;padding:11px;background:#fff;border-radius:12px;transform:rotate(-9deg) translateY(12px);box-shadow:0 12px 25px #24608221;}
+.home-art-plan .art-sheet {transform:rotate(7deg) translateY(12px);width:145px;}
+.home-art-create .art-sheet {transform:rotate(-5deg) translateY(12px);}
+.art-sheet-top {display:flex;gap:3px;margin-bottom:10px;}
+.art-sheet-top span {width:4px;height:4px;border-radius:50%;background:#a9bccd;}
+.art-picture {height:85px;background:#5896b9;color:#fff;border-radius:6px;display:flex;justify-content:center;align-items:center;}
+.home-art-plan .art-picture {background:#76b9b2;}
+.home-art-create .art-picture {background:#a38aca;}
+.art-line {height:5px;background:#e2edf4;margin-top:10px;border-radius:2px;}
+.art-line.short {width:63%;margin-top:6px;}
+.art-sticker {position:absolute;left:10px;bottom:25px;padding:9px 10px;background:white;border-radius:7px;box-shadow:0 5px 12px #38678615;display:flex;gap:6px;align-items:center;font-size:9px;color:#285b77;transform:rotate(-3deg);}
+.art-bubble {position:absolute;right:18px;top:24px;border-radius:12px;width:48px;height:48px;background:#ffffffec;display:flex;align-items:center;justify-content:center;color:#4b98be;transform:rotate(10deg);}
+.home-next {order:3;display:flex;align-items:center;gap:10px;padding:24px 4px;color:#6a7f98;font-size:12px;}
+.home-next .btn {margin-left:auto;background:white;}
+.bare-topbar {padding:15px 30px;background:#ffffffd9;border-bottom:1px solid var(--border);}
+.bare-judul-teks {font-size:17px;}
+.bare-main {padding:26px 30px 40px;}
+.app-shell-bare .btn-primary {background:#83c9eb;color:#174a65;border-color:#83c9eb;}
+.compose-dua {display:grid;grid-template-columns:minmax(0,1.45fr) minmax(310px,1fr);gap:32px;align-items:start;max-width:1500px;margin:0 auto;}
+.compose-workspace {min-width:0;}
+.compose-dates {display:flex;align-items:center;gap:6px;background:white;border-radius:15px;padding:10px 16px;margin-bottom:22px;}
+.strip-hari-sel {min-width:32px;padding:7px 3px;}
+.strip-hari-sel.aktif {background:#e6f5fe;border-color:#d1eafa;}
+.strip-hari-sel.aktif .strip-hari-nama,.strip-hari-sel.aktif .strip-hari-angka {color:#216b94;}
+.strip-hari-nama {font-size:11px;color:#7183a0;}
+.strip-hari-angka {font-size:15px;}
+.compose-format {background:white;padding:22px 25px 0;display:flex;align-items:center;gap:22px;border-radius:18px 18px 0 0;}
+.compose-format-active {font-size:16px;font-weight:650;border-bottom:2px solid #1c6286;padding-bottom:14px;}
+.compose-format-note {font-size:12px;color:#7c8ea7;margin-left:auto;padding-bottom:14px;}
+.compose-controls {display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:white;padding:22px 25px 18px;}
+.compose-controls .platform-ikon-btn {width:35px;height:35px;border-radius:9px;border-width:1px;}
+.compose-controls .platform-ikon-baris {gap:6px;}
+.compose-editor {grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;background:white;padding:0 25px 26px;border-radius:0 0 18px 18px;}
+.compose-editor>div {min-width:0;}
+.compose-kanvas {max-width:none;min-height:240px;aspect-ratio:4/5;border:1px dashed #c5dfed;border-radius:10px;background:#f0f9fe;}
+.compose-kanvas-plus {background:transparent;color:#5b9fbd;}
+.compose-caption-utama {min-height:250px;background:#f9fbff;border:1px solid #e5eaf6;border-radius:10px;font-size:14px;line-height:1.8;}
+.compose-editor .field-hint {font-size:11px;line-height:1.6;color:#74839b;}
+.compose-pratinjau {padding-top:3px;max-width:100%;min-width:0;}
+.compose-preview-label {font-size:13px;font-weight:600;margin-bottom:15px;display:flex;gap:12px;align-items:center;}
+.compose-preview-label span {font-size:11px;font-weight:400;color:#73859d;}
+.compose-pratinjau .hp {--hp-w:min(340px,100cqw)!important;max-width:100%;background:#fff;border-color:#fff;box-shadow:0 12px 40px #285a7a12;}
+.compose-pratinjau .hp-isi {background:#f9fcff;}
+@media(min-width:901px) and (max-width:1200px) {
+ .app-shell {grid-template-columns:200px minmax(0,1fr);}
+ .topbar-desktop-wrap {padding-left:22px;padding-right:22px;}
+ .app-main {padding-left:22px;padding-right:22px;}
+ .social-shortcuts {gap:8px;}.social-shortcut {width:40px;height:40px;}
+ .topbar-inspiration {display:none;}.topbar-kanan {margin-left:auto;}
+ .home-kartu-grid {padding:15px;gap:12px;}.home-kartu {padding:10px;}.home-art {height:165px;}
+ .home-kartu-judul {font-size:14px;}.home-kartu-deskripsi {font-size:12px;}
+ .compose-dua {gap:22px;grid-template-columns:minmax(0,1.4fr) minmax(290px,1fr);}
+ .compose-controls,.compose-format {padding-left:18px;padding-right:18px;}.compose-editor {gap:14px;padding:0 18px 22px;}
+}
+@media(max-width:900px) {
+ .app-shell {padding:0 18px 86px;gap:16px;}
+ .app-main {max-width:none!important;padding:15px 0;overflow:visible;}
+ .home-sapaan {font-size:28px;}.home-kartu-grid {padding:16px;gap:16px;grid-template-columns:repeat(3,minmax(0,1fr));}
+ .home-art {height:150px;}.home-kartu {padding:10px;min-height:360px;}.home-kartu-judul {font-size:14px;}
+ .compose-dua {grid-template-columns:minmax(0,1fr);gap:28px;}
+ .compose-pratinjau {position:static;}.compose-pratinjau .hp {--hp-w:min(340px,100cqw)!important;}
+ .bare-main {padding:18px 16px 95px;}.bare-topbar {padding:12px 16px;}
+ .compose-editor {grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media(max-width:600px) {
+ .home-kartu-grid {grid-template-columns:minmax(0,1fr);padding:12px;}
+ .home-kartu {padding:14px;min-height:0;}.home-art {height:180px;}
+ .home-kartu-judul {font-size:17px;}.home-kartu-deskripsi {font-size:14px;}
+ .home-header {flex-wrap:wrap;}.home-header-ide {max-width:100%;}.home-header-nav {margin-left:0;width:100%;justify-content:space-between;}
+ .home-next {flex-wrap:wrap;line-height:1.7;}.home-next>span {flex:1;}.home-next .btn {width:100%;}
+ .compose-editor {grid-template-columns:minmax(0,1fr);padding:0 18px 20px;}
+ .compose-format {padding:18px 18px 0;}.compose-controls {padding:18px;}
+ .compose-format-note {font-size:10px;}.compose-kanvas {min-height:220px;aspect-ratio:1;}
+ .compose-caption-utama {min-height:180px;}.bare-judul-sub {font-size:10px;}
+ .compose-dates {padding:8px 5px;gap:0;}.strip-hari {gap:0;}.strip-hari-sel {min-width:26px;}
+ .bare-aksi .btn {font-size:11px;padding:8px;}.compose-preview-label {flex-wrap:wrap;justify-content:center;}
+}
+@media(prefers-reduced-motion:reduce) {.social-shortcut,.home-kartu {transition:none;}}
+/* Keep the card action full-width and clear the fixed mobile workspace bar. */
+.home-kartu-aksi { width:100%; }
+@media(max-width:900px) {
+  .app-main {padding-top:72px;}
+}
+
+/* Responsive revision: content must shrink within grid tracks, while long
+   forms scroll inside the available height instead of enlarging the viewport. */
+.app-shell,.app-shell-bare {width:100%;max-width:100%;min-width:0;}
+.app-main,.bare-main,.topbar-desktop-wrap,.topbar-desktop,.home-workspace,.compose-dua {min-width:0;max-width:100%;}
+.app-main,.bare-main {scrollbar-gutter:stable;}
+.home-welcome {display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:24px;}
+.home-welcome>div:first-child {min-width:0;}
+.home-welcome .home-sapaan {font-size:clamp(24px,2.2vw,32px);line-height:1.3;}
+.home-welcome .page-subtitle {font-size:13px;line-height:1.6;color:#637998;}
+.home-welcome .home-header {margin:0;flex-shrink:0;}
+.home-header-ide {display:none;}
+.home-kartu-grid {width:100%;gap:16px;padding:18px;}
+.home-kartu {min-width:0;min-height:350px;align-items:stretch;}
+.home-art {height:165px;flex-shrink:0;}
+.home-kartu-judul {font-size:15px;margin-top:18px;}
+.home-kartu-deskripsi {line-height:1.7;margin-bottom:20px;}
+.home-next {padding:18px 2px;}
+.social-shortcuts {min-width:0;flex-shrink:1;overflow-x:auto;scrollbar-width:thin;padding:3px;}
+.social-shortcut {flex-shrink:0;}
+.topbar-desktop {gap:14px;}
+.topbar-inspiration {flex-shrink:0;}
+.compose-dua {width:100%;grid-template-columns:minmax(0,1fr) minmax(270px,340px);gap:28px;}
+.compose-pratinjau {container-type:inline-size;width:100%;position:sticky;top:0;}
+.compose-pratinjau .hp {width:var(--hp-w);height:min(650px,calc(100dvh - 175px));min-height:320px;aspect-ratio:auto;}
+.compose-pratinjau .hp-isi {min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;}
+.compose-preview-label {justify-content:space-between;flex-wrap:wrap;gap:4px;width:100%;}
+.compose-preview-label span {font-size:10px;}
+.compose-kanvas {min-height:190px;aspect-ratio:1;max-height:360px;}
+.compose-caption-utama {min-height:200px;}
+.compose-format {padding-top:18px;}
+.compose-controls {padding-top:16px;}
+.compose-editor {gap:18px;}
+.bare-topbar {min-width:0;flex-wrap:wrap;gap:10px;}
+.bare-aksi {margin-left:auto;max-width:100%;}
+.trial-nudge {order:4;display:flex;gap:14px;align-items:center;border:1px solid #d9e9f3;background:#edf7fd;padding:16px 20px;border-radius:14px;margin-bottom:12px;}
+.trial-nudge-icon {display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:white;color:#3684a5;flex-shrink:0;}
+.trial-nudge strong {font-size:13px;font-weight:650;}
+.trial-nudge p {font-size:12px;color:#627f95;margin-top:4px;}
+.trial-open {margin-left:auto;white-space:nowrap;background:#fff;border-color:#cddfea;color:#175875;}
+/* A single, centred and bounded dialog on desktop/tablet; bottom sheet only
+   on small phones. Footer remains visible while the body scrolls. */
+.sheet-lapis {padding:20px;align-items:center;background:#1d385566;backdrop-filter:blur(5px);animation:planner-overlay-in 220ms ease both;}
+.sheet-panel {width:min(100%,var(--sheet-lebar,440px));max-width:var(--sheet-lebar,440px);max-height:calc(100dvh - 40px);border:1px solid #e4edf4;border-radius:22px;background:#fff;color:#164864;box-shadow:0 24px 80px #102f5533;animation:planner-dialog-in 280ms cubic-bezier(.2,.8,.2,1) both;}
+.sheet-kepala {position:relative;display:flex;align-items:flex-start;gap:14px;padding:22px 24px 8px;flex-shrink:0;}
+.sheet-judul-blok {padding:0;min-width:0;flex:1;}
+.sheet-judul {font-size:18px;line-height:1.4;letter-spacing:-.35px;}
+.sheet-ket {font-size:13px;line-height:1.6;color:#6b7f96;margin-top:6px;}
+.sheet-close {width:32px;height:32px;flex-shrink:0;border:1px solid #e2ebf2;border-radius:50%;background:#f5f9fc;color:#456b86;display:grid;place-items:center;cursor:pointer;}
+.sheet-badan {min-height:0;overflow-y:auto;padding:16px 24px 22px;}
+.sheet-kaki {padding:16px 24px;background:#f7fafd;border-top:1px solid #e6edf5;}
+.sheet-closing {animation:planner-overlay-out 180ms ease both;pointer-events:none;}
+.sheet-closing .sheet-panel {animation:planner-dialog-out 180ms ease both;}
+.sheet-panel :focus-visible {outline:3px solid #458fae;outline-offset:3px;}
+.platform-picker {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
+.platform-choice {position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:82px;border:1px solid #e2eaf4;border-radius:13px;background:#fff;color:#6b829d;font:inherit;font-size:12px;cursor:pointer;}
+.platform-choice.aktif {color:#256b91;border-color:#79bbdb;background:#edf8ff;box-shadow:0 0 0 2px #cce9f733;}
+.platform-choice .platform-ikon-centang {right:6px;bottom:auto;top:6px;background:#438eaf;}
+.sheet-kaki>.btn-primary {background:#3585a7;border-color:#3585a7;color:#fff;min-height:42px;}
+.offer-hero {display:grid;grid-template-columns:minmax(0,1.2fr) minmax(170px,1fr);gap:18px;align-items:center;background:#eaf5f9;border-radius:15px;padding:24px;overflow:hidden;}
+.offer-badge {font-size:11px;color:#2b748f;background:#ffffffb3;border:1px solid #d1e8f0;border-radius:20px;padding:5px 9px;display:inline-block;}
+.offer-hero h3 {font-size:28px;line-height:1.25;letter-spacing:-.9px;margin:12px 0;color:#16516a;}
+.offer-hero p {font-size:12px;line-height:1.7;color:#617f91;max-width:270px;}
+.offer-illustration {position:relative;padding:10px;}
+.offer-calendar {padding:15px;border-radius:15px;background:white;box-shadow:0 12px 25px #2a71851a;transform:rotate(-5deg);}
+.offer-calendar>span {display:block;font-size:10px;color:#648097;margin-bottom:12px;}
+.offer-calendar>div {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;}
+.offer-calendar i {display:grid;place-items:center;aspect-ratio:1;border-radius:5px;background:#f1f6fb;}
+.offer-calendar .filled {color:#4186a7;background:#d5ecf6;}.offer-calendar .filled:nth-child(6) {background:#e6dcfa;color:#9b7abb;}.offer-calendar .filled:nth-child(9) {background:#d3ece4;color:#589c87;}
+.offer-spark {position:absolute;right:-2px;top:-7px;width:44px;height:44px;background:#fff3ce;color:#b49436;border-radius:13px;display:grid;place-items:center;transform:rotate(12deg);box-shadow:0 5px 15px #536c8612;}
+.offer-plan-heading {display:flex;align-items:center;justify-content:space-between;gap:10px;margin:22px 0 12px;}
+.offer-plan-heading h3 {font-size:14px;}.offer-plan-heading>span {font-size:11px;color:#70869a;}
+.offer-plans {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
+.offer-plan {border:1px solid #dfe8f0;background:white;border-radius:12px;padding:15px;text-align:left;cursor:pointer;color:#1c526e;min-width:0;font:inherit;}
+.offer-plan.selected {border-color:#6cb3d2;background:#f0f9fd;box-shadow:0 0 0 2px #d8edf7;}
+.offer-plan-name {display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:16px;font-weight:650;margin-bottom:10px;overflow-wrap:anywhere;}
+.offer-plan>span:last-child {font-size:11px;line-height:1.6;color:#688397;display:block;}
+.offer-note {font-size:11px;line-height:1.7;color:#708296;margin-top:14px;}
+.offer-footer {display:flex;justify-content:space-between;align-items:center;gap:14px;width:100%;}
+.offer-contact {background:#26795f;color:#fff!important;border:1px solid #26795f;min-height:43px;text-decoration:none;}
+.offer-contact:hover {background:#1e624e;}
+/* Interaction feedback, with a short restrained entrance per navigation. */
+.app-main,.bare-main {animation:planner-page-in 260ms cubic-bezier(.2,.8,.2,1) both;}
+.app-shell button,.app-shell a,.app-shell-bare button,.app-shell-bare a,.sheet-panel button,.sheet-panel a {transition:background-color 180ms ease,border-color 180ms ease,box-shadow 180ms ease,transform 180ms cubic-bezier(.2,.8,.2,1);}
+.home-kartu:hover {transform:translateY(-3px);box-shadow:0 12px 26px #23557510;}
+.home-kartu .art-sheet {transition:transform 300ms cubic-bezier(.2,.8,.2,1);}
+.home-kartu:hover .art-sheet {transform:rotate(-3deg) translateY(7px);}
+.btn:active:not(:disabled),.social-shortcut:active,.platform-choice:active,.offer-plan:active {transform:scale(.975);}
+.sidebar-item:hover {transform:translateX(2px);}
+@keyframes planner-page-in {from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+@keyframes planner-overlay-in {from{opacity:0}to{opacity:1}}
+@keyframes planner-overlay-out {from{opacity:1}to{opacity:0}}
+@keyframes planner-dialog-in {from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes planner-dialog-out {from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.985)}}
+@media(min-width:901px) {
+ .app-shell {grid-template-columns:208px minmax(0,1fr);grid-template-rows:82px minmax(0,1fr);}
+ .topbar-desktop-wrap {padding:13px 24px 9px;}.app-main {padding:12px 24px 28px;}
+ .topbar-desktop {height:56px;}.social-shortcut {width:42px;height:42px;}
+ .social-shortcuts {gap:9px;}.topbar-inspiration {padding:13px 15px;}
+ .bare-main {padding:20px 24px 24px;}.bare-topbar {padding:12px 24px;}
+}
+@media(min-width:901px) and (max-width:1150px) {
+ .app-shell {grid-template-columns:190px minmax(0,1fr);}
+ .home-welcome {align-items:flex-start;}.home-welcome .home-sapaan {font-size:25px;}
+ .home-kartu-grid {padding:12px;gap:10px;}.home-kartu {padding:10px;}.home-art {height:140px;}
+ .compose-dua {grid-template-columns:minmax(0,1fr) minmax(250px,300px);gap:20px;}
+ .compose-editor {grid-template-columns:minmax(0,1fr);}.compose-kanvas {aspect-ratio:4/3;max-height:260px;}
+}
+@media(min-width:901px) and (max-height:720px) {
+ .home-welcome {margin-bottom:16px;}.home-art {height:125px;}.art-sheet {transform:rotate(-9deg) translateY(20px) scale(.85);}
+ .home-art-plan .art-sheet,.home-art-create .art-sheet {transform:rotate(6deg) translateY(20px) scale(.85);}
+ .home-kartu {min-height:300px;}.home-kartu-judul {margin-top:12px;}.home-kartu-deskripsi {font-size:12px;line-height:1.6;margin-bottom:16px;}
+ .home-next {padding:12px 2px;}.compose-kanvas {min-height:160px;max-height:270px;}.compose-caption-utama {min-height:175px;}
+ .compose-dates {padding:6px 10px;margin-bottom:14px;}.compose-controls {padding-top:12px;padding-bottom:12px;}
+}
+@media(max-width:900px) {
+ .compose-dua {grid-template-columns:minmax(0,1fr);width:100%;}
+ .compose-pratinjau {position:static;max-width:380px;justify-self:center;}
+ .compose-pratinjau .hp {height:560px;min-height:0;}
+ .home-welcome {flex-wrap:wrap;gap:12px;margin-bottom:18px;}.home-welcome .home-header {width:100%;}
+ .home-welcome .home-header-nav {margin-left:0;width:100%;justify-content:space-between;}
+ .home-kartu-grid {grid-template-columns:repeat(2,minmax(0,1fr));}
+ .home-kartu:last-child {grid-column:1/-1;}.home-kartu:last-child .home-art {height:140px;}
+ .home-kartu {min-height:0;}.home-kartu-aksi {margin-top:auto;}
+ .trial-nudge {flex-wrap:wrap;}.trial-nudge>div {flex:1;}.trial-open {margin-left:54px;}
+}
+@media(max-width:600px) {
+ .home-kartu-grid {grid-template-columns:minmax(0,1fr);padding:10px;gap:14px;}
+ .home-kartu {padding:14px;}.home-art,.home-kartu:last-child .home-art {height:165px;}
+ .home-kartu-judul {font-size:17px;}.home-kartu-deskripsi {font-size:13px;}
+ .home-welcome .home-sapaan {font-size:26px;}
+ .sheet-lapis {padding:12px;align-items:center;}.sheet-panel {max-height:calc(100dvh - 24px);border-radius:18px;}
+ .sheet-kepala {padding:18px 16px 8px;}.sheet-badan {padding:12px 16px 18px;}.sheet-kaki {padding:12px 16px;}
+ .sheet-judul {font-size:16px;}.sheet-ket {font-size:12px;}
+ .platform-picker {gap:8px;}.platform-choice {min-height:72px;font-size:11px;}
+ .offer-hero {grid-template-columns:minmax(0,1fr);padding:20px;}.offer-hero h3 {font-size:25px;}.offer-illustration {display:none;}
+ .offer-plans {grid-template-columns:minmax(0,1fr);gap:8px;}.offer-plan {padding:12px;}.offer-plan-name {font-size:14px;margin-bottom:4px;}
+ .offer-plan-heading {flex-wrap:wrap;margin-top:18px;}.offer-footer {flex-direction:column-reverse;gap:8px;}.offer-footer>* {width:100%;}
+ .trial-nudge {padding:14px;}.trial-open {width:100%;margin-left:0;}
+}
+@media(prefers-reduced-motion:reduce) {
+ .app-main,.bare-main,.sheet-lapis,.sheet-panel,.sheet-closing,.sheet-closing .sheet-panel {animation:none!important;}
+ .app-shell *,.app-shell-bare *,.sheet-panel * {transition:none!important;scroll-behavior:auto!important;}
+ .home-kartu:hover,.home-kartu:hover .art-sheet,.sidebar-item:hover,.btn:active:not(:disabled) {transform:none;}
+}
+/* Keep the offer illustration compact on short laptop displays. */
+.offer-illustration {max-width:215px;width:100%;justify-self:center;}
+.offer-hero {padding:20px;}
+.offer-hero h3 {font-size:26px;}
+@media(min-width:601px) and (max-height:700px) {
+ .offer-hero {padding:16px 20px;}
+ .offer-illustration {max-width:175px;}
+ .offer-hero h3 {font-size:24px;margin:9px 0;}
+ .offer-hero p {font-size:11px;}
+ .offer-plan-heading {margin-top:16px;}
+}
+@media(min-width:901px) and (max-height:700px) {
+ .home-kartu-grid {padding:14px;}
+ .home-kartu {min-height:270px;}
+ .home-art {height:110px;}
+ .home-welcome {margin-bottom:14px;}
+ .home-next {padding:10px 2px;}
+ .trial-nudge {padding:12px 16px;}
+}

@@ -63,7 +63,13 @@
    atas dan sidebar jadi benar-benar diam, bukan sekadar "sticky".
    Di ponsel (lihat media query di bawah) polanya beda dan tetap dipakai
    body yang bergulir, karena bilah atas/tab bar di sana position:fixed. */
-html, body, #root { height: 100%; }
+html, body { height: 100%; }
+
+/* min-height, bukan height: halaman publik (landing, login, tinjauan
+   klien) boleh tumbuh melebihi layar dan membuat body menggulir. Halaman
+   di dalam aplikasi tidak ikut tumbuh karena kerangkanya sendiri dikunci
+   setinggi satu layar (lihat .app-shell di bawah). */
+#root { min-height: 100%; }
 
 body {
   margin: 0;
@@ -71,7 +77,14 @@ body {
   color: var(--text-primary);
   font-size: 14px;
   line-height: 1.5;
-  overflow: hidden;
+  /* TIDAK dikunci overflow:hidden.
+     Pernah dikunci di sini supaya sidebar tidak ikut tergulir, dan itu
+     diam-diam merusak semua halaman DI LUAR kerangka aplikasi: landing
+     page, login, dan terutama halaman tinjauan klien — ketiganya lebih
+     tinggi dari layar dan mendadak tidak bisa digulir sama sekali.
+     Kunci scroll sekarang dipasang di .app-shell dan .app-shell-bare
+     saja (keduanya setinggi persis satu layar, jadi body memang tidak
+     pernah perlu menggulir saat berada di dalam aplikasi). */
 }
 
 h1, h2, h3, h4, p { margin: 0; }
@@ -372,11 +385,10 @@ h1, h2, h3, h4, p { margin: 0; }
 
 .app-shell {
   background: var(--bg-page);
-  /* 100% (bukan 100vh) — mewarisi tinggi dari html/body yang sudah
-     dikunci. Saat layar di-zoom, 100vh dan tinggi sesungguhnya bisa
-     berbeda di sebagian peramban, dan selisih itulah yang bikin isinya
-     bergeser. Mewarisi lewat rantai html > body > #root selalu tepat. */
-  height: 100%;
+  /* 100dvh: tinggi viewport yang menyesuaikan bilah alamat peramban
+     ponsel. Tidak bisa lagi mewarisi 100% dari #root karena #root kini
+     memakai min-height supaya halaman publik bebas tumbuh. */
+  height: 100dvh;
   overflow: hidden;
   padding: 16px;
   display: grid;
@@ -523,7 +535,7 @@ h1, h2, h3, h4, p { margin: 0; }
    ============================================================ */
 .app-shell-bare {
   background: var(--bg-page);
-  height: 100%;
+  height: 100dvh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -764,7 +776,35 @@ h1, h2, h3, h4, p { margin: 0; }
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 
-.compose-kanvas:hover { border-color: var(--accent); background: var(--accent-bg); }
+.compose-kanvas:hover,
+.compose-kanvas.seret { border-color: var(--accent); background: var(--accent-bg); }
+
+/* Saat berisi gambar, garis putus-putusnya dilepas — ia bukan lagi
+   "tempat kosong yang menunggu diisi". */
+.compose-kanvas:has(.compose-kanvas-terisi) {
+  border-style: solid;
+  border-color: var(--border);
+  background: var(--surface-2);
+  padding: 0;
+}
+
+.compose-kanvas-ganti {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: color-mix(in srgb, #17171F 62%, transparent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.compose-kanvas-ganti:hover { background: var(--danger); }
 
 .compose-kanvas-plus {
   width: 46px;
@@ -788,10 +828,13 @@ h1, h2, h3, h4, p { margin: 0; }
   position: relative;
 }
 
-.compose-kanvas-terisi img {
+.compose-kanvas-terisi img,
+.compose-kanvas-terisi video {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
+  background: #0E0E12;
 }
 
 .compose-kanvas-tautan {
@@ -1949,6 +1992,176 @@ h1, h2, h3, h4, p { margin: 0; }
   .media-dua { grid-template-columns: minmax(0, 1fr); }
 }
 
+/* ============================================================
+   Tiga kelas yang selama ini dipakai di JSX tanpa pernah punya CSS
+   ------------------------------------------------------------
+   Ketiganya ketahuan saat pemeriksaan silang className-vs-CSS, bukan
+   dari laporan. Tanpa aturan ini, elemennya tetap dirender tapi jadi div
+   polos: area seret-lepas tidak kelihatan sebagai area seret-lepas, dan
+   grid kartu menumpuk ke bawah satu per satu alih-alih berjajar.
+   ============================================================ */
+
+/* Area seret-lepas berkas di halaman brief (LampiranMateri.jsx). */
+.jatuhkan {
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface-1);
+  padding: 28px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.jatuhkan:hover,
+.jatuhkan.aktif {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.jatuhkan:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Grid kartu untuk perpustakaan media, set hashtag, dan saran hashtag. */
+.pustaka-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 560px) {
+  .pustaka-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+}
+
+/* Halaman klien (ClientView.jsx) — berdiri sendiri di luar AppShell,
+   jadi ia yang mengatur sendiri tinggi dan posisi tengahnya. */
+.klien-halaman {
+  min-height: 100vh;
+  background: var(--bg-page);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+}
+
+/* ============================================================
+   Pengumuman dari operator (components/PengumumanKlien.jsx)
+   dan konsol operator (pages/Operator.jsx)
+   ============================================================ */
+.pgm-carousel { margin-bottom: 12px; }
+
+.pgm-slide {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  min-height: 150px;
+  display: flex;
+  align-items: flex-end;
+  background: linear-gradient(140deg, var(--accent-soft), var(--accent-bg));
+  background-size: cover;
+  background-position: center;
+  padding: 18px;
+}
+
+/* Lapisan gelap tipis supaya teks tetap terbaca di atas gambar apa pun —
+   tanpa ini, judul putih di atas foto terang jadi hilang. */
+.pgm-slide::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 30%, rgba(14, 14, 18, 0.55));
+}
+
+.pgm-slide-isi { position: relative; z-index: 1; max-width: 70%; }
+.pgm-slide-judul { font-size: 16px; font-weight: 700; color: #fff; }
+.pgm-slide-teks { font-size: 12.5px; color: rgba(255,255,255,0.88); margin-top: 3px; line-height: 1.5; }
+
+.pgm-tutup {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(14, 14, 18, 0.45);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.pgm-tutup:hover { background: rgba(14, 14, 18, 0.7); }
+
+.pgm-titik { display: flex; justify-content: center; gap: 5px; margin-top: 8px; }
+
+.pgm-titik-satu {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: none;
+  background: var(--border-strong);
+  cursor: pointer;
+  padding: 0;
+}
+
+.pgm-titik-satu.aktif { background: var(--accent); width: 16px; border-radius: 999px; }
+
+.pgm-penawaran {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid var(--accent-soft);
+  background: var(--accent-bg);
+  margin-bottom: 10px;
+}
+
+.pgm-penawaran-gambar {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.pgm-berita {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 0.5px solid var(--border);
+  background: var(--surface-2);
+  margin-bottom: 8px;
+}
+
+.operator-ringkas {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+@media (max-width: 700px) {
+  .operator-ringkas { grid-template-columns: minmax(0, 1fr); }
+}
+
+.operator-baris {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 0.5px solid var(--border);
+}
+
+.operator-baris:last-child { border-bottom: none; }
+
 /* Home.jsx: baris kepala — ikon platform, pil ide harian, dan navigasi
    tanggal. Ide harian dan panahnya sungguhan berfungsi (lihat Home.jsx),
    bukan sekadar hiasan header. */
@@ -2985,4 +3198,274 @@ h1, h2, h3, h4, p { margin: 0; }
 ion-icon {
   display: inline-block;
   line-height: 1;
+}
+
+/* ============================================================
+   Pembayaran QRIS
+   ============================================================ */
+
+/* Kendali bersegmen (bulanan/tahunan, saringan status). Dibedakan dari
+   .pil-select yang sebenarnya sebuah <select>, bukan kumpulan tombol. */
+.segmen {
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  flex-wrap: wrap;
+}
+
+.segmen button {
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  padding: 7px 15px;
+  font-size: 12.5px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+.segmen button:hover { color: var(--text-primary); }
+
+.segmen button[aria-pressed='true'] {
+  background: var(--surface);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(20, 20, 40, 0.09);
+}
+
+.bayar-wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.bayar-qr-kolom { display: grid; gap: 10px; }
+
+.bayar-qr-kartu {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  text-align: center;
+}
+
+.bayar-qr-kepala {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+/* Kotak QR dikunci persegi supaya tata letaknya tidak melompat antara
+   saat gambar belum jadi dan sesudahnya. */
+.bayar-qr-bingkai {
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border-radius: 16px;
+  padding: 10px;
+  border: 1px solid var(--border);
+}
+
+.bayar-qr-bingkai img { width: 100%; height: 100%; object-fit: contain; display: block; }
+
+.bayar-qr-galat { font-size: 12px; color: var(--text-muted); padding: 14px; }
+
+.bayar-qr-catatan {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-top: 12px;
+}
+
+.bayar-rincian {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.bayar-status {
+  justify-self: start;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 11px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.bayar-status-menunggu { background: var(--warning-bg); color: var(--warning); }
+.bayar-status-diperiksa { background: var(--accent-bg); color: var(--accent); }
+.bayar-status-lunas { background: var(--success-bg); color: var(--success); }
+.bayar-status-ditolak,
+.bayar-status-kadaluarsa { background: var(--danger-bg); color: var(--danger); }
+
+.bayar-total-label { font-size: 12px; color: var(--text-muted); }
+
+.bayar-total {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 30px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.bayar-total button {
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  border-radius: 10px;
+  padding: 6px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.bayar-total button:hover { color: var(--text-primary); background: var(--surface-3, var(--surface-2)); }
+
+.bayar-kode {
+  display: flex;
+  gap: 9px;
+  padding: 12px 13px;
+  border-radius: 14px;
+  background: var(--warning-bg);
+  color: var(--warning);
+  margin: 4px 0 6px;
+}
+
+.bayar-kode strong { display: block; font-size: 12.5px; margin-bottom: 3px; }
+.bayar-kode span { display: block; font-size: 11.5px; line-height: 1.6; opacity: 0.92; }
+
+.bayar-daftar { display: grid; gap: 7px; margin-bottom: 4px; }
+
+.bayar-daftar > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12.5px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--border);
+}
+
+.bayar-daftar dt { color: var(--text-muted); }
+.bayar-daftar dd { font-weight: 550; text-align: right; }
+
+.bayar-paket-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.bayar-paket {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+
+.bayar-paket:hover { border-color: var(--border-strong); }
+
+.bayar-paket.terpilih {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.bayar-paket strong { font-size: 13.5px; }
+.bayar-paket b { font-size: 17px; font-weight: 650; }
+.bayar-paket span { font-size: 11.5px; color: var(--text-secondary); line-height: 1.5; }
+
+.bayar-riwayat { display: grid; gap: 8px; }
+
+.bayar-riwayat-baris {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 12.5px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.bayar-riwayat-baris small,
+.bayar-riwayat-baris em { color: var(--text-muted); font-size: 11.5px; }
+.bayar-riwayat-baris strong { margin-left: auto; }
+
+/* ---------- sisi operator ---------- */
+
+.operator-qris-ringkas {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  margin-bottom: 14px;
+}
+
+.operator-qris-ringkas > div { flex: 1; min-width: 0; }
+.operator-qris-ringkas strong { display: block; font-size: 13.5px; }
+.operator-qris-ringkas span { display: block; font-size: 11.5px; color: var(--text-secondary); line-height: 1.5; }
+
+.operator-pesanan-daftar { display: grid; gap: 10px; }
+
+.operator-pesanan {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1.2fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.operator-pesanan-utama { display: grid; gap: 3px; min-width: 0; }
+.operator-pesanan-utama strong { font-size: 13.5px; }
+.operator-pesanan-utama small { font-size: 11.5px; color: var(--text-muted); overflow-wrap: anywhere; }
+
+.operator-pesanan-nominal { display: grid; gap: 2px; }
+.operator-pesanan-nominal b { font-size: 17px; font-weight: 650; }
+.operator-pesanan-nominal i {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--warning);
+}
+.operator-pesanan-nominal span { font-size: 11.5px; color: var(--text-secondary); }
+
+.operator-pesanan-waktu { display: grid; gap: 2px; font-size: 11.5px; color: var(--text-muted); }
+.operator-pesanan-waktu em { color: var(--text-secondary); }
+
+.operator-pesanan-aksi { display: flex; gap: 7px; flex-wrap: wrap; justify-content: flex-end; }
+.operator-pesanan-nobukti { font-size: 11.5px; color: var(--text-muted); align-self: center; }
+
+@media (max-width: 860px) {
+  .bayar-wrap { grid-template-columns: minmax(0, 1fr); }
+  .operator-pesanan { grid-template-columns: minmax(0, 1fr); }
+  .operator-pesanan-aksi { justify-content: flex-start; }
 }

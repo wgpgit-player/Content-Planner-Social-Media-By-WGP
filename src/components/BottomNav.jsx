@@ -6,6 +6,7 @@ import { NAV_GROUPS } from './Sidebar'
 import { useAuth } from '../context/AuthContext'
 import { useTenantContext } from '../context/TenantContext'
 import { TenantAvatar } from './TenantSwitcher'
+import { useOperator } from '../lib/useOperator'
 
 // Navigasi bawah untuk mobile.
 //
@@ -29,7 +30,7 @@ import { TenantAvatar } from './TenantSwitcher'
 // kebetulan juga kebiasaan yang sudah dikenal orang dari aplikasi lain.
 
 const TAB_UTAMA = [
-  { path: '/dashboard', label: 'Beranda', ikon: 'grid-outline', ikonAktif: 'grid' },
+  { path: '/home', label: 'Home', ikon: 'home-outline', ikonAktif: 'home' },
   { path: '/kanban', label: 'Tracker', ikon: 'albums-outline', ikonAktif: 'albums' },
   { path: '/content-calendar', label: 'Kalender', ikon: 'calendar-outline', ikonAktif: 'calendar' },
   { path: '/content-bank', label: 'Bank ide', ikon: 'bulb-outline', ikonAktif: 'bulb' },
@@ -38,6 +39,7 @@ const TAB_UTAMA = [
 const PATH_UTAMA = TAB_UTAMA.map((t) => t.path)
 
 export default function BottomNav() {
+  const { isOperator } = useOperator()
   const [sheetTerbuka, setSheetTerbuka] = useState(false)
   const { user, signOut, isMock } = useAuth()
   const { isAdmin, role, tenant } = useTenantContext()
@@ -147,6 +149,7 @@ export default function BottomNav() {
             </div>
           ))}
 
+          {isOperator && <NavLink to="/operator" className="sheet-baris" onClick={() => setSheetTerbuka(false)}><Icon name="shield-checkmark-outline" size={18}/><span>Dashboard admin</span></NavLink>}
           {user && (
             <button type="button" onClick={keluar} className="sheet-keluar">
               <Icon name="log-out-outline" size={17} />

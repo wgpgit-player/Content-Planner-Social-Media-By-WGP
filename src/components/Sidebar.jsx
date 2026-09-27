@@ -1,78 +1,46 @@
+import BrandLogo from './BrandLogo'
 import { useState } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTenantContext } from '../context/TenantContext'
 import TenantSwitcher from './TenantSwitcher'
 import CreatePostModal from './CreatePostModal'
 import Icon from './Icon'
+import { useOperator } from '../lib/useOperator'
 
-// Navigasi utama. Dikelompokkan per kategori, bukan daftar datar, supaya
-// gampang nambah modul baru tanpa bikin sidebar berantakan.
-//
-// `path: null` berarti halamannya belum dibangun — item tetap tampil (biar
-// kelihatan arah roadmap-nya) tapi tidak bisa diklik dan diredupkan.
-// `adminOnly: true` berarti item hanya muncul untuk anggota ber-role admin
-// di workspace yang sedang aktif.
-// `diBilahAtas: true` berarti item ini dipindah ke bilah navigasi atas
-// (components/Topbar.jsx) di layar lebar — pola yang dipakai Plann, di mana
-// tujuan yang paling sering dibuka (Home, Create, Calendar, dst) ada di
-// bilah horizontal atas, dan sidebar kiri isinya alat-alat pendukung saja.
-// Di ponsel penanda ini diabaikan; BottomNav.jsx punya daftar tab sendiri.
-//
-// Ikon memakai penamaan Ionicons v7 (https://ionic.io/ionicons).
-
-// Diekspor karena tab bar bawah di mobile (components/BottomNav.jsx) memakai
-// daftar yang sama. Dua daftar terpisah berarti menu yang baru ditambahkan
-// akan muncul di satu tempat saja, dan itu jenis ketimpangan yang baru
-// ketahuan setelah ada yang mengeluh.
+// Shared navigation keeps desktop and mobile destinations consistent.
 export const NAV_GROUPS = [
-  {
-    label: 'Utama',
-    items: [
-      { icon: 'home-outline', label: 'Home', path: '/home', diBilahAtas: true },
-      { icon: 'grid-outline', label: 'Dashboard', path: '/dashboard', diBilahAtas: true },
-      { icon: 'create-outline', label: 'Susun konten', path: '/compose', diBilahAtas: true },
-      { icon: 'calendar-outline', label: 'Content calendar', path: '/content-calendar', diBilahAtas: true },
-      { icon: 'apps-outline', label: 'Grid pratinjau', path: '/grid', diBilahAtas: true },
-      { icon: 'shield-checkmark-outline', label: 'Persetujuan', path: '/approvals', diBilahAtas: true },
-      { icon: 'albums-outline', label: 'Project tracker', path: '/kanban' },
-    ],
-  },
-  {
-    label: 'Konten',
-    items: [
-      { icon: 'bulb-outline', label: 'Bank ide konten', path: '/content-bank' },
-      { icon: 'layers-outline', label: 'Content pillar', path: '/content-pillar' },
-      { icon: 'compass-outline', label: 'Strategi konten', path: '/strategy' },
-      { icon: 'chatbubble-ellipses-outline', label: 'Caption formula', path: '/caption-formula' },
-      { icon: 'fish-outline', label: 'Hook library', path: '/hook-library' },
-      { icon: 'megaphone-outline', label: 'CTA library', path: '/cta-library' },
-      { icon: 'pricetags-outline', label: 'Set hashtag', path: '/hashtag-sets' },
-      { icon: 'images-outline', label: 'Media Collections', path: '/media' },
-    ],
-  },
-  {
-    label: 'Analitik',
-    items: [
-      { icon: 'bar-chart-outline', label: 'Performance tracker', path: '/performance-tracker' },
-      { icon: 'speedometer-outline', label: 'KPI', path: '/kpi' },
-    ],
-  },
-  {
-    label: 'Workspace',
-    items: [
-      { icon: 'people-outline', label: 'Tim', path: '/team' },
-      { icon: 'notifications-outline', label: 'Pengingat', path: '/reminders' },
-      { icon: 'link-outline', label: 'Tautan klien', path: '/client-links', adminOnly: true },
-      { icon: 'settings-outline', label: 'Pengaturan', path: '/settings', adminOnly: true },
-    ],
-  },
-  {
-    label: 'AI Asisten',
-    items: [
-      { icon: 'sparkles-outline', label: 'Chat asisten', path: null, badge: 'Segera' },
-    ],
-  },
+  { label: 'Utama', items: [
+    {icon:'home-outline',label:'Home',path:'/home'},
+    {icon:'create-outline',label:'Susun konten',path:'/compose'},
+    {icon:'calendar-outline',label:'Kalender konten',path:'/content-calendar'},
+    {icon:'apps-outline',label:'Pratinjau feed',path:'/grid'},
+  ]},
+  { label: 'Alat kreatif', items: [
+    {icon:'bulb-outline',label:'Ide konten',path:'/content-bank'},
+    {icon:'compass-outline',label:'Template & strategi',path:'/strategy'},
+    {icon:'images-outline',label:'Koleksi media',path:'/media'},
+  ]},
+  { label: 'Pustaka konten', items: [
+    {icon:'layers-outline',label:'Pilar konten',path:'/content-pillar'},
+    {icon:'chatbubble-ellipses-outline',label:'Formula caption',path:'/caption-formula'},
+    {icon:'fish-outline',label:'Pustaka hook',path:'/hook-library'},
+    {icon:'megaphone-outline',label:'Pustaka CTA',path:'/cta-library'},
+    {icon:'pricetags-outline',label:'Set hashtag',path:'/hashtag-sets'},
+  ]},
+  { label: 'Kolaborasi', items: [
+    {icon:'shield-checkmark-outline',label:'Persetujuan',path:'/approvals'},
+    {icon:'albums-outline',label:'Progres produksi',path:'/kanban'},
+    {icon:'people-outline',label:'Tim',path:'/team'},
+    {icon:'link-outline',label:'Tautan klien',path:'/client-links',adminOnly:true},
+  ]},
+  { label: 'Laporan & pengaturan', items: [
+    {icon:'grid-outline',label:'Dashboard',path:'/dashboard'},
+    {icon:'bar-chart-outline',label:'Performa konten',path:'/performance-tracker'},
+    {icon:'speedometer-outline',label:'KPI',path:'/kpi'},
+    {icon:'notifications-outline',label:'Pengingat',path:'/reminders'},
+    {icon:'settings-outline',label:'Pengaturan',path:'/settings',adminOnly:true},
+  ]},
 ]
 
 function Badge({ text }) {
@@ -88,7 +56,9 @@ function Badge({ text }) {
 export default function Sidebar() {
   const { user, signOut, isMock } = useAuth()
   const { isAdmin, role } = useTenantContext()
+  const { isOperator } = useOperator()
   const navigate = useNavigate()
+  const location = useLocation()
   const [modalBuat, setModalBuat] = useState(false)
 
   async function handleLogout() {
@@ -98,6 +68,7 @@ export default function Sidebar() {
 
   return (
     <div className="sidebar-scroll app-sidebar">
+      <div className="sidebar-brand"><BrandLogo/><span className="sidebar-brand-caption">Ruang gerak tim kreatif</span></div>
       <TenantSwitcher />
 
       {/* Satu keputusan besar, satu tombol besar — ala Plann. Membuka
@@ -111,15 +82,14 @@ export default function Sidebar() {
       <CreatePostModal open={modalBuat} onClose={() => setModalBuat(false)} />
 
       {NAV_GROUPS.map((group) => {
-        // Item bertanda diBilahAtas sudah tampil di Topbar (layar lebar),
-        // jadi tidak diulang di sini — sidebar jadi murni "alat", seperti
-        // grup TOOLS di Plann, bukan daftar dua kali untuk halaman yang sama.
-        const items = group.items.filter((i) => !i.adminOnly || isAdmin).filter((i) => !i.diBilahAtas)
+        const items = group.items.filter((i) => !i.adminOnly || isAdmin)
+        const compact = !['Utama', 'Alat kreatif'].includes(group.label)
+        const Group = compact ? 'details' : 'div'
         if (items.length === 0) return null
 
         return (
-          <div key={group.label}>
-            <p className="sidebar-group-label">{group.label.toUpperCase()}</p>
+          <Group key={group.label + location.pathname} className="sidebar-group" {...(compact ? {open: items.some(i => i.path === location.pathname)} : {})}>
+            {compact ? <summary className="sidebar-group-toggle">{group.label}<Icon name="chevron-down-outline" size={14} /></summary> : <p className="sidebar-group-label">{group.label}</p>}
             {items.map((item) =>
               item.path ? (
                 <NavLink
@@ -140,9 +110,22 @@ export default function Sidebar() {
                 </span>
               )
             )}
-          </div>
+          </Group>
         )
       })}
+
+      {/* Dashboard admin platform. Bukan bagian dari NAV_GROUPS karena ini
+          bukan menu workspace — ia milik pemilik aplikasi, dan hanya
+          terlihat oleh yang terdaftar di tabel platform_admins. */}
+      {isOperator && (
+        <div>
+          <p className="sidebar-group-label">PLATFORM</p>
+          <NavLink to="/operator" className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}>
+            <Icon name="shield-outline" size={16} />
+            <span>Konsol operator</span>
+          </NavLink>
+        </div>
+      )}
 
       {user && (
         <div style={{ marginTop: 16, paddingTop: 12, borderTop: '0.5px solid var(--border)' }}>

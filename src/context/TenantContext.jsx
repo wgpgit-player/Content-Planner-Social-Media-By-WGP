@@ -45,6 +45,7 @@ const MOCK_TENANT = {
   hero_background_url: null,
   onboarding_completed: true,
   subscription_plan: 'free',
+  subscription_status: 'trial',
   role: 'admin',
 }
 
@@ -95,7 +96,7 @@ export function TenantProvider({ children }) {
 
     const { data, error: err } = await supabase
       .from('tenant_members')
-      .select('role, tenant_id, tenants(id, name, slug, logo_url, brand_color, hero_background_url, onboarding_completed, subscription_plan)')
+      .select('role, tenant_id, tenants(id, name, slug, logo_url, brand_color, hero_background_url, onboarding_completed, subscription_plan, subscription_status)')
       .eq('user_id', user.id)
 
     if (err) {

@@ -30,7 +30,7 @@ export default function ProtectedRoute({ children }) {
 
   if (error) return <GagalMemuat pesan={error.message} onCobaLagi={reloadTenants} />
   if (tenantLoading) return <Memuat />
-  if (needsOnboarding) return <Navigate to="/onboarding" replace />
+  if (needsOnboarding) return <Navigate to={"/onboarding?next=" + encodeURIComponent(location.pathname + location.search)} replace />
 
   return children
 }

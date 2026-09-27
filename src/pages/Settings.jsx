@@ -7,6 +7,7 @@ import { PILLAR_COLOR_CHOICES } from '../config/pillarTemplates'
 import { PLATFORMS } from '../config/platforms'
 import AppShell from '../components/AppShell'
 import Icon from '../components/Icon'
+import KartuPenyimpanan from '../components/KartuPenyimpanan'
 
 // Sama dengan constraint tenants_name_length_check di database.
 const NAME_MAX = 60
@@ -454,6 +455,9 @@ export default function Settings() {
     return (
       <AppShell title="Pengaturan" description="Kelola akun dan identitas workspace ini." maxWidth={680}>
         {tabBar}
+        {/* Pemakaian penyimpanan tetap diperlihatkan ke staff: merekalah
+            yang mengunggah, jadi merekalah yang perlu tahu sisanya. */}
+        <KartuPenyimpanan />
         <div className="card">
           <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
             Kamu terdaftar sebagai staff di workspace ini. Minta admin untuk mengubah nama, logo, atau warna brand.
@@ -476,6 +480,8 @@ export default function Settings() {
           {message.text}
         </p>
       )}
+
+      <KartuPenyimpanan />
 
       <Section title="Identitas" description="Nama yang tampil di sidebar dan di seluruh aplikasi untuk workspace ini.">
         <label className="field-label" htmlFor="set-name">Nama workspace</label>

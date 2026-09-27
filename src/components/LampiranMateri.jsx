@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Icon from './Icon'
 import { supabase } from '../lib/supabaseClient'
 import { useTenantContext } from '../context/TenantContext'
-import { unggahMateri, urlMateri, hapusMateri, ukuranTerbaca, JENIS_DITERIMA } from '../lib/materi'
+import { unggahMateri, urlMateri, hapusMateri, ukuranTerbaca, jenisVideo, JENIS_DITERIMA } from '../lib/materi'
 import { useConfirm } from '../lib/useConfirm'
 
 // Lampiran materi di halaman brief.
@@ -57,7 +57,12 @@ export default function LampiranMateri({ contentId, nilai, onBerubah }) {
 
     const { error } = await supabase
       .from('content_items')
-      .update({ asset_path: hasil.path, asset_mime: hasil.mime, asset_size: hasil.size })
+      .update({
+        asset_path: hasil.path,
+        asset_mime: hasil.mime,
+        asset_size: hasil.size,
+        asset_poster_path: hasil.posterPath ?? null,
+      })
       .eq('id', contentId)
       .eq('tenant_id', tenantId)
 
@@ -70,21 +75,28 @@ export default function LampiranMateri({ contentId, nilai, onBerubah }) {
   }
 
   async function lepasMateri() {
-    const yakin = await tanya.ask({ title: 'Hapus materi ini?', description: 'Gambar yang sudah diunggah akan dihapus dari penyimpanan.' })
+    const yakin = await tanya.ask({
+      title: 'Hapus materi ini?',
+      description: 'Berkas yang sudah diunggah akan dihapus dari penyimpanan.',
+    })
     if (!yakin) return
 
     setSibuk(true)
     const path = nilai?.asset_path
+    const posterPath = nilai?.asset_poster_path
 
     const { error } = await supabase
       .from('content_items')
-      .update({ asset_path: null, asset_mime: null, asset_size: null })
+      .update({ asset_path: null, asset_mime: null, asset_size: null, asset_poster_path: null })
       .eq('id', contentId)
       .eq('tenant_id', tenantId)
 
     if (error) { setSibuk(false); setGalat(error.message); return }
 
     if (path) await hapusMateri(path)
+    // Bingkai diam video ikut dibuang — tanpa ini ia tertinggal di
+    // penyimpanan selamanya tanpa ada yang menunjuk ke sana.
+    if (posterPath) await hapusMateri(posterPath)
     setSibuk(false)
     setPratinjau(null)
     onBerubah?.()
@@ -128,15 +140,30 @@ export default function LampiranMateri({ contentId, nilai, onBerubah }) {
 
       {pratinjau ? (
         <div style={{ marginBottom: 12 }}>
-          <img
-            src={pratinjau}
-            alt="Materi konten"
-            style={{
-              width: '100%', maxHeight: 340, objectFit: 'contain',
-              borderRadius: 12, background: 'var(--surface-1)',
-              border: '0.5px solid var(--border)',
-            }}
-          />
+          {jenisVideo(nilai?.asset_mime) ? (
+            // Video diputar di tempat, supaya yang menyetujui benar-benar
+            // menonton hasilnya — bukan menyetujui sebuah nama berkas.
+            <video
+              src={pratinjau}
+              controls
+              playsInline
+              style={{
+                width: '100%', maxHeight: 340, borderRadius: 12,
+                background: '#0E0E12', border: '0.5px solid var(--border)',
+                display: 'block',
+              }}
+            />
+          ) : (
+            <img
+              src={pratinjau}
+              alt="Materi konten"
+              style={{
+                width: '100%', maxHeight: 340, objectFit: 'contain',
+                borderRadius: 12, background: 'var(--surface-1)',
+                border: '0.5px solid var(--border)',
+              }}
+            />
+          )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 9, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
               {ukuranTerbaca(nilai?.asset_size)}

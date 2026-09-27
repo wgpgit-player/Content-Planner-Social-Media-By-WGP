@@ -1,0 +1,1 @@
+export default function BrandLogo(){return <span className="brand-lockup"><img src="/brand/plannersm-icon.svg" width="36" height="36" alt=""/><span>plannersm<span className="brand-dot">.</span></span></span>}
