@@ -1,0 +1,20 @@
+# plannersm.co
+#
+# Yang dilarang di bawah ini bukan rahasia — semuanya tetap dijaga di sisi
+# server lewat login dan RLS. Ini cuma supaya mesin pencari tidak membuang
+# waktu merayapi halaman yang isinya kosong tanpa sesi, dan supaya tautan
+# review klien tidak ikut terindeks lalu muncul di hasil pencarian orang
+# lain — tautan itu memang dibagikan tanpa login, jadi satu-satunya yang
+# menjaganya adalah tidak tersebar.
+
+User-agent: *
+Allow: /
+Disallow: /r/
+Disallow: /invite/
+Disallow: /operator
+Disallow: /bayar
+Disallow: /dashboard
+Disallow: /settings
+Disallow: /compose
+
+Sitemap: https://plannersm.co/sitemap.xml

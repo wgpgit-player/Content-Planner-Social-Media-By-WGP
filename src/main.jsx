@@ -6,6 +6,7 @@ import './index.css'
 import './planner-theme.css'
 import './brand-refresh.css'
 import './creative-experience.css'
+import './landing-polish.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

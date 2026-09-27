@@ -16,7 +16,7 @@ export const PLATFORMS = [
   { key: 'tiktok', label: 'TikTok', icon: 'logo-tiktok', color: 'var(--pink)', bg: 'var(--pink-bg)' },
   { key: 'facebook', label: 'Facebook', icon: 'logo-facebook', color: '#185FA5', bg: '#E6F1FB' },
   { key: 'youtube', label: 'YouTube', icon: 'logo-youtube', color: '#A32D2D', bg: '#FCEBEB' },
-  { key: 'twitter', label: 'X (Twitter)', icon: 'logo-twitter', color: '#2C2C2A', bg: '#F1EFE8' },
+  { key: 'twitter', label: 'X', icon: 'logo-x', color: '#2C2C2A', bg: '#F1EFE8' },
   { key: 'linkedin', label: 'LinkedIn', icon: 'logo-linkedin', color: '#0C447C', bg: '#E6F1FB' },
   { key: 'threads', label: 'Threads', icon: 'at-circle-outline', color: '#444441', bg: '#F1EFE8' },
 ]

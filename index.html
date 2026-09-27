@@ -17,6 +17,90 @@
       content="Perencana konten untuk tim media sosial dan agensi. Rencanakan, jadwalkan, dan bagi tugas dalam satu tempat."
     />
 
+    <!-- ===== Kartu tautan saat dibagikan =====
+         Tanpa ini, tautan plannersm.co yang dikirim lewat WhatsApp atau
+         ditempel di Instagram muncul sebagai teks polos tanpa gambar. Untuk
+         produk yang pembelinya justru orang media sosial, itu kesan pertama
+         yang buruk dan gratis untuk diperbaiki.
+
+         Gambarnya 1200x630 — ukuran yang dipakai hampir semua platform.
+         URL-nya harus mutlak (bukan /og-...), karena yang mengambilnya
+         adalah server WhatsApp/Facebook, bukan browser pengunjung. -->
+    <link rel="canonical" href="https://plannersm.co/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="plannersm.co" />
+    <meta property="og:locale" content="id_ID" />
+    <meta property="og:url" content="https://plannersm.co/" />
+    <meta property="og:title" content="plannersm.co — Ide boleh ke mana saja, kerjanya tetap tertata" />
+    <meta
+      property="og:description"
+      content="Perencana konten untuk tim media sosial dan agensi. Susun agenda, bagi tugas, dan kumpulkan persetujuan klien dalam satu tempat."
+    />
+    <meta property="og:image" content="https://plannersm.co/og-plannersm.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="plannersm.co — perencana konten untuk tim media sosial" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="plannersm.co — Ide boleh ke mana saja, kerjanya tetap tertata" />
+    <meta
+      name="twitter:description"
+      content="Perencana konten untuk tim media sosial dan agensi. Susun agenda, bagi tugas, dan kumpulkan persetujuan klien dalam satu tempat."
+    />
+    <meta name="twitter:image" content="https://plannersm.co/og-plannersm.png" />
+
+    <!-- ===== Penanda terstruktur untuk mesin pencari =====
+         Organization memberi tahu Google siapa pemilik layanan ini, dan
+         SoftwareApplication menjelaskan apa yang dijual beserta harga
+         termurahnya. Angka di sini harus selalu sama dengan yang ada di
+         tabel paket_langganan — kalau harga di database naik, ubah juga
+         di sini, karena harga yang berbeda antara hasil pencarian dan
+         halaman aslinya membuat orang merasa tertipu. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://plannersm.co/#organisasi",
+            "name": "World Gate Project",
+            "legalName": "PT Wolka Group Palmedia",
+            "url": "https://plannersm.co/",
+            "logo": "https://plannersm.co/icon-512.png",
+            "address": {
+              "@type": "PostalAddress",
+              "streetAddress": "Gedung Wirausaha Lt. 1 Unit 104, Jl. H.R. Rasuna Said Kav. C-5",
+              "addressLocality": "Jakarta Selatan",
+              "addressRegion": "DKI Jakarta",
+              "postalCode": "12920",
+              "addressCountry": "ID"
+            },
+            "contactPoint": {
+              "@type": "ContactPoint",
+              "telephone": "+62-851-1103-7992",
+              "email": "halo@plannersm.co",
+              "contactType": "customer support",
+              "availableLanguage": ["id", "en"]
+            }
+          },
+          {
+            "@type": "SoftwareApplication",
+            "name": "plannersm.co",
+            "url": "https://plannersm.co/",
+            "applicationCategory": "BusinessApplication",
+            "operatingSystem": "Web",
+            "publisher": { "@id": "https://plannersm.co/#organisasi" },
+            "description": "Perencana konten untuk tim media sosial dan agensi: agenda konten, brief, pembagian tugas, dan persetujuan klien.",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "IDR",
+              "description": "Paket Gratis tersedia tanpa kartu kredit."
+            }
+          }
+        ]
+      }
+    </script>
+
     <!-- ===== Progressive Web App ===== -->
     <link rel="manifest" href="/manifest.webmanifest" />
 

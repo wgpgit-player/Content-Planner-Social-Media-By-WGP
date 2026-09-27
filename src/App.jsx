@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { TenantProvider } from './context/TenantContext'
+import { PenyediaBahasa } from './lib/bahasa'
 import ProtectedRoute from './components/ProtectedRoute'
 import { isMisconfiguredDeployment } from './lib/supabaseClient'
 import SetupNeeded from './pages/SetupNeeded.jsx'
@@ -35,6 +36,7 @@ import Reminders from './pages/Reminders.jsx'
 import Composer from './pages/Composer.jsx'
 import Strategy from './pages/Strategy.jsx'
 import Bayar from './pages/Bayar.jsx'
+import { SyaratKetentuan, KebijakanPrivasi } from './pages/Legal.jsx'
 
 // Struktur route:
 //   Publik           → /login, /signup, /invite/:token
@@ -70,6 +72,11 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      {/* Pilihan bahasa dipasang paling luar supaya bertahan saat berpindah
+          halaman. Untuk sekarang yang diterjemahkan adalah halaman publik —
+          beranda, halaman legal, dan footer; bagian dalam aplikasi masih
+          berbahasa Indonesia. */}
+      <PenyediaBahasa>
       <AuthProvider>
         <TenantProvider>
           <Routes>
@@ -89,6 +96,11 @@ export default function App() {
                 melihat halaman jualan lagi, jadi dialihkan ke dashboard. */}
             <Route path="/" element={<BerandaPublik />} />
             <Route path="/tentang" element={<Landing />} />
+
+            {/* Halaman legal sengaja publik dan tanpa login: orang yang
+                sedang menimbang membeli harus bisa membacanya lebih dulu. */}
+            <Route path="/syarat" element={<SyaratKetentuan />} />
+            <Route path="/privasi" element={<KebijakanPrivasi />} />
             <Route path="/home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/kanban" element={<ProtectedRoute><KanbanBoard /></ProtectedRoute>} />
@@ -121,6 +133,7 @@ export default function App() {
           </Routes>
         </TenantProvider>
       </AuthProvider>
+      </PenyediaBahasa>
     </BrowserRouter>
   )
 }
