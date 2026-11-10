@@ -127,6 +127,7 @@ export default function CreativeLab({ inApp = false }) {
   const [notifTerkirim, setNotifTerkirim] = useState(null)
   const [waTersalin, setWaTersalin] = useState(false)
   const [memberMap, setMemberMap] = useState({})
+  const [isDataRiil, setIsDataRiil] = useState(false)
 
   // Ambil data tugas & anggota tim riil dari Supabase jika tersedia
   useEffect(() => {
@@ -159,7 +160,7 @@ export default function CreativeLab({ inApp = false }) {
           .order('scheduled_date', { ascending: true, nullsFirst: false })
           .limit(60)
 
-        if (!batalkan && items && items.length > 0) {
+        if (!batalkan && items) {
           const hariIni = todayIso()
           const dikelompokkan = {
             mendesak: [],
@@ -169,7 +170,7 @@ export default function CreativeLab({ inApp = false }) {
           }
 
           items.forEach((it) => {
-            const assigneeName = it.assignee_id ? (map[it.assignee_id] || 'Karyawan Tim') : 'Belum ditugaskan'
+            const assigneeName = it.assignee_id ? (map[it.assignee_id] || 'Anggota Tim') : 'Belum ditugaskan'
             const itemLengkap = {
               ...it,
               assignee_name: assigneeName,
@@ -186,17 +187,19 @@ export default function CreativeLab({ inApp = false }) {
             }
           })
 
-          // Gabungkan dengan preset jika kategori tertentu kosong agar selalu interaktif
-          const hasil = {
-            mendesak: dikelompokkan.mendesak.length ? dikelompokkan.mendesak : PRESET_TUGAS.mendesak,
-            draf: dikelompokkan.draf.length ? dikelompokkan.draf : PRESET_TUGAS.draf,
-            review: dikelompokkan.review.length ? dikelompokkan.review : PRESET_TUGAS.review,
-            terjadwal: dikelompokkan.terjadwal.length ? dikelompokkan.terjadwal : PRESET_TUGAS.terjadwal,
-          }
+          // Jika ruang kerja sudah punya data konten riil, gunakan 100% data riil tanpa preset dummy
+          const adaDataRiil = items.length > 0
+          setIsDataRiil(adaDataRiil)
+
+          const hasil = adaDataRiil
+            ? dikelompokkan
+            : PRESET_TUGAS
 
           setDaftarTugas(hasil)
           if (hasil[kategori] && hasil[kategori].length > 0) {
             setTugasTerpilih(hasil[kategori][0])
+          } else {
+            setTugasTerpilih(null)
           }
         }
       } catch (err) {
@@ -216,6 +219,8 @@ export default function CreativeLab({ inApp = false }) {
     const list = daftarTugas[kat] || []
     if (list.length > 0) {
       setTugasTerpilih(list[0])
+    } else {
+      setTugasTerpilih(null)
     }
   }
 
@@ -283,8 +288,9 @@ export default function CreativeLab({ inApp = false }) {
   }
 
   const listAktif = daftarTugas[kategori] || []
-  const plat = tugasTerpilih ? getPlatform(tugasTerpilih.platform) : null
-  const stat = tugasTerpilih ? getStatus(tugasTerpilih.status) : null
+  const itemAktif = tugasTerpilih || (listAktif.length > 0 ? listAktif[0] : null)
+  const plat = itemAktif ? getPlatform(itemAktif.platform) : null
+  const stat = itemAktif ? getStatus(itemAktif.status) : null
 
   // Hitung jumlah untuk status badge
   const jumlahMendesak = (daftarTugas.mendesak || []).length
@@ -344,9 +350,9 @@ export default function CreativeLab({ inApp = false }) {
             <span className="mobilizer-pulse" />
             Pusat Kendali Mobilisasi Tugas
           </span>
-          <small>
-            <Icon name="radio-outline" size={12} style={{ marginRight: 4 }} />
-            Aktif & Terhubung
+          <small style={{ color: isDataRiil ? '#059669' : '#736280', fontWeight: 600 }}>
+            <Icon name={isDataRiil ? 'cloud-done-outline' : 'sparkles-outline'} size={12} style={{ marginRight: 4 }} />
+            {isDataRiil ? 'Data Riil Tim Aktif' : 'Simulasi Contoh (Belum Ada Konten)'}
           </small>
         </div>
 
@@ -403,7 +409,43 @@ export default function CreativeLab({ inApp = false }) {
         )}
 
         {/* 3. Kartu Preview Tugas Interaktif */}
-        {tugasTerpilih && plat && stat && (
+        {listAktif.length === 0 ? (
+          <div
+            className="task-preview-box"
+            style={{
+              textAlign: 'center',
+              padding: '36px 20px',
+              background: '#fff',
+              border: '1.5px dashed #d5c3f0',
+              borderRadius: 16,
+            }}
+          >
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: '50%',
+                background: '#f1eaff',
+                color: '#5935d5',
+                display: 'grid',
+                placeItems: 'center',
+                margin: '0 auto 12px',
+              }}
+            >
+              <Icon name="checkmark-done-outline" size={22} color="#5935d5" />
+            </div>
+            <p style={{ fontSize: 14, fontWeight: 700, margin: '0 0 5px', color: '#28213f' }}>
+              Tidak Ada Tugas di Kategori Ini
+            </p>
+            <p style={{ fontSize: 12.5, color: '#6d5d7e', margin: '0 0 16px', maxWidth: 360, marginInline: 'auto' }}>
+              Semua tugas di kategori ini sudah beres atau belum dijadwalkan. Buat tugas baru dan mandatkan ke tim kamu!
+            </p>
+            <Link to="/compose" className="task-btn-primary" style={{ margin: '0 auto', display: 'inline-flex' }}>
+              <Icon name="add-circle-outline" size={16} />
+              Buat Konten & Mandatkan Tugas
+            </Link>
+          </div>
+        ) : itemAktif && plat && stat ? (
           <div className="task-preview-box">
             {/* Meta Row: Platform, Waktu, Status */}
             <div className="task-meta-row">
@@ -417,7 +459,7 @@ export default function CreativeLab({ inApp = false }) {
                 </span>
                 <span className="task-badge-time">
                   <Icon name="time-outline" size={13} style={{ marginRight: 4 }} />
-                  {formatTanggalJam(tugasTerpilih.scheduled_date, tugasTerpilih.scheduled_time)}
+                  {formatTanggalJam(itemAktif.scheduled_date, itemAktif.scheduled_time)}
                 </span>
               </div>
               <span
@@ -436,16 +478,16 @@ export default function CreativeLab({ inApp = false }) {
             </div>
 
             {/* Judul Tugas */}
-            <h3 className="task-title-heading">{tugasTerpilih.title}</h3>
+            <h3 className="task-title-heading">{itemAktif.title}</h3>
 
             {/* Baris PIC / Penanggung Jawab */}
             <div className="task-assignee-row">
               <div className="task-assignee-avatar">
-                {String(tugasTerpilih?.assignee_name || 'T').charAt(0).toUpperCase()}
+                {String(itemAktif?.assignee_name || 'T').charAt(0).toUpperCase()}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <span style={{ fontWeight: 600 }}>PIC Penanggung Jawab:</span>{' '}
-                <span style={{ color: '#5935d5', fontWeight: 650 }}>{tugasTerpilih?.assignee_name || 'Tim Pengeksekusi'}</span>
+                <span style={{ color: '#5935d5', fontWeight: 650 }}>{itemAktif?.assignee_name || 'Tim Pengeksekusi'}</span>
               </div>
               <span style={{ fontSize: 10.5, color: '#87759b' }}>
                 <Icon name="person-outline" size={12} style={{ marginRight: 3 }} />
@@ -457,7 +499,7 @@ export default function CreativeLab({ inApp = false }) {
             <div className="task-brief-container">
               <strong>Mandat Eksekusi & Brief Pokok:</strong>
               <p style={{ margin: 0 }}>
-                {tugasTerpilih?.brief || tugasTerpilih?.objective || 'Fokus pada penyampaian hook yang menarik dan pastikan visual sesuai pedoman brand.'}
+                {itemAktif?.brief || itemAktif?.objective || 'Fokus pada penyampaian hook yang menarik dan pastikan visual sesuai pedoman brand.'}
               </p>
             </div>
 
@@ -465,7 +507,7 @@ export default function CreativeLab({ inApp = false }) {
             <div className="task-action-row">
               {/* Tombol Menuju Sub Worksheet */}
               <Link
-                to={String(tugasTerpilih?.id || '').startsWith('preset-') ? '/worksheet' : `/worksheet?id=${tugasTerpilih?.id || ''}`}
+                to={String(itemAktif?.id || '').startsWith('preset-') ? '/worksheet' : `/worksheet?id=${itemAktif?.id || ''}`}
                 className="task-btn-primary"
               >
                 <Icon name="reader-outline" size={15} />
@@ -510,7 +552,7 @@ export default function CreativeLab({ inApp = false }) {
               </div>
             )}
           </div>
-        )}
+        ) : null}
 
         {/* Feedback / Petunjuk Bawah */}
         <p className="lab-feedback" role="status">
