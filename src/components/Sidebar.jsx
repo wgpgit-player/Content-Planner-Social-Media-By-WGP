@@ -1,52 +1,53 @@
 import BrandLogo from './BrandLogo'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTenantContext } from '../context/TenantContext'
+import { supabase } from '../lib/supabaseClient'
 import TenantSwitcher from './TenantSwitcher'
 import CreatePostModal from './CreatePostModal'
 import Icon from './Icon'
 import { useOperator } from '../lib/useOperator'
 
-// Shared navigation keeps desktop and mobile destinations consistent.
+// Navigasi 3 Zona Ringkas: Ruang Kerja Harian, Studio Kreatif, dan Manajemen.
 export const NAV_GROUPS = [
-  { label: 'Utama', items: [
-    {icon:'home-outline',label:'Home',path:'/home'},
-    {icon:'create-outline',label:'Susun konten',path:'/compose'},
-    {icon:'calendar-outline',label:'Kalender konten',path:'/content-calendar'},
-    {icon:'apps-outline',label:'Pratinjau feed',path:'/grid'},
+  { label: 'Ruang kerja harian', items: [
+    { icon: 'home-outline', label: 'Home', path: '/home' },
+    { icon: 'reader-outline', label: 'Lembar kerja tugas', path: '/worksheet', id: 'worksheet' },
+    { icon: 'calendar-outline', label: 'Kalender konten', path: '/content-calendar' },
+    { icon: 'albums-outline', label: 'Progres produksi', path: '/kanban' },
+    { icon: 'shield-checkmark-outline', label: 'Persetujuan', path: '/approvals', id: 'approvals' },
   ]},
-  { label: 'Alat kreatif', items: [
-    {icon:'bulb-outline',label:'Ide konten',path:'/content-bank'},
-    {icon:'compass-outline',label:'Template & strategi',path:'/strategy'},
-    {icon:'images-outline',label:'Koleksi media',path:'/media'},
+  { label: 'Studio kreatif', items: [
+    { icon: 'create-outline', label: 'Susun konten', path: '/compose' },
+    { icon: 'bulb-outline', label: 'Bank ide', path: '/content-bank' },
+    { icon: 'chatbubble-ellipses-outline', label: 'Pustaka copywriting', path: '/copywriting' },
+    { icon: 'images-outline', label: 'Koleksi media', path: '/media' },
+    { icon: 'apps-outline', label: 'Pratinjau feed', path: '/grid' },
   ]},
-  { label: 'Pustaka konten', items: [
-    {icon:'layers-outline',label:'Pilar konten',path:'/content-pillar'},
-    {icon:'chatbubble-ellipses-outline',label:'Formula caption',path:'/caption-formula'},
-    {icon:'fish-outline',label:'Pustaka hook',path:'/hook-library'},
-    {icon:'megaphone-outline',label:'Pustaka CTA',path:'/cta-library'},
-    {icon:'pricetags-outline',label:'Set hashtag',path:'/hashtag-sets'},
-  ]},
-  { label: 'Kolaborasi', items: [
-    {icon:'reader-outline',label:'Lembar kerja tugas',path:'/worksheet'},
-    {icon:'shield-checkmark-outline',label:'Persetujuan',path:'/approvals'},
-    {icon:'albums-outline',label:'Progres produksi',path:'/kanban'},
-    {icon:'people-outline',label:'Tim',path:'/team'},
-    {icon:'link-outline',label:'Tautan klien',path:'/client-links',adminOnly:true},
-  ]},
-  { label: 'Laporan & pengaturan', items: [
-    {icon:'grid-outline',label:'Dashboard',path:'/dashboard'},
-    {icon:'bar-chart-outline',label:'Performa konten',path:'/performance-tracker'},
-    {icon:'speedometer-outline',label:'KPI',path:'/kpi'},
-    {icon:'notifications-outline',label:'Pengingat',path:'/reminders'},
-    {icon:'settings-outline',label:'Pengaturan',path:'/settings',adminOnly:true},
+  { label: 'Manajemen & tim', items: [
+    { icon: 'grid-outline', label: 'Dashboard', path: '/dashboard' },
+    { icon: 'bar-chart-outline', label: 'Performa konten', path: '/performance-tracker' },
+    { icon: 'people-outline', label: 'Tim', path: '/team' },
+    { icon: 'link-outline', label: 'Tautan klien', path: '/client-links', adminOnly: true },
+    { icon: 'settings-outline', label: 'Pengaturan', path: '/settings', adminOnly: true },
   ]},
 ]
 
-function Badge({ text }) {
+function Badge({ text, color = 'var(--accent)', bg = 'var(--accent-bg)' }) {
   return (
-    <span className="badge" style={{ background: 'var(--accent-bg)', color: 'var(--accent)' }}>
+    <span
+      className="badge"
+      style={{
+        background: bg,
+        color: color,
+        marginLeft: 'auto',
+        fontWeight: 700,
+        fontSize: 10.5,
+        padding: '2px 7px',
+        borderRadius: 99,
+      }}
+    >
       {text}
     </span>
   )
@@ -56,11 +57,53 @@ function Badge({ text }) {
 // oleh tab bar bawah, jadi tidak ada lagi mode laci di sini.
 export default function Sidebar() {
   const { user, signOut, isMock } = useAuth()
-  const { isAdmin, role } = useTenantContext()
+  const { tenantId, isAdmin, role } = useTenantContext()
   const { isOperator } = useOperator()
   const navigate = useNavigate()
   const location = useLocation()
   const [modalBuat, setModalBuat] = useState(false)
+  const [counts, setCounts] = useState({ tugasSaya: 0, perluReview: 0 })
+
+  // Ambil data notifikasi real-time untuk badge sidebar
+  useEffect(() => {
+    if (!supabase || !tenantId || !user) return
+    let batal = false
+
+    async function muatBadge() {
+      try {
+        // 1. Tugas aktif milik user yang sedang login
+        const { count: tugasCount } = await supabase
+          .from('content_items')
+          .select('id', { count: 'exact', head: true })
+          .eq('tenant_id', tenantId)
+          .eq('assignee_id', user.id)
+          .in('status', ['idea', 'draft', 'review'])
+
+        // 2. Konten yang sedang menunggu review persetujuan
+        const { count: reviewCount } = await supabase
+          .from('content_items')
+          .select('id', { count: 'exact', head: true })
+          .eq('tenant_id', tenantId)
+          .eq('status', 'review')
+
+        if (!batal) {
+          setCounts({
+            tugasSaya: tugasCount ?? 0,
+            perluReview: reviewCount ?? 0,
+          })
+        }
+      } catch (err) {
+        // Abaikan jika tabel belum siap
+      }
+    }
+
+    muatBadge()
+    const timer = setInterval(muatBadge, 30000)
+    return () => {
+      batal = true
+      clearInterval(timer)
+    }
+  }, [tenantId, user])
 
   async function handleLogout() {
     await signOut()
@@ -83,8 +126,27 @@ export default function Sidebar() {
       <CreatePostModal open={modalBuat} onClose={() => setModalBuat(false)} />
 
       {NAV_GROUPS.map((group) => {
-        const items = group.items.filter((i) => !i.adminOnly || isAdmin)
-        const compact = !['Utama', 'Alat kreatif'].includes(group.label)
+        const items = group.items
+          .filter((i) => !i.adminOnly || isAdmin)
+          .map((item) => {
+            let badgeText = item.badge || null
+            let badgeColor = 'var(--accent)'
+            let badgeBg = 'var(--accent-bg)'
+
+            if (item.id === 'worksheet' && counts.tugasSaya > 0) {
+              badgeText = String(counts.tugasSaya)
+              badgeColor = 'var(--accent, #5935d5)'
+              badgeBg = 'var(--accent-bg, #f1eaff)'
+            } else if (item.id === 'approvals' && counts.perluReview > 0) {
+              badgeText = String(counts.perluReview)
+              badgeColor = '#b45309'
+              badgeBg = '#fef3c7'
+            }
+
+            return { ...item, badgeText, badgeColor, badgeBg }
+          })
+
+        const compact = group.label === 'Manajemen & tim'
         const Group = compact ? 'details' : 'div'
         if (items.length === 0) return null
 
@@ -101,13 +163,13 @@ export default function Sidebar() {
                 >
                   <Icon name={item.icon} size={16} />
                   <span>{item.label}</span>
-                  {item.badge && <Badge text={item.badge} />}
+                  {item.badgeText && <Badge text={item.badgeText} color={item.badgeColor} bg={item.badgeBg} />}
                 </NavLink>
               ) : (
                 <span key={item.label} className="sidebar-item" style={{ opacity: 0.45, cursor: 'default' }}>
                   <Icon name={item.icon} size={16} />
                   <span>{item.label}</span>
-                  {item.badge && <Badge text={item.badge} />}
+                  {item.badgeText && <Badge text={item.badgeText} color={item.badgeColor} bg={item.badgeBg} />}
                 </span>
               )
             )}

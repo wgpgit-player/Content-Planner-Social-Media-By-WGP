@@ -5,12 +5,39 @@ import { useAuth } from '../context/AuthContext'
 import { useTenantContext } from '../context/TenantContext'
 import AppShell from '../components/AppShell'
 import Icon from '../components/Icon'
+import Sheet from '../components/Sheet'
 import ChecklistTugas from '../components/ChecklistTugas'
 import Komentar from '../components/Komentar'
 import LampiranMateri from '../components/LampiranMateri'
 import { getPlatform } from '../config/platforms'
 import { getStatus, STATUSES } from '../config/statuses'
 import { parseIsoDate, todayIso } from '../lib/dates'
+
+const PRESET_HOOKS = [
+  { kategori: 'Tanya & Penasaran', teks: 'Banyak yang belum tahu, ternyata ini rahasia di balik...' },
+  { kategori: 'Tanya & Penasaran', teks: 'Kamu tahu nggak kenapa hal ini sering diabaikan orang?' },
+  { kategori: 'Edukasi & Fakta', teks: '3 hal penting yang wajib kamu perhatikan sebelum mulai...' },
+  { kategori: 'Edukasi & Fakta', teks: 'Fakta mengejutkan: 8 dari 10 orang belum sadar tentang ini!' },
+  { kategori: 'Kebaikan & ZISWAF', teks: 'Sedekah subuh bukan sekadar angka, tapi tentang kebiasaan hati...' },
+  { kategori: 'Kebaikan & ZISWAF', teks: 'Jangan tunggu berlebih baru berbagi, keberkahan hadir saat kita peduli.' },
+  { kategori: 'Cerita & Humanis', teks: 'Satu momen kecil yang membuat kami tersadar indahnya berbagi...' },
+]
+
+const PRESET_CTAS = [
+  { kategori: 'Interaksi & Komen', teks: 'Ketik "MAU" di kolom komentar, nanti mimin kirimkan panduannya ya!' },
+  { kategori: 'Interaksi & Komen', teks: 'Menurut kamu poin berapa yang paling berkesan? Tulis di kolom komentar!' },
+  { kategori: 'Save & Share', teks: 'Simpan (save) postingan ini agar tidak lupa saat kamu membutuhkannya nanti.' },
+  { kategori: 'Save & Share', teks: 'Bagikan postingan ini ke teman atau keluargamu yang butuh pengingat ini.' },
+  { kategori: 'Donasi & Link', teks: 'Klik tautan di bio untuk salurkan donasi terbaikmu bersama ZISWAF CTARSA.' },
+  { kategori: 'Donasi & Link', teks: 'Scan kode QRIS CTARSA di slide terakhir untuk sedekah mudah hari ini.' },
+]
+
+const PRESET_HASHTAGS = [
+  { nama: 'ZISWAF & Kemanusiaan', tags: '#ZISWAFCTARSA #BerbagiKebaikan #SedekahSubuh #ZakatBerkah #DonasiOnline' },
+  { nama: 'Edukasi & Inspirasi', tags: '#InspirasiKebaikan #PeduliSesama #GenerasiPeduli #PendidikanUntukSemua' },
+  { nama: 'Komunitas & Relawan', tags: '#AksiSosial #RelawanIndonesia #TanganKebaikan #CTARSABersama' },
+  { nama: 'Kreator & Viral', tags: '#ContentCreator #ViralIndonesia #EdukasiBermanfaat #FYPIndonesia' },
+]
 
 // Sub Worksheet Karyawan — lembar kerja eksekusi tugas dari Manajer Sosmed.
 //
@@ -50,6 +77,34 @@ export default function Worksheet() {
     reference_url: '',
     status: 'draft',
   })
+  const [modalBantu, setModalBantu] = useState(null) // null | 'hook' | 'cta' | 'hashtag'
+
+  function sisipkanHook(teks) {
+    setDraf((d) => ({
+      ...d,
+      caption: d.caption ? `${teks}\n\n${d.caption}` : `${teks}\n\n`,
+    }))
+    setModalBantu(null)
+    setPesan('Hook berhasil disisipkan ke naskah! ✓')
+  }
+
+  function sisipkanCta(teks) {
+    setDraf((d) => ({
+      ...d,
+      cta: teks,
+    }))
+    setModalBantu(null)
+    setPesan('CTA berhasil disisipkan! ✓')
+  }
+
+  function sisipkanHashtag(tags) {
+    setDraf((d) => ({
+      ...d,
+      hashtags: d.hashtags ? `${d.hashtags} ${tags}` : tags,
+    }))
+    setModalBantu(null)
+    setPesan('Set hashtag berhasil disisipkan! ✓')
+  }
 
   // 1. Muat daftar tugas yang ditugaskan ke karyawan (atau semua untuk admin)
   const muatDaftar = useCallback(async () => {
@@ -466,12 +521,43 @@ export default function Worksheet() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {/* Draf Caption / Naskah */}
                 <div>
-                  <label className="field-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span>Draf Naskah / Caption Lengkap</span>
-                    <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-muted)' }}>
-                      {draf.caption.length} karakter
-                    </span>
-                  </label>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, flexWrap: 'wrap', gap: 6 }}>
+                    <label className="field-label" style={{ margin: 0 }}>
+                      Draf Naskah / Caption Lengkap ({draf.caption.length} karakter)
+                    </label>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button
+                        type="button"
+                        className="btn btn-sm"
+                        onClick={() => setModalBantu('hook')}
+                        style={{ fontSize: 11, padding: '3px 9px', display: 'flex', alignItems: 'center', gap: 4, background: '#f5efff', color: '#5935d5', border: '1px solid #dfcef5' }}
+                        title="Pilih contoh kalimat pembuka (hook)"
+                      >
+                        <Icon name="fish-outline" size={13} color="#5935d5" />
+                        <span>Sisipkan Hook</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-sm"
+                        onClick={() => setModalBantu('cta')}
+                        style={{ fontSize: 11, padding: '3px 9px', display: 'flex', alignItems: 'center', gap: 4, background: '#f5efff', color: '#5935d5', border: '1px solid #dfcef5' }}
+                        title="Pilih contoh ajakan bertindak (CTA)"
+                      >
+                        <Icon name="megaphone-outline" size={13} color="#5935d5" />
+                        <span>Sisipkan CTA</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-sm"
+                        onClick={() => setModalBantu('hashtag')}
+                        style={{ fontSize: 11, padding: '3px 9px', display: 'flex', alignItems: 'center', gap: 4, background: '#f5efff', color: '#5935d5', border: '1px solid #dfcef5' }}
+                        title="Pilih set hashtag siap pakai"
+                      >
+                        <Icon name="pricetags-outline" size={13} color="#5935d5" />
+                        <span>Set Hashtag</span>
+                      </button>
+                    </div>
+                  </div>
                   <textarea
                     className="textarea"
                     rows={7}
@@ -549,6 +635,145 @@ export default function Worksheet() {
           </div>
         )}
       </div>
+
+      {/* Drawer Cepat Copywriting */}
+      {modalBantu && (
+        <Sheet
+          open={Boolean(modalBantu)}
+          onClose={() => setModalBantu(null)}
+          title={
+            modalBantu === 'hook'
+              ? 'Pilih Hook Pembuka'
+              : modalBantu === 'cta'
+              ? 'Pilih Ajakan Bertindak (CTA)'
+              : 'Pilih Set Hashtag'
+          }
+          description={
+            modalBantu === 'hook'
+              ? 'Klik salah satu hook untuk menyisipkannya langsung ke awal naskah caption kamu.'
+              : modalBantu === 'cta'
+              ? 'Klik salah satu CTA untuk langsung mengisinya ke kolom Ajakan Bertindak.'
+              : 'Klik set hashtag untuk menyisipkannya ke kolom hashtag.'
+          }
+          lebar={480}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '10px 0' }}>
+            {modalBantu === 'hook' &&
+              PRESET_HOOKS.map((item, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => sisipkanHook(item.teks)}
+                  className="card"
+                  style={{
+                    textAlign: 'left',
+                    padding: '12px 14px',
+                    border: '1px solid var(--border)',
+                    borderRadius: 10,
+                    cursor: 'pointer',
+                    background: 'var(--surface-0)',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--accent)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
+                >
+                  <span
+                    style={{
+                      fontSize: 10.5,
+                      fontWeight: 650,
+                      color: 'var(--accent)',
+                      background: 'var(--accent-bg)',
+                      padding: '2px 8px',
+                      borderRadius: 99,
+                      display: 'inline-block',
+                      marginBottom: 6,
+                    }}
+                  >
+                    {item.kategori}
+                  </span>
+                  <p style={{ fontSize: 13, color: 'var(--text-primary)', margin: 0, fontWeight: 500, lineHeight: 1.5 }}>
+                    "{item.teks}"
+                  </p>
+                </button>
+              ))}
+
+            {modalBantu === 'cta' &&
+              PRESET_CTAS.map((item, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => sisipkanCta(item.teks)}
+                  className="card"
+                  style={{
+                    textAlign: 'left',
+                    padding: '12px 14px',
+                    border: '1px solid var(--border)',
+                    borderRadius: 10,
+                    cursor: 'pointer',
+                    background: 'var(--surface-0)',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--accent)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
+                >
+                  <span
+                    style={{
+                      fontSize: 10.5,
+                      fontWeight: 650,
+                      color: '#059669',
+                      background: '#ecfdf5',
+                      padding: '2px 8px',
+                      borderRadius: 99,
+                      display: 'inline-block',
+                      marginBottom: 6,
+                    }}
+                  >
+                    {item.kategori}
+                  </span>
+                  <p style={{ fontSize: 13, color: 'var(--text-primary)', margin: 0, fontWeight: 500, lineHeight: 1.5 }}>
+                    "{item.teks}"
+                  </p>
+                </button>
+              ))}
+
+            {modalBantu === 'hashtag' &&
+              PRESET_HASHTAGS.map((item, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => sisipkanHashtag(item.tags)}
+                  className="card"
+                  style={{
+                    textAlign: 'left',
+                    padding: '12px 14px',
+                    border: '1px solid var(--border)',
+                    borderRadius: 10,
+                    cursor: 'pointer',
+                    background: 'var(--surface-0)',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--accent)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
+                >
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: 'var(--text-primary)',
+                      display: 'block',
+                      marginBottom: 4,
+                    }}
+                  >
+                    🏷️ {item.nama}
+                  </span>
+                  <p style={{ fontSize: 12, color: 'var(--accent)', margin: 0, lineHeight: 1.5 }}>
+                    {item.tags}
+                  </p>
+                </button>
+              ))}
+          </div>
+        </Sheet>
+      )}
     </AppShell>
   )
 }

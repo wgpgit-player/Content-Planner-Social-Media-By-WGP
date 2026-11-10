@@ -38,6 +38,7 @@ import Composer from './pages/Composer.jsx'
 import Strategy from './pages/Strategy.jsx'
 import Bayar from './pages/Bayar.jsx'
 import Worksheet from './pages/Worksheet.jsx'
+import CopywritingHub from './pages/CopywritingHub.jsx'
 import { SyaratKetentuan, KebijakanPrivasi } from './pages/Legal.jsx'
 
 // Struktur route:
@@ -120,6 +121,7 @@ export default function App() {
             <Route path="/reminders" element={<ProtectedRoute><Reminders /></ProtectedRoute>} />
             <Route path="/compose" element={<ProtectedRoute><Composer /></ProtectedRoute>} />
             <Route path="/strategy" element={<ProtectedRoute><Strategy /></ProtectedRoute>} />
+            <Route path="/copywriting" element={<ProtectedRoute><CopywritingHub /></ProtectedRoute>} />
             <Route path="/cta-library" element={<ProtectedRoute><CtaLibrary /></ProtectedRoute>} />
             <Route path="/caption-formula" element={<ProtectedRoute><CaptionFormulaLibrary /></ProtectedRoute>} />
             <Route path="/hook-library" element={<ProtectedRoute><HookLibrary /></ProtectedRoute>} />

@@ -31,9 +31,9 @@ import { useOperator } from '../lib/useOperator'
 
 const TAB_UTAMA = [
   { path: '/home', label: 'Home', ikon: 'home-outline', ikonAktif: 'home' },
-  { path: '/kanban', label: 'Tracker', ikon: 'albums-outline', ikonAktif: 'albums' },
+  { path: '/worksheet', label: 'Tugas', ikon: 'reader-outline', ikonAktif: 'reader' },
   { path: '/content-calendar', label: 'Kalender', ikon: 'calendar-outline', ikonAktif: 'calendar' },
-  { path: '/content-bank', label: 'Bank ide', ikon: 'bulb-outline', ikonAktif: 'bulb' },
+  { path: '/kanban', label: 'Tracker', ikon: 'albums-outline', ikonAktif: 'albums' },
 ]
 
 const PATH_UTAMA = TAB_UTAMA.map((t) => t.path)
