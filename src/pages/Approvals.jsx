@@ -35,7 +35,7 @@ function Kartu({ item, anggota }) {
   const hariIniTayang = item.scheduled_date === hariIni
 
   return (
-    <Link to={`/content/${item.id}`} className="row-link">
+    <Link to={`/worksheet?id=${item.id}`} className="row-link">
       <div
         style={{
           width: 34, height: 34, borderRadius: 10, flexShrink: 0, background: p.bg,
@@ -46,10 +46,10 @@ function Kartu({ item, anggota }) {
       </div>
 
       <div style={{ minWidth: 0, flex: 1 }}>
-        <p style={{ fontSize: 13.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <p style={{ fontSize: 13.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', margin: 0, fontWeight: 600 }}>
           {item.title}
         </p>
-        <p style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 5 }}>
+        <p style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 5, margin: '3px 0 0' }}>
           <Avatar anggota={anggota} size={14} />
           {anggota ? namaAnggota(anggota) : 'Belum ditugaskan'}
           {' · '}
@@ -67,6 +67,9 @@ function Kartu({ item, anggota }) {
           Tayang hari ini
         </span>
       )}
+      <span className="chip" style={{ background: 'var(--accent-bg)', color: 'var(--accent)', borderColor: 'transparent', fontSize: 11, flexShrink: 0 }}>
+        Buka Lembar Kerja ↗
+      </span>
       <Icon name="chevron-forward" size={15} color="var(--text-muted)" />
     </Link>
   )
@@ -90,22 +93,36 @@ export default function Approvals() {
     const kolom = 'id,title,platform,status,approval_state,scheduled_date,assignee_id,submitted_at'
 
     const [a, b, c] = await Promise.all([
+      // Ambil yang approval_state = pending ATAU status = review
       supabase.from('content_items').select(kolom)
-        .eq('tenant_id', tenantId).eq('approval_state', 'pending')
-        // nullsFirst: false supaya konten tanpa tanggal tidak menumpuk di
-        // atas dan menutupi yang benar-benar mendesak.
+        .eq('tenant_id', tenantId)
+        .or('approval_state.eq.pending,status.eq.review')
         .order('scheduled_date', { ascending: true, nullsFirst: false }).limit(100),
       supabase.from('content_items').select(kolom)
         .eq('tenant_id', tenantId).eq('approval_state', 'changes_requested')
         .order('scheduled_date', { ascending: true, nullsFirst: false }).limit(100),
       supabase.from('content_items').select('id', { count: 'exact', head: true })
-        .eq('tenant_id', tenantId).eq('approval_state', 'approved'),
+        .eq('tenant_id', tenantId).or('approval_state.eq.approved,status.eq.published'),
     ])
 
     const err = a.error ?? b.error ?? c.error
     if (err) setGalat(err.message)
 
-    setMenunggu(a.data ?? [])
+    // Filter daftar menunggu: jangan masukkan yang sudah disetujui atau sedang diminta revisi
+    const daftarMenunggu = (a.data ?? []).filter(
+      (it) => it.approval_state !== 'approved' && it.approval_state !== 'changes_requested'
+    )
+
+    // Sinkronkan otomatis konten berstatus review agar approval_state-nya pending jika belum
+    const perluSinkron = (a.data ?? []).filter(
+      (it) => it.status === 'review' && it.approval_state !== 'pending' && it.approval_state !== 'approved' && it.approval_state !== 'changes_requested'
+    )
+    if (perluSinkron.length > 0) {
+      const ids = perluSinkron.map((it) => it.id)
+      supabase.from('content_items').update({ approval_state: 'pending' }).in('id', ids).then(() => {})
+    }
+
+    setMenunggu(daftarMenunggu)
     setRevisi(b.data ?? [])
     setDisetujui(c.count ?? 0)
     setLoading(false)

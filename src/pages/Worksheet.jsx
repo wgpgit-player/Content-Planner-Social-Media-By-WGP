@@ -213,7 +213,7 @@ export default function Worksheet() {
 
     let query = supabase
       .from('content_items')
-      .select('id,title,platform,status,scheduled_date,scheduled_time,brief,objective,target_audience,key_message,production_notes,assignee_id')
+      .select('id,title,platform,status,approval_state,scheduled_date,scheduled_time,brief,objective,target_audience,key_message,production_notes,assignee_id')
       .eq('tenant_id', tenantId)
       .order('scheduled_date', { ascending: true, nullsFirst: false })
       .limit(100)
@@ -282,6 +282,8 @@ export default function Worksheet() {
     setPesan(null)
 
     const statusFinal = statusKustom || draf.status
+    const isAjukanReview = statusFinal === 'review'
+
     const payload = {
       caption: draf.caption.trim() || null,
       cta: draf.cta.trim() || null,
@@ -291,11 +293,30 @@ export default function Worksheet() {
       updated_at: new Date().toISOString(),
     }
 
+    if (isAjukanReview) {
+      payload.approval_state = 'pending'
+      payload.submitted_at = new Date().toISOString()
+    }
+
     const { error } = await supabase
       .from('content_items')
       .update(payload)
       .eq('id', tugasAktif.id)
       .eq('tenant_id', tenantId)
+
+    if (isAjukanReview && !error) {
+      try {
+        await supabase.from('content_reviews').insert({
+          tenant_id: tenantId,
+          content_item_id: tugasAktif.id,
+          decision: 'submitted',
+          note: 'Diajukan dari Lembar Kerja Tugas untuk direview Manajer',
+          reviewer_user_id: user?.id ?? null,
+        })
+      } catch (e) {
+        // Abaikan jika tabel tidak ada
+      }
+    }
 
     setSaving(false)
     if (error) {
@@ -303,14 +324,90 @@ export default function Worksheet() {
     } else {
       setPesan({
         tipe: 'success',
-        teks: statusKustom === 'review'
-          ? 'Tugas berhasil diajukan ke Manajer Sosmed untuk direview!'
+        teks: isAjukanReview
+          ? 'Tugas berhasil diajukan ke Manajer Sosmed untuk direview! (Masuk ke antrean Persetujuan)'
           : 'Draf pengerjaan berhasil disimpan.',
       })
       // Perbarui state lokal & daftar
       setTugasAktif((prev) => ({ ...prev, ...payload }))
       setDraf((prev) => ({ ...prev, status: statusFinal }))
-      setTugasList((prev) => prev.map((t) => (t.id === tugasAktif.id ? { ...t, status: statusFinal } : t)))
+      setTugasList((prev) => prev.map((t) => (t.id === tugasAktif.id ? { ...t, ...payload, status: statusFinal } : t)))
+    }
+  }
+
+  // 5. Manajer: Setujui Konten (ACC)
+  async function accSetujuiKonten() {
+    if (!tugasAktif || !supabase || !tenantId) return
+    const yakin = await tanya.ask({
+      title: `Setujui & ACC "${tugasAktif.title}"?`,
+      description: 'Konten ini akan dinyatakan siap tayang dan status persetujuannya disetujui.',
+      labelConfirm: 'Setujui Konten (ACC)',
+      danger: false,
+    })
+    if (!yakin) return
+
+    setSaving(true)
+    const payload = {
+      approval_state: 'approved',
+      status: tugasAktif.scheduled_date ? 'scheduled' : 'draft',
+      approved_by: user?.id ?? null,
+      approved_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+    const { error } = await supabase.from('content_items').update(payload).eq('id', tugasAktif.id).eq('tenant_id', tenantId)
+    if (!error) {
+      try {
+        await supabase.from('content_reviews').insert({
+          tenant_id: tenantId,
+          content_item_id: tugasAktif.id,
+          decision: 'approved',
+          reviewer_user_id: user?.id ?? null,
+        })
+      } catch (e) {}
+    }
+    setSaving(false)
+    if (error) {
+      setPesan({ tipe: 'error', teks: `Gagal menyetujui: ${error.message}` })
+    } else {
+      setPesan({ tipe: 'success', teks: `Konten "${tugasAktif.title}" berhasil disetujui (ACC)!` })
+      setTugasAktif((prev) => ({ ...prev, ...payload }))
+      setTugasList((prev) => prev.map((t) => (t.id === tugasAktif.id ? { ...t, ...payload } : t)))
+    }
+  }
+
+  // 6. Manajer: Minta Revisi
+  const [modalRevisi, setModalRevisi] = useState(false)
+  const [catatanRevisi, setCatatanRevisi] = useState('')
+
+  async function kirimMintaRevisi() {
+    if (!tugasAktif || !supabase || !tenantId) return
+    setSaving(true)
+    const payload = {
+      approval_state: 'changes_requested',
+      status: 'draft',
+      updated_at: new Date().toISOString(),
+    }
+    const { error } = await supabase.from('content_items').update(payload).eq('id', tugasAktif.id).eq('tenant_id', tenantId)
+    if (!error) {
+      try {
+        await supabase.from('content_reviews').insert({
+          tenant_id: tenantId,
+          content_item_id: tugasAktif.id,
+          decision: 'changes_requested',
+          note: catatanRevisi.trim() || null,
+          reviewer_user_id: user?.id ?? null,
+        })
+      } catch (e) {}
+    }
+    setSaving(false)
+    if (error) {
+      setPesan({ tipe: 'error', teks: `Gagal meminta revisi: ${error.message}` })
+    } else {
+      setPesan({ tipe: 'success', teks: `Catatan revisi berhasil dikirim ke staf.` })
+      setTugasAktif((prev) => ({ ...prev, ...payload }))
+      setTugasList((prev) => prev.map((t) => (t.id === tugasAktif.id ? { ...t, ...payload } : t)))
+      setModalRevisi(false)
+      setCatatanRevisi('')
     }
   }
 
@@ -551,13 +648,28 @@ export default function Worksheet() {
             <div className="card" style={{ padding: '16px 20px' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
                     <span className="chip" style={{ background: platformAktif.bg, color: platformAktif.color, borderColor: 'transparent' }}>
                       <Icon name={platformAktif.icon} size={13} /> {platformAktif.label}
                     </span>
                     <span className="chip" style={{ background: statusAktif.bg, color: statusAktif.color, borderColor: 'transparent' }}>
                       {statusAktif.label}
                     </span>
+                    {(tugasAktif.approval_state === 'pending' || tugasAktif.status === 'review') && (
+                      <span className="chip" style={{ background: '#fef3c7', color: '#92400e', borderColor: 'transparent', fontWeight: 650 }}>
+                        <Icon name="time-outline" size={12} /> Menunggu ACC Manajer
+                      </span>
+                    )}
+                    {tugasAktif.approval_state === 'approved' && (
+                      <span className="chip" style={{ background: '#d1fae5', color: '#065f46', borderColor: 'transparent', fontWeight: 650 }}>
+                        <Icon name="checkmark-circle-outline" size={12} /> Disetujui (ACC)
+                      </span>
+                    )}
+                    {tugasAktif.approval_state === 'changes_requested' && (
+                      <span className="chip" style={{ background: '#fee2e2', color: '#991b1b', borderColor: 'transparent', fontWeight: 650 }}>
+                        <Icon name="arrow-undo-outline" size={12} /> Perlu Revisi
+                      </span>
+                    )}
                     {isTerlambat && (
                       <span className="chip" style={{ background: 'var(--danger-bg)', color: 'var(--danger)', borderColor: 'transparent' }}>
                         <Icon name="alarm-outline" size={12} /> Terlambat
@@ -621,6 +733,113 @@ export default function Worksheet() {
                 </div>
               </div>
             </div>
+
+            {/* Banner Keputusan Persetujuan Manajer (ACC) */}
+            {isAdmin && (tugasAktif.approval_state === 'pending' || tugasAktif.status === 'review') && (
+              <div
+                style={{
+                  background: '#fffbeb',
+                  border: '1.5px solid #f59e0b',
+                  borderRadius: 12,
+                  padding: '14px 18px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: 12,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 10,
+                      background: '#fef3c7',
+                      color: '#d97706',
+                      display: 'grid',
+                      placeItems: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Icon name="time-outline" size={22} color="#d97706" />
+                  </div>
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: '#92400e' }}>
+                      Tugas Menunggu Keputusan Persetujuan (ACC)
+                    </h4>
+                    <p style={{ margin: '2px 0 0', fontSize: 12, color: '#b45309' }}>
+                      Staf telah mengajukan draf naskah ini untuk Anda tinjau. Anda dapat menyetujui langsung atau meminta revisi.
+                    </p>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    className="btn btn-sm"
+                    onClick={() => setModalRevisi(true)}
+                    disabled={saving}
+                    style={{ background: '#fff', color: '#dc2626', border: '1px solid #fca5a5', fontWeight: 650 }}
+                    title="Kembalikan ke status draft dan beri catatan revisi untuk staf"
+                  >
+                    <Icon name="arrow-undo-outline" size={14} /> Minta Revisi
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-sm"
+                    onClick={accSetujuiKonten}
+                    disabled={saving}
+                    style={{ background: '#059669', color: '#fff', border: 'none', fontWeight: 700 }}
+                    title="Setujui konten ini (ACC) dan ubah ke jadwal siap tayang"
+                  >
+                    <Icon name="checkmark-circle-outline" size={15} /> Setujui Konten (ACC)
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {tugasAktif.approval_state === 'approved' && (
+              <div
+                style={{
+                  background: '#ecfdf5',
+                  border: '1px solid #a7f3d0',
+                  borderRadius: 10,
+                  padding: '11px 16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  fontSize: 12.5,
+                  color: '#065f46',
+                }}
+              >
+                <Icon name="checkmark-circle" size={18} color="#059669" />
+                <span>
+                  <strong>Konten ini telah Disetujui (ACC) oleh Manajer</strong> dan dinyatakan siap tayang sesuai jadwal.
+                </span>
+              </div>
+            )}
+
+            {tugasAktif.approval_state === 'changes_requested' && (
+              <div
+                style={{
+                  background: '#fef2f2',
+                  border: '1px solid #fecaca',
+                  borderRadius: 10,
+                  padding: '11px 16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  fontSize: 12.5,
+                  color: '#991b1b',
+                }}
+              >
+                <Icon name="alert-circle" size={18} color="#dc2626" />
+                <span>
+                  <strong>Manajer meminta revisi untuk konten ini.</strong> Silakan sesuaikan materi naskah/aset lalu klik "Ajukan Review" kembali.
+                </span>
+              </div>
+            )}
 
             {/* SEKSI 1: Mandat & Arahan Pokok Manajer Sosmed */}
             <div className="card" style={{ borderLeft: '4px solid var(--accent, #6366f1)' }}>
@@ -1203,6 +1422,60 @@ export default function Worksheet() {
               >
                 <Icon name="save-outline" size={14} />
                 {saving ? 'Menyimpan...' : 'Simpan Perubahan Brief'}
+              </button>
+            </div>
+          </form>
+        </Sheet>
+      )}
+
+      {/* Modal / Sheet Minta Revisi */}
+      {modalRevisi && (
+        <Sheet
+          open
+          onClose={() => setModalRevisi(false)}
+          title="Minta Revisi ke Staf"
+          description={`Tuliskan catatan perbaikan yang jelas untuk "${tugasAktif?.title}". Status pengerjaan akan dikembalikan ke Draft agar diperbaiki staf.`}
+          lebar={500}
+        >
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              kirimMintaRevisi()
+            }}
+            style={{ display: 'flex', flexDirection: 'column', gap: 14 }}
+          >
+            <div>
+              <label className="field-label">
+                Catatan Perbaikan / Masukan Revisi <span style={{ color: 'var(--danger)' }}>*</span>
+              </label>
+              <textarea
+                className="textarea"
+                rows={4}
+                required
+                placeholder="Contoh: Hook video di 3 detik pertama tolong dibuat lebih emosional, dan perbaiki typo di slide 2..."
+                value={catatanRevisi}
+                onChange={(e) => setCatatanRevisi(e.target.value)}
+                style={{ fontSize: 13, lineHeight: 1.5 }}
+              />
+            </div>
+
+            <div className="sheet-aksi" style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setModalRevisi(false)}
+                disabled={saving}
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                className="btn btn-danger"
+                disabled={saving}
+                style={{ background: '#dc2626', borderColor: 'transparent' }}
+              >
+                <Icon name="arrow-undo-outline" size={14} />
+                {saving ? 'Mengirim...' : 'Kirim Catatan Revisi'}
               </button>
             </div>
           </form>
