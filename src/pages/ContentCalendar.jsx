@@ -95,9 +95,14 @@ function DetailPopup({ item, onClose, onSave }) {
         onChange={(e) => setTime(e.target.value)}
       />
 
-      <Link to={`/content/${item.id}`} className="btn btn-block" style={{ textDecoration: 'none', marginTop: 14 }}>
-        <Icon name="document-text-outline" size={14} /> Buka brief
-      </Link>
+      <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+        <Link to={`/worksheet?id=${item.id}`} className="btn btn-primary" style={{ flex: 1, textDecoration: 'none', justifyContent: 'center' }}>
+          <Icon name="reader-outline" size={14} /> Lembar Kerja ↗
+        </Link>
+        <Link to={`/content/${item.id}`} className="btn btn-secondary" style={{ textDecoration: 'none', justifyContent: 'center' }}>
+          <Icon name="document-text-outline" size={14} /> Detail Brief
+        </Link>
+      </div>
 
       <div className="sheet-aksi">
         <button type="button" onClick={onClose} className="btn">Tutup</button>

@@ -239,13 +239,16 @@ export default function ContentDetail() {
           <button type="button" className="btn btn-sm" onClick={() => navigate(-1)}>
             <Icon name="chevron-back-outline" size={14} /> Kembali
           </button>
+          <Link to={`/worksheet?id=${id}`} className="btn btn-sm btn-secondary" title="Buka di Lembar Kerja Tugas">
+            <Icon name="reader-outline" size={14} /> Lembar Kerja Tugas ↗
+          </Link>
           <SmartDispatchButton
             item={{ ...form, id }}
             targetUrl={form.reference_url}
             onStatusUpdated={(status) => setForm((prev) => ({ ...prev, status }))}
           />
           <button type="button" className="btn btn-sm btn-primary" onClick={simpan} disabled={saving}>
-            {saving ? 'Menyimpan...' : 'Simpan'}
+            {saving ? 'Menyimpan...' : 'Simpan brief'}
           </button>
         </div>
       }
@@ -389,26 +392,55 @@ export default function ContentDetail() {
 
       <ChecklistTugas contentItemId={id} />
 
+      {/* Kartu Mandat Brief & Eksekusi Konten */}
       <div className="card">
-        <p style={{ fontSize: 14, fontWeight: 600, marginBottom: 3 }}>Isi brief</p>
-        <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 18 }}>
-          Tidak harus lengkap sekaligus. Isi yang sudah jelas dulu.
-        </p>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <div>
+            <h3 style={{ fontSize: 15, fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+              Mandat Brief & Wording Konten
+            </h3>
+            <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '2px 0 0' }}>
+              Arahan kerja dari manajer sosmed untuk dieksekusi oleh tim kreatif.
+            </p>
+          </div>
+          <Link
+            to={`/worksheet?id=${id}`}
+            className="btn btn-sm btn-secondary"
+            style={{ fontWeight: 650, fontSize: 11.5 }}
+          >
+            <Icon name="reader-outline" size={13} /> Buka di Lembar Kerja ↗
+          </Link>
+        </div>
 
-        {KOLOM_BRIEF.map((k) => (
-          <Field key={k.name} label={k.label}>
-            <textarea
-              className="textarea"
-              rows={k.rows}
-              value={form[k.name] ?? ''}
-              onChange={(e) => ubah(k.name, e.target.value)}
-              placeholder={k.placeholder}
-              style={{ minHeight: k.rows * 22 }}
-            />
-          </Field>
-        ))}
+        {/* 1. Mandat & Arahan Pokok Manajer */}
+        <Field label="Mandat & Arahan Pokok Manajer (Brief Directive)">
+          <textarea
+            className="textarea"
+            rows={3}
+            value={form.brief ?? ''}
+            onChange={(e) => ubah('brief', e.target.value)}
+            placeholder="Konten ini tentang apa, tujuan utama, sudut pandang emosional, dan instruksi untuk tim..."
+          />
+        </Field>
 
-        <Field label="Tautan referensi acuan" hint="Contoh konten serupa, video viral, Canva, atau folder Drive.">
+        {/* 2. Wording di Dalam Konten (Teks Visual / Slide / Storyboard) */}
+        <div style={{ background: '#faf8fe', border: '1.5px solid #e5daf5', borderRadius: 12, padding: 14, marginBottom: 16 }}>
+          <label className="field-label" style={{ color: '#5935d5', fontWeight: 700, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
+            <Icon name="document-text-outline" size={15} color="#5935d5" />
+            Wording di Dalam Konten (Teks Visual, Slide Carousel, atau Script Video)
+          </label>
+          <textarea
+            className="textarea"
+            rows={5}
+            value={form.production_notes ?? ''}
+            onChange={(e) => ubah('production_notes', e.target.value)}
+            placeholder="Tulis wording teks yang WAJIB dicantumkan desainer pada visual grafis atau naskah yang dibacakan di video..."
+            style={{ background: '#fff', fontSize: 12.5, lineHeight: 1.5 }}
+          />
+        </div>
+
+        {/* 3. Tautan Referensi Acuan & Bahan Materi */}
+        <Field label="Tautan Referensi Konten / Bahan Acuan" hint="Contoh video viral, moodboard Canva, atau materi dari Google Drive.">
           <div style={{ display: 'flex', gap: 8 }}>
             <input
               className="input"
@@ -432,6 +464,81 @@ export default function ContentDetail() {
             )}
           </div>
         </Field>
+
+        {/* 4. Draf Naskah Medsos (Caption, CTA, Hashtag) */}
+        <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14, marginTop: 14 }}>
+          <p style={{ fontSize: 13, fontWeight: 700, margin: '0 0 10px', color: 'var(--text-primary)' }}>
+            Draf Naskah Medsos (Caption & Saluran)
+          </p>
+
+          <Field label="Draf Caption">
+            <textarea
+              className="textarea"
+              rows={4}
+              value={form.caption ?? ''}
+              onChange={(e) => ubah('caption', e.target.value)}
+              placeholder="Caption siap tempel. Tim pelaksana juga bisa menyusunnya di Lembar Kerja."
+            />
+          </Field>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <Field label="Ajakan Bertindak (CTA)">
+              <input
+                className="input"
+                value={form.cta ?? ''}
+                onChange={(e) => ubah('cta', e.target.value)}
+                placeholder="Contoh: klik link di bio, komen 'ZAKAT'"
+              />
+            </Field>
+
+            <Field label="Hashtag">
+              <input
+                className="input"
+                value={form.hashtags ?? ''}
+                onChange={(e) => ubah('hashtags', e.target.value)}
+                placeholder="#ZISWAFCTARSA #BerbagiKebaikan"
+              />
+            </Field>
+          </div>
+        </div>
+
+        {/* 5. Parameter Strategis Tambahan (Collapsible Accordion — Agar Tidak Menakuti Pengguna) */}
+        <details style={{ marginTop: 12, background: 'var(--surface-1, #f9fafb)', borderRadius: 10, padding: '10px 14px', border: '1px solid var(--border)' }}>
+          <summary style={{ fontSize: 12, fontWeight: 650, color: 'var(--text-secondary)', cursor: 'pointer', outline: 'none' }}>
+            ⚙️ Parameter Strategis Tambahan (Tujuan, Audiens, Pesan Utama — Opsional)
+          </summary>
+          <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <Field label="Tujuan Konten">
+              <textarea
+                className="textarea"
+                rows={2}
+                value={form.objective ?? ''}
+                onChange={(e) => ubah('objective', e.target.value)}
+                placeholder="Apa yang diharapkan terjadi setelah orang melihat konten ini?"
+              />
+            </Field>
+
+            <Field label="Target Audiens">
+              <textarea
+                className="textarea"
+                rows={2}
+                value={form.target_audience ?? ''}
+                onChange={(e) => ubah('target_audience', e.target.value)}
+                placeholder="Siapa yang dituju (segmen donatur, relawan, masyarakat umum)..."
+              />
+            </Field>
+
+            <Field label="Pesan Utama (Key Message)">
+              <textarea
+                className="textarea"
+                rows={2}
+                value={form.key_message ?? ''}
+                onChange={(e) => ubah('key_message', e.target.value)}
+                placeholder="Satu kalimat pokok yang harus nyangkut di benak audiens..."
+              />
+            </Field>
+          </div>
+        </details>
       </div>
 
       <Komentar contentId={id} />

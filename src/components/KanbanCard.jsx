@@ -27,7 +27,7 @@ export default function KanbanCard({ item, onDragStart, onDragEnd, warnaStatus, 
     posisiAwal.current = null
     if (!awal) return
     const jarak = Math.abs(e.clientX - awal.x) + Math.abs(e.clientY - awal.y)
-    if (jarak < 5) navigate(`/content/${item.id}`)
+    if (jarak < 5) navigate(`/worksheet?id=${item.id}`)
   }
 
   const adaBrief = Boolean(item.brief && item.brief.trim() !== '')
