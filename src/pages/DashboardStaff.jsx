@@ -34,7 +34,7 @@ function BarisTugas({ item }) {
   const adaBrief = Boolean(item.brief && item.brief.trim() !== '')
 
   return (
-    <Link to={`/content/${item.id}`} className="row-link">
+    <Link to={`/worksheet?id=${item.id}`} className="row-link" title="Buka di Lembar Kerja Tugas">
       <div
         style={{
           width: 32, height: 32, borderRadius: 9, flexShrink: 0, background: p.bg,
