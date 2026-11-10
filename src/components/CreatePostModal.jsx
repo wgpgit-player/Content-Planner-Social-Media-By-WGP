@@ -65,6 +65,9 @@ export default function CreatePostModal({ open, onClose }) {
   const [wording, setWording] = useState('')
   const [referensi, setReferensi] = useState('')
   const [brief, setBrief] = useState('')
+  const [keyMessage, setKeyMessage] = useState('')
+  const [objective, setObjective] = useState('')
+  const [targetAudience, setTargetAudience] = useState('')
   const [assigneeId, setAssigneeId] = useState('')
   const [pillarId, setPillarId] = useState('')
   const [tanggal, setTanggal] = useState(() => isoDate(addDays(new Date(), 1)))
@@ -136,6 +139,9 @@ export default function CreatePostModal({ open, onClose }) {
         platform,
         title: title.trim(),
         brief: brief.trim() || null,
+        key_message: keyMessage.trim() || null,
+        objective: objective.trim() || null,
+        target_audience: targetAudience.trim() || null,
         production_notes: wording.trim() || null,
         reference_url: referensi.trim() || null,
         assignee_id: assigneeId || null,
@@ -186,6 +192,9 @@ export default function CreatePostModal({ open, onClose }) {
     setWording('')
     setReferensi('')
     setBrief('')
+    setKeyMessage('')
+    setObjective('')
+    setTargetAudience('')
     setBerhasil(null)
     setPesan(null)
   }
@@ -409,7 +418,7 @@ export default function CreatePostModal({ open, onClose }) {
           <div>
             <label className="field-label">
               <Icon name="clipboard-outline" size={13} style={{ marginRight: 4 }} />
-              Mandat & Arahan Pokok Manajer (Brief Directive)
+              Mandat & Arahan Pokok Manajer (Ringkasan Brief)
             </label>
             <textarea
               className="textarea"
@@ -421,7 +430,58 @@ export default function CreatePostModal({ open, onClose }) {
             />
           </div>
 
-          {/* 6. Target Tanggal & Content Pillar */}
+          {/* 6. Pesan Utama (Key Message) & Target Sasaran */}
+          <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <label className="field-label" style={{ margin: 0, fontWeight: 700, color: 'var(--text-primary)' }}>
+                <Icon name="key-outline" size={13} style={{ marginRight: 4 }} />
+                Pesan Utama (Key Message) & Sasaran Audiens
+              </label>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Membantu tim memahami esensi konten</span>
+            </div>
+
+            <div style={{ marginBottom: 10 }}>
+              <label className="field-label" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                Pesan Utama (Key Message)
+              </label>
+              <input
+                className="input"
+                placeholder="Gagasan pokok yang harus tertanam di audiens (contoh: Sedekah subuh berkah & praktis via QRIS CTARSA)"
+                value={keyMessage}
+                onChange={(e) => setKeyMessage(e.target.value)}
+                style={{ fontSize: 12.5 }}
+              />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div>
+                <label className="field-label" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                  Tujuan Konten (Objective)
+                </label>
+                <input
+                  className="input"
+                  placeholder="Contoh: Edukasi donatur & ajakan sedekah subuh"
+                  value={objective}
+                  onChange={(e) => setObjective(e.target.value)}
+                  style={{ fontSize: 12.5 }}
+                />
+              </div>
+              <div>
+                <label className="field-label" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                  Target Audiens
+                </label>
+                <input
+                  className="input"
+                  placeholder="Contoh: Donatur muda, pekerja muslim"
+                  value={targetAudience}
+                  onChange={(e) => setTargetAudience(e.target.value)}
+                  style={{ fontSize: 12.5 }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 7. Target Tanggal & Content Pillar */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
             <div>
               <label className="field-label">Target Tanggal Tayang</label>

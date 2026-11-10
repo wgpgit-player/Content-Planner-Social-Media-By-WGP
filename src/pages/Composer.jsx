@@ -91,6 +91,9 @@ export default function Composer() {
   const [wording, setWording] = useState('')
   const [referensi, setReferensi] = useState('')
   const [brief, setBrief] = useState('')
+  const [keyMessage, setKeyMessage] = useState('')
+  const [objective, setObjective] = useState('')
+  const [targetAudience, setTargetAudience] = useState('')
   const [assigneeId, setAssigneeId] = useState('')
   const [tabPratinjau, setTabPratinjau] = useState('brief') // 'brief' | 'feed'
   const [caption, setCaption] = useState('')
@@ -249,6 +252,9 @@ export default function Composer() {
       platform,
       title: judul.trim(),
       brief: brief.trim() || null,
+      key_message: keyMessage.trim() || null,
+      objective: objective.trim() || null,
+      target_audience: targetAudience.trim() || null,
       production_notes: wording.trim() || null,
       reference_url: referensi.trim() || assetUrl.trim() || null,
       caption: caption.trim() || null,
@@ -555,6 +561,47 @@ export default function Composer() {
                 placeholder="Contoh: Fokus pada hook emosional & tone ceria"
                 value={brief}
                 onChange={(e) => setBrief(e.target.value)}
+                style={{ fontSize: 12 }}
+              />
+            </div>
+          </div>
+
+          {/* 4. Pesan Utama (Key Message) & Target Sasaran */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr', gap: 10, marginBottom: 14 }}>
+            <div>
+              <label className="field-label" style={{ fontSize: 11.5, margin: '0 0 4px 0' }}>
+                <Icon name="key-outline" size={12} style={{ marginRight: 3 }} />
+                Pesan Utama (Key Message)
+              </label>
+              <input
+                className="input"
+                placeholder="Poin yang harus tertanam di audiens"
+                value={keyMessage}
+                onChange={(e) => setKeyMessage(e.target.value)}
+                style={{ fontSize: 12 }}
+              />
+            </div>
+            <div>
+              <label className="field-label" style={{ fontSize: 11.5, margin: '0 0 4px 0' }}>
+                Tujuan Konten (Objective)
+              </label>
+              <input
+                className="input"
+                placeholder="Contoh: Edukasi, Donasi"
+                value={objective}
+                onChange={(e) => setObjective(e.target.value)}
+                style={{ fontSize: 12 }}
+              />
+            </div>
+            <div>
+              <label className="field-label" style={{ fontSize: 11.5, margin: '0 0 4px 0' }}>
+                Target Audiens
+              </label>
+              <input
+                className="input"
+                placeholder="Contoh: Donatur muda"
+                value={targetAudience}
+                onChange={(e) => setTargetAudience(e.target.value)}
                 style={{ fontSize: 12 }}
               />
             </div>

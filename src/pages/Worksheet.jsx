@@ -112,6 +112,63 @@ export default function Worksheet() {
   })
   const [modalBantu, setModalBantu] = useState(null) // null | 'hook' | 'cta' | 'hashtag'
 
+  // Modal & Form edit brief / arahan manajer
+  const [modalEditBrief, setModalEditBrief] = useState(false)
+  const [formBrief, setFormBrief] = useState({
+    brief: '',
+    key_message: '',
+    objective: '',
+    target_audience: '',
+    production_notes: '',
+    reference_url: '',
+  })
+
+  function bukaModalEditBrief() {
+    if (!tugasAktif) return
+    setFormBrief({
+      brief: tugasAktif.brief ?? '',
+      key_message: tugasAktif.key_message ?? '',
+      objective: tugasAktif.objective ?? '',
+      target_audience: tugasAktif.target_audience ?? '',
+      production_notes: tugasAktif.production_notes ?? '',
+      reference_url: tugasAktif.reference_url ?? '',
+    })
+    setModalEditBrief(true)
+  }
+
+  async function simpanEditBrief() {
+    if (!tugasAktif || !supabase || !tenantId) return
+    setSaving(true)
+    setPesan(null)
+
+    const payload = {
+      brief: formBrief.brief.trim() || null,
+      key_message: formBrief.key_message.trim() || null,
+      objective: formBrief.objective.trim() || null,
+      target_audience: formBrief.target_audience.trim() || null,
+      production_notes: formBrief.production_notes.trim() || null,
+      reference_url: formBrief.reference_url.trim() || null,
+      updated_at: new Date().toISOString(),
+    }
+
+    const { error } = await supabase
+      .from('content_items')
+      .update(payload)
+      .eq('id', tugasAktif.id)
+      .eq('tenant_id', tenantId)
+
+    setSaving(false)
+
+    if (error) {
+      setPesan({ tipe: 'error', teks: `Gagal memperbarui brief: ${error.message}` })
+    } else {
+      setTugasAktif((prev) => ({ ...prev, ...payload }))
+      setTugasList((prev) => prev.map((t) => (t.id === tugasAktif.id ? { ...t, ...payload } : t)))
+      setModalEditBrief(false)
+      setPesan({ tipe: 'success', teks: 'Arahan & Brief berhasil diperbarui.' })
+    }
+  }
+
   function sisipkanHook(teks) {
     setDraf((d) => ({
       ...d,
@@ -567,9 +624,20 @@ export default function Worksheet() {
 
             {/* SEKSI 1: Mandat & Arahan Pokok Manajer Sosmed */}
             <div className="card" style={{ borderLeft: '4px solid var(--accent, #6366f1)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 12 }}>
-                <Icon name="clipboard-outline" size={16} color="var(--accent)" />
-                <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>Arahan & Brief dari Manajer Sosmed</h3>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                  <Icon name="clipboard-outline" size={16} color="var(--accent)" />
+                  <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>Arahan & Brief dari Manajer Sosmed</h3>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={bukaModalEditBrief}
+                  title="Edit ringkasan brief, pesan utama, target audiens, dan wording"
+                  style={{ fontSize: 11.5, gap: 5 }}
+                >
+                  <Icon name="create-outline" size={13} /> Edit Brief & Arahan
+                </button>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
@@ -577,29 +645,57 @@ export default function Worksheet() {
                   <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', margin: '0 0 4px 0', textTransform: 'uppercase' }}>
                     Ringkasan Brief
                   </p>
-                  <p style={{ fontSize: 12.5, margin: 0, color: 'var(--text-primary)', whiteSpace: 'pre-wrap' }}>
-                    {tugasAktif.brief || 'Belum ada ringkasan brief.'}
-                  </p>
+                  {tugasAktif.brief ? (
+                    <p style={{ fontSize: 12.5, margin: 0, color: 'var(--text-primary)', whiteSpace: 'pre-wrap' }}>
+                      {tugasAktif.brief}
+                    </p>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={bukaModalEditBrief}
+                      style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent)', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                    >
+                      <Icon name="add-circle-outline" size={13} /> + Tulis Ringkasan Brief
+                    </button>
+                  )}
                 </div>
 
                 <div style={{ background: 'var(--surface-1, #f9fafb)', padding: '10px 12px', borderRadius: 8 }}>
                   <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', margin: '0 0 4px 0', textTransform: 'uppercase' }}>
                     Pesan Utama (Key Message)
                   </p>
-                  <p style={{ fontSize: 12.5, margin: 0, color: 'var(--text-primary)' }}>
-                    {tugasAktif.key_message || 'Belum ditentukan.'}
-                  </p>
+                  {tugasAktif.key_message ? (
+                    <p style={{ fontSize: 12.5, margin: 0, color: 'var(--text-primary)' }}>
+                      {tugasAktif.key_message}
+                    </p>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={bukaModalEditBrief}
+                      style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent)', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                    >
+                      <Icon name="add-circle-outline" size={13} /> + Tentukan Key Message
+                    </button>
+                  )}
                 </div>
 
                 <div style={{ background: 'var(--surface-1, #f9fafb)', padding: '10px 12px', borderRadius: 8 }}>
                   <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', margin: '0 0 4px 0', textTransform: 'uppercase' }}>
                     Tujuan & Target Audiens
                   </p>
-                  <p style={{ fontSize: 12.5, margin: 0, color: 'var(--text-primary)' }}>
-                    {tugasAktif.objective || tugasAktif.target_audience
-                      ? `${tugasAktif.objective ?? ''} ${tugasAktif.target_audience ? `· Target: ${tugasAktif.target_audience}` : ''}`
-                      : 'Belum diisi.'}
-                  </p>
+                  {tugasAktif.objective || tugasAktif.target_audience ? (
+                    <p style={{ fontSize: 12.5, margin: 0, color: 'var(--text-primary)' }}>
+                      {tugasAktif.objective ?? ''} {tugasAktif.target_audience ? `· Target: ${tugasAktif.target_audience}` : ''}
+                    </p>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={bukaModalEditBrief}
+                      style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent)', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                    >
+                      <Icon name="add-circle-outline" size={13} /> + Tentukan Tujuan & Target
+                    </button>
+                  )}
                 </div>
 
                 {tugasAktif.production_notes && (
@@ -1007,6 +1103,109 @@ export default function Worksheet() {
                 </button>
               ))}
           </div>
+        </Sheet>
+      )}
+
+      {/* Modal / Sheet Edit Brief & Arahan Pokok */}
+      {modalEditBrief && (
+        <Sheet
+          open
+          onClose={() => setModalEditBrief(false)}
+          title="Edit Arahan & Brief Manajer"
+          description={`Sesuaikan ringkasan, pesan utama, dan wording untuk "${tugasAktif?.title}".`}
+          lebar={600}
+        >
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              simpanEditBrief()
+            }}
+            style={{ display: 'flex', flexDirection: 'column', gap: 14 }}
+          >
+            <div>
+              <label className="field-label">Ringkasan Brief Pokok</label>
+              <textarea
+                className="textarea"
+                rows={3}
+                placeholder="Arahan pokok apa yang harus diperhatikan tim..."
+                value={formBrief.brief}
+                onChange={(e) => setFormBrief((f) => ({ ...f, brief: e.target.value }))}
+              />
+            </div>
+
+            <div>
+              <label className="field-label">Pesan Utama (Key Message)</label>
+              <input
+                className="input"
+                placeholder="Satu kalimat / poin utama yang harus tertanam di benak penonton"
+                value={formBrief.key_message}
+                onChange={(e) => setFormBrief((f) => ({ ...f, key_message: e.target.value }))}
+              />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div>
+                <label className="field-label">Tujuan Konten (Objective)</label>
+                <input
+                  className="input"
+                  placeholder="Contoh: Edukasi, Donasi, Engagement"
+                  value={formBrief.objective}
+                  onChange={(e) => setFormBrief((f) => ({ ...f, objective: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="field-label">Target Audiens</label>
+                <input
+                  className="input"
+                  placeholder="Contoh: Generasi muda, pekerja muslim"
+                  value={formBrief.target_audience}
+                  onChange={(e) => setFormBrief((f) => ({ ...f, target_audience: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="field-label">Wording di Dalam Konten (Teks Visual & Script Video)</label>
+              <textarea
+                className="textarea"
+                rows={5}
+                placeholder="Teks atau naskah yang wajib dicantumkan tim ke dalam konten..."
+                value={formBrief.production_notes}
+                onChange={(e) => setFormBrief((f) => ({ ...f, production_notes: e.target.value }))}
+                style={{ fontSize: 12.5, lineHeight: 1.5 }}
+              />
+            </div>
+
+            <div>
+              <label className="field-label">Tautan Referensi Acuan (URL)</label>
+              <input
+                className="input"
+                type="url"
+                placeholder="https://..."
+                value={formBrief.reference_url}
+                onChange={(e) => setFormBrief((f) => ({ ...f, reference_url: e.target.value }))}
+              />
+            </div>
+
+            <div className="sheet-aksi" style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setModalEditBrief(false)}
+                disabled={saving}
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={saving}
+              >
+                <Icon name="save-outline" size={14} />
+                {saving ? 'Menyimpan...' : 'Simpan Perubahan Brief'}
+              </button>
+            </div>
+          </form>
         </Sheet>
       )}
 
