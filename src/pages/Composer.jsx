@@ -11,6 +11,7 @@ import { useTenantContext } from '../context/TenantContext'
 import { PLATFORMS, getPlatform } from '../config/platforms'
 import { isoDate, addDays, startOfWeek, buildWeekDates, todayIso } from '../lib/dates'
 import { unggahMediaPerpustakaan, urlMateri, jenisVideo, JENIS_DITERIMA } from '../lib/materi'
+import { useTenantMembers, namaAnggota } from '../lib/useTenantMembers'
 
 // Composer: menyusun konten sambil melihat feed-nya.
 //
@@ -84,8 +85,14 @@ export default function Composer() {
     const dariUrl = platformAwal?.split(',').map((p) => p.trim()).filter(Boolean)
     return dariUrl?.length ? dariUrl : ['instagram']
   })
+  const { members } = useTenantMembers()
   const [pillarId, setPillarId] = useState('')
   const [judul, setJudul] = useState(() => ideAwal || '')
+  const [wording, setWording] = useState('')
+  const [referensi, setReferensi] = useState('')
+  const [brief, setBrief] = useState('')
+  const [assigneeId, setAssigneeId] = useState('')
+  const [tabPratinjau, setTabPratinjau] = useState('brief') // 'brief' | 'feed'
   const [caption, setCaption] = useState('')
   const [assetUrl, setAssetUrl] = useState('')
 
@@ -241,9 +248,13 @@ export default function Composer() {
       tenant_id: tenantId,
       platform,
       title: judul.trim(),
+      brief: brief.trim() || null,
+      production_notes: wording.trim() || null,
+      reference_url: referensi.trim() || assetUrl.trim() || null,
       caption: caption.trim() || null,
+      assignee_id: assigneeId || null,
       pillar_id: pillarId || null,
-      status: 'idea',
+      status: 'draft',
       scheduled_date: tanggal || null,
       scheduled_time: jam || null,
       asset_url: assetUrl.trim() || null,
@@ -262,16 +273,33 @@ export default function Composer() {
       return
     }
 
-    // Satu platform: langsung ke briefnya, selagi idenya masih hangat.
-    // Beberapa platform: tetap di sini, karena melompat ke salah satu dari
-    // tiga konten yang baru dibuat akan membingungkan.
+    // Inisialisasi checklist SOP standar untuk item baru
+    if (data?.length) {
+      try {
+        const sopItems = []
+        for (const it of data) {
+          sopItems.push(
+            { content_item_id: it.id, tenant_id: tenantId, label: 'Pelajari brief & riset referensi manajer', position: 1 },
+            { content_item_id: it.id, tenant_id: tenantId, label: 'Buat desain visual / edit video & wording', position: 2 },
+            { content_item_id: it.id, tenant_id: tenantId, label: 'Tulis draf caption, CTA, & hashtag', position: 3 },
+            { content_item_id: it.id, tenant_id: tenantId, label: 'Quality check mandiri (cek typo & estetika)', position: 4 },
+            { content_item_id: it.id, tenant_id: tenantId, label: 'Ajukan review ke Manajer Sosmed', position: 5 }
+          )
+        }
+        await supabase.from('checklist_items').insert(sopItems)
+      } catch (e) {
+        // Abaikan jika tabel checklist tidak ada
+      }
+    }
+
+    // Satu platform: langsung ke Lembar Kerja Tugas (/worksheet) agar tim/manajer bisa melihat hasil briefnya
     if (data?.length === 1) {
-      navigate(`/content/${data[0].id}`)
+      navigate(`/worksheet?id=${data[0].id}`)
       return
     }
 
-    setJudul(''); setCaption(''); setAssetUrl(''); lepasAset()
-    setPesan({ tipe: 'sukses', teks: `${data.length} konten dibuat, satu untuk tiap platform.` })
+    setJudul(''); setWording(''); setReferensi(''); setBrief(''); setCaption(''); setAssetUrl(''); lepasAset()
+    setPesan({ tipe: 'sukses', teks: `${data.length} brief konten dibuat dan dimandatkan ke tim.` })
     await muat()
   }
 
@@ -399,14 +427,29 @@ export default function Composer() {
               })}
             </div>
 
-            <div style={{ display: 'flex', gap: 8, marginLeft: 'auto', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 8, marginLeft: 'auto', alignItems: 'center', flexWrap: 'wrap' }}>
+              <select
+                aria-label="PIC Penanggung Jawab"
+                className="select"
+                value={assigneeId}
+                onChange={(e) => setAssigneeId(e.target.value)}
+                style={{ fontSize: 12, padding: '4px 8px', width: 'auto' }}
+              >
+                <option value="">Pilih PIC Tim...</option>
+                {members.map((m) => (
+                  <option key={m.user_id} value={m.user_id}>
+                    {namaAnggota(m)}
+                  </option>
+                ))}
+              </select>
+
               <input
                 aria-label="Jam tayang"
                 className="input"
                 type="time"
                 value={jam}
                 onChange={(e) => setJam(e.target.value)}
-                style={{ width: 96 }}
+                style={{ width: 92, fontSize: 12, padding: '4px 6px' }}
               />
               <div className="pil-select-bungkus">
                 <select
@@ -423,23 +466,110 @@ export default function Composer() {
             </div>
           </div>
 
-          {/* Kanvas dan kotak tulis bersebelahan, seperti di Plann. Kanvasnya
-              dibatasi lebarnya lewat CSS — sebelumnya ia dibiarkan selebar
-              kolom, dan karena tingginya mengikuti perbandingan sisi, hasilnya
-              bidang kosong raksasa yang memenuhi layar. */}
+          {/* 1. Judul Konten & Topik Jobdesk (Paling Utama) */}
+          <div style={{ marginTop: 12, marginBottom: 12 }}>
+            <label className="field-label" style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>
+              Judul Konten / Topik Jobdesk <span style={{ color: 'var(--danger)' }}>*</span>
+            </label>
+            <input
+              id="cmp-judul"
+              className="input"
+              value={judul}
+              onChange={(e) => setJudul(e.target.value)}
+              placeholder={
+                platformTerpilih.includes('article')
+                  ? 'Contoh: ZISWAF CTARSA Salurkan Bantuan Air Bersih di Sukabumi'
+                  : 'Contoh: Reels: 3 Tips Sedekah Subuh Berkah'
+              }
+              style={{ fontSize: 15, fontWeight: 700, padding: '10px 14px', borderColor: 'var(--accent)' }}
+            />
+          </div>
+
+          {/* 2. Wording di Dalam Konten (Teks Visual & Script Video) */}
+          <div style={{ background: '#faf8fe', border: '1.5px solid #e5daf5', borderRadius: 12, padding: 12, marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, flexWrap: 'wrap', gap: 6 }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: '#5935d5', margin: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+                <Icon name="document-text-outline" size={14} color="#5935d5" />
+                Wording di Dalam Konten (Teks Visual / Slide / Storyboard)
+              </label>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  style={{ fontSize: 10.5, padding: '2px 7px', background: '#fff', color: '#5935d5', border: '1px solid #d5c3f0', cursor: 'pointer' }}
+                  onClick={() =>
+                    setWording(
+                      `[Slide 1 - Hook]: 3 Rahasia yang Jarang Diketahui Tentang...\n[Slide 2 - Masalah]: Sering merasa bingung saat ingin mulai...?\n[Slide 3 - Insight]: Padahal kuncinya ada pada konsistensi langkah kecil.\n[Slide 4 - Cara Praktis]: 1. Tentukan niat, 2. Eksekusi rutin, 3. Evaluasi.\n[Slide 5 - CTA]: Simpan postingan ini & klik link di bio untuk panduan lengkapnya!`
+                    )
+                  }
+                >
+                  + Format 5 Slide
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  style={{ fontSize: 10.5, padding: '2px 7px', background: '#fff', color: '#5935d5', border: '1px solid #d5c3f0', cursor: 'pointer' }}
+                  onClick={() =>
+                    setWording(
+                      `[00:00 - 00:03 Hook]: "Jangan lewatkan waktu subuh tanpa 1 amalan ini..."\n[00:03 - 00:20 Pembahasan]: Tunjukkan cuplikan relawan membagikan santunan langsung ke pelosok.\n[00:20 - 00:30 CTA]: "Salurkan sedekah subuhmu lewat ZISWAF CTARSA. Klik link di bio!"`
+                    )
+                  }
+                >
+                  + Video Script
+                </button>
+              </div>
+            </div>
+            <textarea
+              className="textarea"
+              rows={4}
+              placeholder="Tulis teks wording yang WAJIB dicantumkan desainer pada visual atau script yang dibacakan di video..."
+              value={wording}
+              onChange={(e) => setWording(e.target.value)}
+              style={{ fontSize: 12.5, lineHeight: 1.5, background: '#fff' }}
+            />
+          </div>
+
+          {/* 3. Tautan Referensi & Mandat Manajer */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
+            <div>
+              <label className="field-label" style={{ fontSize: 11.5, margin: '0 0 4px 0' }}>
+                <Icon name="link-outline" size={12} style={{ marginRight: 3 }} />
+                Tautan Referensi Konten (Link Acuan)
+              </label>
+              <input
+                className="input"
+                type="url"
+                placeholder="https://instagram.com/reel/... atau Canva / Drive"
+                value={referensi}
+                onChange={(e) => setReferensi(e.target.value)}
+                style={{ fontSize: 12 }}
+              />
+            </div>
+            <div>
+              <label className="field-label" style={{ fontSize: 11.5, margin: '0 0 4px 0' }}>
+                <Icon name="clipboard-outline" size={12} style={{ marginRight: 3 }} />
+                Mandat & Arahan Pokok Manajer
+              </label>
+              <input
+                className="input"
+                placeholder="Contoh: Fokus pada hook emosional & tone ceria"
+                value={brief}
+                onChange={(e) => setBrief(e.target.value)}
+                style={{ fontSize: 12 }}
+              />
+            </div>
+          </div>
+
+          {/* Kanvas Media & Draf Caption */}
           <div className="compose-editor">
             <div>
-              {/* Kanvas: unggah gambar sungguhan, bisa diseret-lepas.
-                  Berkasnya naik duluan ke penyimpanan lewat jalur
-                  perpustakaan, karena di layar ini kontennya memang belum
-                  dibuat — jalurnya baru ditempelkan ke konten saat disimpan.
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
+                <label className="field-label" style={{ margin: 0, fontSize: 11.5 }}>
+                  Unggah Media Jadi (Opsional — Dikerjakan Desainer)
+                </label>
+              </div>
 
-                  Kotak tautan di bawahnya untuk hal yang BERBEDA: materi yang
-                  memang tinggal di Canva atau Drive. Tautan Canva adalah
-                  halaman web, bukan berkas gambar, jadi tidak bisa
-                  ditampilkan sebagai gambar di mana pun — kalau desainnya
-                  perlu DILIHAT di sini dan di grid, ekspor dulu jadi
-                  JPG/PNG lalu unggah ke kanvas. */}
+              {/* Kanvas: unggah gambar sungguhan, bisa diseret-lepas */}
               <div
                 className={`compose-kanvas${seret ? ' seret' : ''}`}
                 onClick={() => !aset && inputBerkas.current?.click()}
@@ -458,8 +588,6 @@ export default function Composer() {
                 {asetUrl ? (
                   <div className="compose-kanvas-terisi">
                     {jenisVideo(aset?.mime) ? (
-                      // Video bisa diputar langsung di sini, jadi hasil
-                      // editnya bisa ditonton sebelum dijadwalkan.
                       <video src={asetUrl} poster={posterUrl ?? undefined} controls playsInline />
                     ) : (
                       <img src={asetUrl} alt="Gambar konten" />
@@ -484,7 +612,7 @@ export default function Composer() {
                       <Icon name="add" size={22} />
                     </span>
                     <p style={{ fontSize: 11.5, color: 'var(--text-muted)', lineHeight: 1.5 }}>
-                      Ketuk atau seret gambar ke sini
+                      Foto/video materi (opsional)
                     </p>
                   </div>
                 )}
@@ -510,15 +638,16 @@ export default function Composer() {
                 value={assetUrl}
                 onChange={(e) => setAssetUrl(e.target.value)}
                 placeholder="Tautan Canva / Drive (opsional)"
-                style={{ fontSize: 12 }}
+                style={{ fontSize: 12, marginTop: 6 }}
               />
-              <p className="field-hint" style={{ marginTop: 5 }}>
-                Tautan Canva tidak bisa tampil sebagai gambar. Supaya desainnya
-                terlihat di pratinjau, ekspor jadi JPG lalu unggah di atas.
-              </p>
             </div>
 
             <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
+                <label className="field-label" style={{ margin: 0, fontSize: 11.5 }}>
+                  Draf Caption & Ajakan Bertindak
+                </label>
+              </div>
               <textarea
                 aria-label="Caption konten"
                 id="cmp-caption"
@@ -546,19 +675,6 @@ export default function Composer() {
                   </button>
                 )}
               </div>
-
-              <input
-                id="cmp-judul"
-                className="input"
-                value={judul}
-                onChange={(e) => setJudul(e.target.value)}
-                placeholder={
-                  platformTerpilih.includes('article')
-                    ? 'Judul Siaran Pers / Headline Berita (contoh: Penyaluran Air Bersih ZISWAF CTARSA di Sukabumi)'
-                    : 'Judul singkat (dilihat tim, tidak ikut tayang)'
-                }
-                style={{ marginTop: 12 }}
-              />
             </div>
           </div>
 
@@ -576,7 +692,9 @@ export default function Composer() {
 
         {/* ---------- Kanan: pratinjau di mockup telepon ---------- */}
         <div className="compose-pratinjau">
-          <p className="compose-preview-label">Pratinjau feed <span>Perubahan terlihat langsung</span></p>
+          <p className="compose-preview-label">
+            Pratinjau {asetUrl ? 'Feed & Visual' : 'Mandat Brief Tim'} <span>Perubahan terlihat langsung</span>
+          </p>
           <TeleponMockup lebar={390}>
             {platformPratinjau === 'article' ? (
               <div style={{ background: '#fff', minHeight: 480, padding: 18, display: 'flex', flexDirection: 'column' }}>
@@ -620,13 +738,82 @@ export default function Composer() {
 
                 {/* Isi Naskah Berita */}
                 <div style={{ flex: 1, fontSize: 11.5, color: 'var(--text-secondary)', lineHeight: 1.55, whiteSpace: 'pre-wrap', maxHeight: 160, overflowY: 'auto', background: 'var(--surface-1, #f9fafb)', padding: '8px 10px', borderRadius: 8 }}>
-                  {caption || 'Naskah rilis pers atau artikel berita akan muncul di sini secara real-time saat kamu menulis di sisi kiri...'}
+                  {caption || wording || 'Naskah rilis pers atau artikel berita akan muncul di sini secara real-time saat kamu menulis di sisi kiri...'}
                 </div>
 
                 {/* Footer Web CTARSA */}
                 <div style={{ borderTop: '1px solid var(--border)', paddingTop: 8, marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>ctarsa.or.id/berita</span>
                   <span style={{ fontSize: 10.5, fontWeight: 600, color: '#0284c7' }}>Siap Publikasi ✓</span>
+                </div>
+              </div>
+            ) : !asetUrl ? (
+              /* Pratinjau Mandat Brief Tim (Saat gambar belum diunggah) */
+              <div style={{ background: '#fff', minHeight: 480, padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {/* Header Brief */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border)', paddingBottom: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span className="chip" style={{ background: getPlatform(platformPratinjau).bg, color: getPlatform(platformPratinjau).color, fontWeight: 700, margin: 0 }}>
+                      <Icon name={getPlatform(platformPratinjau).icon} size={14} /> {getPlatform(platformPratinjau).label}
+                    </span>
+                    <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                      {tanggal ? `${tanggal} ${jam ? `· ${jam} WIB` : ''}` : 'Target Tayang'}
+                    </span>
+                  </div>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: '#5935d5', background: '#f1eaff', padding: '3px 8px', borderRadius: 99 }}>
+                    MANDAT BRIEF
+                  </span>
+                </div>
+
+                {/* Topik / Judul Brief */}
+                <div>
+                  <span style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                    Topik / Judul Konten:
+                  </span>
+                  <h3 style={{ fontSize: 15, fontWeight: 750, color: 'var(--text-primary)', margin: '4px 0 0', lineHeight: 1.35 }}>
+                    {judul || 'Belum ada judul konten...'}
+                  </h3>
+                </div>
+
+                {/* PIC Penanggung Jawab */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--surface-1, #f9fafb)', padding: '10px 12px', borderRadius: 10 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#5935d5', color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 12 }}>
+                    {namaAnggota(members.find((m) => m.user_id === assigneeId)).charAt(0).toUpperCase() || 'P'}
+                  </div>
+                  <div style={{ fontSize: 12 }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Ditugaskan ke: </span>
+                    <strong style={{ color: 'var(--text-primary)' }}>
+                      {namaAnggota(members.find((m) => m.user_id === assigneeId))}
+                    </strong>
+                  </div>
+                </div>
+
+                {/* Wording di Dalam Konten */}
+                <div style={{ flex: 1, background: '#faf8fe', border: '1.5px solid #e5daf5', padding: '12px 14px', borderRadius: 10, maxHeight: 180, overflowY: 'auto' }}>
+                  <span style={{ fontSize: 10.5, fontWeight: 700, color: '#5935d5', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>
+                    Wording Visual & Script:
+                  </span>
+                  <p style={{ fontSize: 12, margin: 0, color: '#28213f', whiteSpace: 'pre-wrap', lineHeight: 1.5, fontFamily: 'inherit' }}>
+                    {wording || 'Wording teks yang harus muncul di dalam visual akan tampil di sini secara langsung saat kamu mengetik di sisi kiri...'}
+                  </p>
+                </div>
+
+                {/* Referensi & Mandat */}
+                {referensi && (
+                  <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '8px 12px', borderRadius: 8, fontSize: 11.5 }}>
+                    <strong style={{ color: '#065f46' }}>Referensi: </strong>
+                    <span style={{ color: '#047857', wordBreak: 'break-all' }}>{referensi}</span>
+                  </div>
+                )}
+
+                {brief && (
+                  <div style={{ background: 'var(--surface-1, #f9fafb)', padding: '8px 12px', borderRadius: 8, fontSize: 11.5, color: 'var(--text-secondary)' }}>
+                    <strong>Arahan Manajer: </strong>{brief}
+                  </div>
+                )}
+
+                <div style={{ borderTop: '1px solid var(--border)', paddingTop: 10, fontSize: 11, color: 'var(--text-muted)', textAlign: 'center' }}>
+                  💡 Foto & video hasil kerja akan diunggah oleh penanggung jawab di Lembar Kerja.
                 </div>
               </div>
             ) : (

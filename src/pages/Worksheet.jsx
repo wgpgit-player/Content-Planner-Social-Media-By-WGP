@@ -548,13 +548,47 @@ export default function Worksheet() {
                 </div>
 
                 {tugasAktif.production_notes && (
-                  <div style={{ background: 'var(--surface-1, #f9fafb)', padding: '10px 12px', borderRadius: 8 }}>
-                    <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', margin: '0 0 4px 0', textTransform: 'uppercase' }}>
-                      Catatan Produksi Manajer
-                    </p>
-                    <p style={{ fontSize: 12.5, margin: 0, color: 'var(--text-primary)' }}>
+                  <div style={{ gridColumn: '1 / -1', background: '#f5efff', border: '1.5px solid #d5c3f0', padding: '14px 16px', borderRadius: 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <p style={{ fontSize: 11.5, fontWeight: 700, color: '#5935d5', margin: 0, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Icon name="document-text-outline" size={15} color="#5935d5" />
+                        Wording di Dalam Konten (Teks Visual, Slide, & Script Video)
+                      </p>
+                      <span style={{ fontSize: 10.5, fontWeight: 700, background: '#e9dffc', color: '#5935d5', padding: '2px 8px', borderRadius: 99 }}>
+                        Mandat Eksekusi Tim
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 13, margin: 0, color: '#28213f', whiteSpace: 'pre-wrap', lineHeight: 1.6, fontWeight: 500 }}>
                       {tugasAktif.production_notes}
-                    </p>
+                    </div>
+                  </div>
+                )}
+
+                {tugasAktif.reference_url && (
+                  <div style={{ gridColumn: '1 / -1', background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '12px 14px', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: 8, background: '#d1fae5', color: '#059669', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+                        <Icon name="link-outline" size={18} />
+                      </div>
+                      <div>
+                        <p style={{ fontSize: 11, fontWeight: 700, color: '#065f46', margin: 0, textTransform: 'uppercase' }}>
+                          Tautan Referensi Acuan & Bahan Materi
+                        </p>
+                        <span style={{ fontSize: 12, color: '#047857', wordBreak: 'break-all' }}>
+                          {tugasAktif.reference_url}
+                        </span>
+                      </div>
+                    </div>
+                    <a
+                      href={tugasAktif.reference_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-sm"
+                      style={{ background: '#059669', color: '#fff', border: 'none', fontWeight: 650, fontSize: 11.5 }}
+                    >
+                      <Icon name="open-outline" size={13} />
+                      Buka Referensi Acuan ↗
+                    </a>
                   </div>
                 )}
               </div>

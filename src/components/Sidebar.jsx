@@ -19,7 +19,7 @@ export const NAV_GROUPS = [
     { icon: 'shield-checkmark-outline', label: 'Persetujuan', path: '/approvals', id: 'approvals' },
   ]},
   { label: 'Studio kreatif', items: [
-    { icon: 'create-outline', label: 'Susun konten', path: '/compose' },
+    { icon: 'create-outline', label: 'Susun brief & konten', path: '/compose' },
     { icon: 'bulb-outline', label: 'Bank ide', path: '/content-bank' },
     { icon: 'chatbubble-ellipses-outline', label: 'Pustaka copywriting', path: '/copywriting' },
     { icon: 'images-outline', label: 'Koleksi media', path: '/media' },
@@ -115,12 +115,16 @@ export default function Sidebar() {
       <div className="sidebar-brand"><BrandLogo/><span className="sidebar-brand-caption">Ruang gerak tim kreatif</span></div>
       <TenantSwitcher />
 
-      {/* Satu keputusan besar, satu tombol besar — ala Plann. Membuka
-          pop-in pemilih platform dulu (CreatePostModal), baru melempar ke
-          Composer, supaya orang tidak mendarat di halaman kosong. */}
-      <button type="button" className="btn btn-primary btn-block sidebar-tombol-buat" onClick={() => setModalBuat(true)}>
-        <Icon name="add-circle-outline" size={16} />
-        Buat konten
+      {/* Tombol Utama: Membuka Modal Pembuatan Brief & Mandat Jobdesk */}
+      <button
+        type="button"
+        className="btn btn-primary btn-block sidebar-tombol-buat"
+        onClick={() => setModalBuat(true)}
+        title="Buat mandat brief & jobdesk untuk tim konten"
+        style={{ fontWeight: 700, gap: 7 }}
+      >
+        <Icon name="document-text-outline" size={16} />
+        Buat Brief / Jobdesk
       </button>
 
       <CreatePostModal open={modalBuat} onClose={() => setModalBuat(false)} />

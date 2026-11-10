@@ -71,9 +71,9 @@ const KOLOM_BRIEF = [
   },
   {
     name: 'production_notes',
-    label: 'Catatan produksi',
-    placeholder: 'Durasi, rasio, aset yang dibutuhkan, lokasi, siapa yang syuting.',
-    rows: 3,
+    label: 'Wording di dalam konten (Teks visual / slide / script video)',
+    placeholder: 'Wording teks yang harus muncul di dalam desain banner, per slide carousel, atau naskah video.',
+    rows: 5,
   },
 ]
 
@@ -408,14 +408,29 @@ export default function ContentDetail() {
           </Field>
         ))}
 
-        <Field label="Tautan referensi" hint="Contoh konten serupa atau sumber data.">
-          <input
-            className="input"
-            type="url"
-            value={form.reference_url ?? ''}
-            onChange={(e) => ubah('reference_url', e.target.value)}
-            placeholder="https://"
-          />
+        <Field label="Tautan referensi acuan" hint="Contoh konten serupa, video viral, Canva, atau folder Drive.">
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              className="input"
+              type="url"
+              value={form.reference_url ?? ''}
+              onChange={(e) => ubah('reference_url', e.target.value)}
+              placeholder="https://instagram.com/... atau Canva / Drive"
+              style={{ flex: 1 }}
+            />
+            {form.reference_url && (
+              <a
+                href={form.reference_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-secondary btn-sm"
+                style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+              >
+                <Icon name="open-outline" size={13} />
+                Buka Acuan ↗
+              </a>
+            )}
+          </div>
         </Field>
       </div>
 
