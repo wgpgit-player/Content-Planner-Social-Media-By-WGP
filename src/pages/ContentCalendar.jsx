@@ -57,7 +57,7 @@ function EventBlock({ item, style, onClick }) {
   )
 }
 
-function DetailPopup({ item, onClose, onSave }) {
+function DetailPopup({ item, onClose, onSave, onDelete }) {
   const [time, setTime] = useState(item.scheduledTime?.slice(0, 5) ?? '')
   const [saving, setSaving] = useState(false)
   const p = getPlatform(item.platform)
@@ -65,6 +65,14 @@ function DetailPopup({ item, onClose, onSave }) {
   async function handleSave() {
     setSaving(true)
     await onSave(item.id, time || null)
+    setSaving(false)
+    onClose()
+  }
+
+  async function handleHapus() {
+    if (!window.confirm(`Hapus brief "${item.title}"?`)) return
+    setSaving(true)
+    await onDelete?.(item.id)
     setSaving(false)
     onClose()
   }
@@ -104,11 +112,22 @@ function DetailPopup({ item, onClose, onSave }) {
         </Link>
       </div>
 
-      <div className="sheet-aksi">
-        <button type="button" onClick={onClose} className="btn">Tutup</button>
-        <button type="button" onClick={handleSave} disabled={saving} className="btn btn-primary">
-          {saving ? 'Menyimpan...' : 'Simpan jam'}
+      <div className="sheet-aksi" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 18 }}>
+        <button
+          type="button"
+          onClick={handleHapus}
+          disabled={saving}
+          className="btn btn-danger btn-sm"
+          title="Hapus brief ini"
+        >
+          <Icon name="trash-outline" size={14} /> Hapus Brief
         </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button type="button" onClick={onClose} className="btn">Tutup</button>
+          <button type="button" onClick={handleSave} disabled={saving} className="btn btn-primary">
+            {saving ? 'Menyimpan...' : 'Simpan jam'}
+          </button>
+        </div>
       </div>
     </Sheet>
   )
@@ -164,6 +183,16 @@ export default function ContentCalendar() {
   async function handleSaveTime(id, time) {
     if (!supabase) return
     await supabase.from('content_items').update({ scheduled_time: time }).eq('id', id)
+    await load()
+  }
+
+  async function handleDelete(id) {
+    if (!supabase || !tenantId) return
+    const { error: err } = await supabase.from('content_items').delete().eq('id', id).eq('tenant_id', tenantId)
+    if (err) {
+      alert(`Gagal menghapus brief: ${err.message}`)
+      return
+    }
     await load()
   }
 
@@ -326,7 +355,7 @@ export default function ContentCalendar() {
         )}
 
         {selected && (
-          <DetailPopup item={selected} onClose={() => setSelected(null)} onSave={handleSaveTime} />
+          <DetailPopup item={selected} onClose={() => setSelected(null)} onSave={handleSaveTime} onDelete={handleDelete} />
         )}
       </div>
     </AppShell>

@@ -10,6 +10,7 @@ import ChecklistTugas from '../components/ChecklistTugas'
 import Komentar from '../components/Komentar'
 import LampiranMateri from '../components/LampiranMateri'
 import SmartDispatchButton from '../components/SmartDispatchButton'
+import { useConfirm } from '../lib/useConfirm'
 import { getPlatform } from '../config/platforms'
 import { getStatus, STATUSES } from '../config/statuses'
 import { parseIsoDate, todayIso } from '../lib/dates'
@@ -90,6 +91,7 @@ export default function Worksheet() {
   const { user } = useAuth()
   const { tenantId, isAdmin } = useTenantContext()
   const [searchParams, setSearchParams] = useSearchParams()
+  const tanya = useConfirm()
 
   const [tugasList, setTugasList] = useState([])
   const [tugasAktifId, setTugasAktifId] = useState(searchParams.get('id') || null)
@@ -252,6 +254,48 @@ export default function Worksheet() {
       setTugasAktif((prev) => ({ ...prev, ...payload }))
       setDraf((prev) => ({ ...prev, status: statusFinal }))
       setTugasList((prev) => prev.map((t) => (t.id === tugasAktif.id ? { ...t, status: statusFinal } : t)))
+    }
+  }
+
+  // 4. Hapus brief / tugas ini secara permanen
+  async function hapusBrief() {
+    if (!tugasAktif || !supabase || !tenantId) return
+
+    const yakin = await tanya.ask({
+      title: `Hapus brief "${tugasAktif.title}"?`,
+      description: 'Brief, arahan wording, dan seluruh naskah pengerjaan di dalamnya akan dihapus secara permanen.',
+      labelConfirm: 'Hapus Brief',
+      danger: true,
+    })
+    if (!yakin) return
+
+    setSaving(true)
+    setPesan(null)
+    const idDihapus = tugasAktif.id
+
+    const { error } = await supabase
+      .from('content_items')
+      .delete()
+      .eq('id', idDihapus)
+      .eq('tenant_id', tenantId)
+
+    setSaving(false)
+
+    if (error) {
+      setPesan({ tipe: 'error', teks: error.message })
+    } else {
+      const sisaTugas = tugasList.filter((t) => t.id !== idDihapus)
+      setTugasList(sisaTugas)
+      setPesan({ tipe: 'success', teks: `Brief "${tugasAktif.title}" berhasil dihapus.` })
+
+      if (sisaTugas.length > 0) {
+        setTugasAktifId(sisaTugas[0].id)
+        setSearchParams({ id: sisaTugas[0].id })
+      } else {
+        setTugasAktifId(null)
+        setTugasAktif(null)
+        setSearchParams({})
+      }
     }
   }
 
@@ -506,6 +550,17 @@ export default function Worksheet() {
                       setTugasList((prev) => prev.map((t) => (t.id === tugasAktif.id ? { ...t, status: statusBaru } : t)))
                     }}
                   />
+
+                  {/* Tombol Hapus Brief */}
+                  <button
+                    type="button"
+                    className="btn btn-danger btn-sm"
+                    onClick={hapusBrief}
+                    disabled={saving}
+                    title="Hapus brief / tugas ini secara permanen"
+                  >
+                    <Icon name="trash-outline" size={14} /> Hapus
+                  </button>
                 </div>
               </div>
             </div>
@@ -710,24 +765,35 @@ export default function Worksheet() {
                 </div>
 
                 {/* Tombol Simpan & Serah Terima */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10, marginTop: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 8, flexWrap: 'wrap' }}>
                   <button
                     type="button"
-                    className="btn btn-secondary btn-sm"
-                    onClick={() => simpanDraf()}
+                    className="btn btn-danger btn-sm"
+                    onClick={hapusBrief}
                     disabled={saving}
+                    title="Hapus brief / tugas ini"
                   >
-                    <Icon name="save-outline" size={14} /> Simpan Progres
+                    <Icon name="trash-outline" size={14} /> Hapus Brief
                   </button>
-                  <button
-                    type="button"
-                    className="btn btn-primary btn-sm"
-                    onClick={() => simpanDraf('review')}
-                    disabled={saving}
-                    style={{ background: 'var(--success, #10b981)', borderColor: 'transparent' }}
-                  >
-                    <Icon name="checkmark-done-outline" size={14} /> Selesai & Serahkan ke Manajer (ACC)
-                  </button>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => simpanDraf()}
+                      disabled={saving}
+                    >
+                      <Icon name="save-outline" size={14} /> Simpan Progres
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      onClick={() => simpanDraf('review')}
+                      disabled={saving}
+                      style={{ background: 'var(--success, #10b981)', borderColor: 'transparent' }}
+                    >
+                      <Icon name="checkmark-done-outline" size={14} /> Selesai & Serahkan ke Manajer (ACC)
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -943,6 +1009,8 @@ export default function Worksheet() {
           </div>
         </Sheet>
       )}
+
+      {tanya.dialog}
     </AppShell>
   )
 }
