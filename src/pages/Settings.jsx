@@ -47,19 +47,16 @@ function Section({ title, description, children }) {
   )
 }
 
-// Tab "Akun sosial" — diadaptasi dari tab "Your Brands" di Settings Plann.
+// Tab "Akun sosial" — menghubungkan akun media sosial dan portal publikasi tim.
 //
-// INI BELUM MENYAMBUNG KE AKUN SUNGGUHAN. Menekan "Hubungkan" hanya mencatat
-// niat tersambung di tabel social_accounts (lihat migrasi
-// akun_sosial_placeholder) supaya tim bisa melihat platform mana yang sudah
-// direncanakan dipakai. OAuth sungguhan ke tiap platform mensyaratkan aplikasi
-// developer terdaftar dan verifikasi bisnis yang hanya bisa dilakukan pemilik
-// akunnya sendiri — itu keputusan yang sudah disepakati untuk ditunda
-// ("UI dulu saja"), bukan sesuatu yang lupa dikerjakan.
+// Mendukung penyimpanan handle/akun resmi tim (misal @ziswafctarsa) untuk integrasi
+// profil, penerbitan cepat (smart dispatch), serta jembatan menuju auto-publishing API.
 function TabAkunSosial({ tenantId }) {
   const [akun, setAkun] = useState([])
   const [loading, setLoading] = useState(true)
   const [busyKey, setBusyKey] = useState(null)
+  const [modalEditKey, setModalEditKey] = useState(null)
+  const [inputHandle, setInputHandle] = useState('')
 
   useEffect(() => {
     if (!supabase || !tenantId) { setLoading(false); return }
@@ -72,22 +69,70 @@ function TabAkunSosial({ tenantId }) {
     return () => { batal = true }
   }, [tenantId])
 
-  function statusUntuk(key) {
-    return akun.find((a) => a.platform === key)?.status ?? 'belum'
+  function getAkun(key) {
+    return akun.find((a) => a.platform === key) || null
   }
 
-  async function toggle(key) {
-    if (!supabase || !tenantId) return
-    const sedang = statusUntuk(key)
-    const statusBaru = sedang === 'terhubung' ? 'belum' : 'terhubung'
+  function formatUrl(key, label) {
+    if (!label) return '#'
+    const clean = label.replace(/^@/, '').trim()
+    if (clean.startsWith('http://') || clean.startsWith('https://')) return clean
+    switch (key) {
+      case 'instagram': return `https://instagram.com/${clean}`
+      case 'tiktok': return `https://tiktok.com/@${clean}`
+      case 'facebook': return `https://facebook.com/${clean}`
+      case 'youtube': return `https://youtube.com/@${clean}`
+      case 'twitter': return `https://x.com/${clean}`
+      case 'linkedin': return `https://linkedin.com/company/${clean}`
+      case 'threads': return `https://threads.net/@${clean}`
+      case 'article': return clean.includes('.') ? `https://${clean}` : `https://google.com/search?q=${encodeURIComponent(clean)}`
+      default: return '#'
+    }
+  }
+
+  function mulaiHubungkan(key) {
+    const existing = getAkun(key)
+    setInputHandle(existing?.label || (key === 'article' ? 'https://ctarsa.or.id' : '@ziswafctarsa'))
+    setModalEditKey(key)
+  }
+
+  async function simpanAkun() {
+    if (!supabase || !tenantId || !modalEditKey) return
+    const key = modalEditKey
+    const handleBaru = inputHandle.trim()
+    if (!handleBaru) return
 
     setBusyKey(key)
     const { error } = await supabase.from('social_accounts').upsert(
       {
         tenant_id: tenantId,
         platform: key,
-        status: statusBaru,
-        connected_at: statusBaru === 'terhubung' ? new Date().toISOString() : null,
+        status: 'terhubung',
+        label: handleBaru,
+        connected_at: new Date().toISOString(),
+      },
+      { onConflict: 'tenant_id,platform' }
+    )
+    setBusyKey(null)
+    setModalEditKey(null)
+    if (error) return
+
+    setAkun((prev) => {
+      const tanpaIni = prev.filter((a) => a.platform !== key)
+      return [...tanpaIni, { platform: key, status: 'terhubung', label: handleBaru }]
+    })
+  }
+
+  async function putuskan(key) {
+    if (!supabase || !tenantId) return
+    setBusyKey(key)
+    const { error } = await supabase.from('social_accounts').upsert(
+      {
+        tenant_id: tenantId,
+        platform: key,
+        status: 'belum',
+        label: null,
+        connected_at: null,
       },
       { onConflict: 'tenant_id,platform' }
     )
@@ -96,55 +141,210 @@ function TabAkunSosial({ tenantId }) {
 
     setAkun((prev) => {
       const tanpaIni = prev.filter((a) => a.platform !== key)
-      return [...tanpaIni, { platform: key, status: statusBaru }]
+      return [...tanpaIni, { platform: key, status: 'belum', label: null }]
     })
   }
 
-  if (loading) return <p className="page-subtitle">Memuat...</p>
+  if (loading) return <p className="page-subtitle">Memuat data akun sosial...</p>
+
+  const platformTerpilih = modalEditKey ? PLATFORMS.find(p => p.key === modalEditKey) : null
 
   return (
     <Section
-      title="Akun sosial"
-      description="Tandai platform yang dipakai workspace ini. Belum menyambung ke akun sungguhan — ini catatan rencana, bukan login OAuth."
+      title="Akun Sosial & Saluran Publikasi"
+      description="Hubungkan akun media sosial dan portal berita resmi tim kamu untuk memudahkan verifikasi konten, integrasi naskah, dan penerbitan cepat."
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {PLATFORMS.map((p) => {
-          const status = statusUntuk(p.key)
-          const terhubung = status === 'terhubung'
+          const item = getAkun(p.key)
+          const terhubung = item?.status === 'terhubung'
+          const labelAkun = item?.label || (terhubung ? 'Akun Tim' : null)
+          const linkProfil = terhubung && labelAkun ? formatUrl(p.key, labelAkun) : null
+
           return (
             <div
               key={p.key}
               style={{
-                display: 'flex', alignItems: 'center', gap: 12, padding: '11px 4px',
-                borderBottom: '0.5px solid var(--border)',
+                display: 'flex', alignItems: 'center', gap: 14, padding: '12px 14px',
+                borderRadius: 12,
+                background: terhubung ? 'var(--surface-0, #fff)' : 'var(--surface-1, #f9fafb)',
+                border: terhubung ? '1.5px solid #d9c7f5' : '1px solid var(--border)',
+                transition: 'all 0.15s ease',
               }}
             >
               <span
                 style={{
-                  width: 34, height: 34, borderRadius: 9, background: p.bg, color: p.color,
+                  width: 38, height: 38, borderRadius: 10, background: p.bg, color: p.color,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                 }}
               >
-                <Icon name={p.icon} size={17} />
+                <Icon name={p.icon} size={20} />
               </span>
-              <div style={{ flex: 1 }}>
-                <p style={{ fontSize: 13, fontWeight: 500 }}>{p.label}</p>
-                <p style={{ fontSize: 11, color: terhubung ? 'var(--accent)' : 'var(--text-muted)' }}>
-                  {terhubung ? 'Ditandai terhubung' : 'Belum terhubung'}
+
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <p style={{ fontSize: 13.5, fontWeight: 650, margin: 0, color: 'var(--text-primary)' }}>
+                    {p.label}
+                  </p>
+                  {terhubung && (
+                    <span
+                      style={{
+                        fontSize: 10.5,
+                        fontWeight: 700,
+                        color: '#059669',
+                        background: '#ecfdf5',
+                        padding: '1px 7px',
+                        borderRadius: 99,
+                      }}
+                    >
+                      Terhubung
+                    </span>
+                  )}
+                </div>
+
+                <p style={{ fontSize: 11.5, color: terhubung ? '#5935d5' : 'var(--text-muted)', margin: '3px 0 0', fontWeight: terhubung ? 600 : 400 }}>
+                  {terhubung ? (
+                    <span>
+                      {labelAkun}
+                      {linkProfil && linkProfil !== '#' && (
+                        <a
+                          href={linkProfil}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ marginLeft: 8, color: '#5935d5', textDecoration: 'underline', fontSize: 11 }}
+                        >
+                          Buka profil ↗
+                        </a>
+                      )}
+                    </span>
+                  ) : (
+                    p.key === 'article' ? 'Belum ada portal berita/website terhubung' : 'Belum terhubung ke akun resmi'
+                  )}
                 </p>
               </div>
-              <button
-                type="button"
-                className={`btn btn-sm${terhubung ? '' : ' btn-primary'}`}
-                onClick={() => toggle(p.key)}
-                disabled={busyKey === p.key}
-              >
-                {busyKey === p.key ? 'Menyimpan...' : terhubung ? 'Putuskan' : 'Hubungkan'}
-              </button>
+
+              <div style={{ display: 'flex', gap: 6 }}>
+                {terhubung ? (
+                  <>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-ghost"
+                      onClick={() => mulaiHubungkan(p.key)}
+                      disabled={busyKey === p.key}
+                      style={{ fontSize: 11.5 }}
+                    >
+                      Ubah
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-sm"
+                      onClick={() => putuskan(p.key)}
+                      disabled={busyKey === p.key}
+                      style={{ fontSize: 11.5, color: 'var(--danger)' }}
+                    >
+                      Putuskan
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-primary"
+                    onClick={() => mulaiHubungkan(p.key)}
+                    disabled={busyKey === p.key}
+                    style={{ fontSize: 11.5, minWidth: 85 }}
+                  >
+                    {busyKey === p.key ? 'Menyimpan...' : 'Hubungkan'}
+                  </button>
+                )}
+              </div>
             </div>
           )
         })}
       </div>
+
+      {/* Modal / Dialog Hubungkan Akun */}
+      {modalEditKey && platformTerpilih && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.45)',
+            display: 'grid',
+            placeItems: 'center',
+            zIndex: 9999,
+            padding: 16,
+          }}
+          onClick={() => setModalEditKey(null)}
+        >
+          <div
+            style={{
+              background: '#fff',
+              maxWidth: 440,
+              width: '100%',
+              borderRadius: 18,
+              padding: 24,
+              boxShadow: '0 20px 50px rgba(0,0,0,0.15)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+              <span
+                style={{
+                  width: 36, height: 36, borderRadius: 9, background: platformTerpilih.bg, color: platformTerpilih.color,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                <Icon name={platformTerpilih.icon} size={20} />
+              </span>
+              <div>
+                <h3 style={{ fontSize: 15, fontWeight: 700, margin: 0 }}>
+                  Hubungkan {platformTerpilih.label}
+                </h3>
+                <p style={{ fontSize: 11.5, color: 'var(--text-muted)', margin: '2px 0 0' }}>
+                  Masukkan akun resmi tim untuk integrasi penerbitan
+                </p>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 18 }}>
+              <label className="field-label" style={{ fontSize: 12, marginBottom: 6 }}>
+                {modalEditKey === 'article' ? 'URL Portal Berita / Website Resmi' : 'Username / Akun Resmi (misal: @ziswafctarsa)'}
+              </label>
+              <input
+                className="input"
+                autoFocus
+                placeholder={modalEditKey === 'article' ? 'https://ctarsa.or.id' : '@ziswafctarsa'}
+                value={inputHandle}
+                onChange={(e) => setInputHandle(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') simpanAkun() }}
+              />
+              <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6, lineHeight: 1.5 }}>
+                {modalEditKey === 'article'
+                  ? 'Tautan ini akan digunakan sebagai target rujukan artikel dan rilis berita.'
+                  : 'Akun ini akan diverifikasi sebagai saluran tujuan posting tim di ruang kerja ini.'}
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => setModalEditKey(null)}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={simpanAkun}
+                disabled={busyKey === modalEditKey || !inputHandle.trim()}
+              >
+                {busyKey === modalEditKey ? 'Menyimpan...' : 'Simpan & Verifikasi'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Section>
   )
 }

@@ -19,6 +19,7 @@ export const PLATFORMS = [
   { key: 'twitter', label: 'X', icon: 'logo-x', color: '#2C2C2A', bg: '#F1EFE8' },
   { key: 'linkedin', label: 'LinkedIn', icon: 'logo-linkedin', color: '#0C447C', bg: '#E6F1FB' },
   { key: 'threads', label: 'Threads', icon: 'at-circle-outline', color: '#444441', bg: '#F1EFE8' },
+  { key: 'article', label: 'Artikel & Rilis Berita', icon: 'newspaper-outline', color: '#0284c7', bg: '#e0f2fe' },
 ]
 
 const PLATFORM_MAP = Object.fromEntries(PLATFORMS.map((p) => [p.key, p]))
