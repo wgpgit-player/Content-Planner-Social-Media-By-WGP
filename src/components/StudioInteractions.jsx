@@ -63,9 +63,14 @@ export default function StudioInteractions({ inApp = false }) {
   }
 
   useEffect(() => {
-    if (buka && !dialog.current.open) dialog.current.showModal()
-    else if (!buka && dialog.current.open) dialog.current.close()
-  }, [buka])
+    if (!dialog.current) return
+    try {
+      if (buka && !dialog.current.open) dialog.current.showModal?.()
+      else if (!buka && dialog.current.open) dialog.current.close?.()
+    } catch {
+      // Abaikan jika browser tidak mendukung HTML5 dialog
+    }
+  }, [buka, mounted])
 
   useEffect(() => {
     if (!kursor) return

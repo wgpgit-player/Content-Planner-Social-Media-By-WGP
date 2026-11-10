@@ -20,11 +20,15 @@ import { todayIso, parseIsoDate } from '../lib/dates'
 
 function formatTanggalJam(isoDate, time) {
   if (!isoDate) return 'Tanpa jadwal'
-  const hariIni = todayIso()
-  const d = parseIsoDate(isoDate)
-  const BULAN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
-  const labelTgl = isoDate === hariIni ? 'Hari Ini' : `${d.getDate()} ${BULAN[d.getMonth()]}`
-  return time ? `${labelTgl}, ${time.slice(0, 5)} WIB` : labelTgl
+  try {
+    const hariIni = todayIso()
+    const d = parseIsoDate(isoDate)
+    const BULAN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
+    const labelTgl = isoDate === hariIni ? 'Hari Ini' : `${d.getDate()} ${BULAN[d.getMonth()]}`
+    return time ? `${labelTgl}, ${String(time).slice(0, 5)} WIB` : labelTgl
+  } catch {
+    return String(isoDate)
+  }
 }
 
 // Preset tugas interaktif realistis (digunakan saat database kosong atau sebagai fallback)
@@ -437,11 +441,11 @@ export default function CreativeLab({ inApp = false }) {
             {/* Baris PIC / Penanggung Jawab */}
             <div className="task-assignee-row">
               <div className="task-assignee-avatar">
-                {tugasTerpilih.assignee_name.charAt(0).toUpperCase()}
+                {String(tugasTerpilih?.assignee_name || 'T').charAt(0).toUpperCase()}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <span style={{ fontWeight: 600 }}>PIC Penanggung Jawab:</span>{' '}
-                <span style={{ color: '#5935d5', fontWeight: 650 }}>{tugasTerpilih.assignee_name}</span>
+                <span style={{ color: '#5935d5', fontWeight: 650 }}>{tugasTerpilih?.assignee_name || 'Tim Pengeksekusi'}</span>
               </div>
               <span style={{ fontSize: 10.5, color: '#87759b' }}>
                 <Icon name="person-outline" size={12} style={{ marginRight: 3 }} />
@@ -453,7 +457,7 @@ export default function CreativeLab({ inApp = false }) {
             <div className="task-brief-container">
               <strong>Mandat Eksekusi & Brief Pokok:</strong>
               <p style={{ margin: 0 }}>
-                {tugasTerpilih.brief || tugasTerpilih.objective || 'Fokus pada penyampaian hook yang menarik dan pastikan visual sesuai pedoman brand.'}
+                {tugasTerpilih?.brief || tugasTerpilih?.objective || 'Fokus pada penyampaian hook yang menarik dan pastikan visual sesuai pedoman brand.'}
               </p>
             </div>
 
@@ -461,7 +465,7 @@ export default function CreativeLab({ inApp = false }) {
             <div className="task-action-row">
               {/* Tombol Menuju Sub Worksheet */}
               <Link
-                to={tugasTerpilih.id.startsWith('preset-') ? '/worksheet' : `/worksheet?id=${tugasTerpilih.id}`}
+                to={String(tugasTerpilih?.id || '').startsWith('preset-') ? '/worksheet' : `/worksheet?id=${tugasTerpilih?.id || ''}`}
                 className="task-btn-primary"
               >
                 <Icon name="reader-outline" size={15} />

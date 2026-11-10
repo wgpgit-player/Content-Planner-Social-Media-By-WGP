@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import ErrorBoundary from './components/ErrorBoundary'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { TenantProvider } from './context/TenantContext'
 import { PenyediaBahasa } from './lib/bahasa'
@@ -78,6 +79,7 @@ export default function App() {
           beranda, halaman legal, dan footer; bagian dalam aplikasi masih
           berbahasa Indonesia. */}
       <PenyediaBahasa>
+      <ErrorBoundary>
       <AuthProvider>
         <TenantProvider>
           <Routes>
@@ -135,6 +137,7 @@ export default function App() {
           </Routes>
         </TenantProvider>
       </AuthProvider>
+      </ErrorBoundary>
       </PenyediaBahasa>
     </BrowserRouter>
   )
