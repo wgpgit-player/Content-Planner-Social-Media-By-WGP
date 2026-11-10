@@ -26,17 +26,28 @@
          Gambarnya 1200x630 — ukuran yang dipakai hampir semua platform.
          URL-nya harus mutlak (bukan /og-...), karena yang mengambilnya
          adalah server WhatsApp/Facebook, bukan browser pengunjung. -->
-    <link rel="canonical" href="https://plannersm.co/" />
+    <!-- ALAMAT RESMI SITUS
+         Selama domain plannersm.co belum dibeli, alamat yang hidup adalah
+         plannersm.vercel.app. Semua URL mutlak di bawah ini — canonical,
+         og:url, og:image, dan penanda Schema.org — harus menunjuk ke alamat
+         yang BENAR-BENAR bisa dibuka. Kalau menunjuk ke domain yang belum
+         ada, WhatsApp dan Facebook gagal mengambil gambarnya dan tautan yang
+         dibagikan muncul polos tanpa pratinjau.
+
+         Kalau nanti plannersm.co jadi dibeli: ganti seluruh
+         "https://plannersm.vercel.app" di berkas ini, di public/sitemap.xml,
+         dan di public/robots.txt menjadi "https://plannersm.co". -->
+    <link rel="canonical" href="https://plannersm.vercel.app/" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="plannersm.co" />
     <meta property="og:locale" content="id_ID" />
-    <meta property="og:url" content="https://plannersm.co/" />
+    <meta property="og:url" content="https://plannersm.vercel.app/" />
     <meta property="og:title" content="plannersm.co — Ide boleh ke mana saja, kerjanya tetap tertata" />
     <meta
       property="og:description"
       content="Perencana konten untuk tim media sosial dan agensi. Susun agenda, bagi tugas, dan kumpulkan persetujuan klien dalam satu tempat."
     />
-    <meta property="og:image" content="https://plannersm.co/og-plannersm.png" />
+    <meta property="og:image" content="https://plannersm.vercel.app/og-plannersm.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="plannersm.co — perencana konten untuk tim media sosial" />
@@ -46,7 +57,7 @@
       name="twitter:description"
       content="Perencana konten untuk tim media sosial dan agensi. Susun agenda, bagi tugas, dan kumpulkan persetujuan klien dalam satu tempat."
     />
-    <meta name="twitter:image" content="https://plannersm.co/og-plannersm.png" />
+    <meta name="twitter:image" content="https://plannersm.vercel.app/og-plannersm.png" />
 
     <!-- ===== Penanda terstruktur untuk mesin pencari =====
          Organization memberi tahu Google siapa pemilik layanan ini, dan
@@ -61,11 +72,11 @@
         "@graph": [
           {
             "@type": "Organization",
-            "@id": "https://plannersm.co/#organisasi",
+            "@id": "https://plannersm.vercel.app/#organisasi",
             "name": "World Gate Project",
             "legalName": "PT Wolka Group Palmedia",
-            "url": "https://plannersm.co/",
-            "logo": "https://plannersm.co/icon-512.png",
+            "url": "https://plannersm.vercel.app/",
+            "logo": "https://plannersm.vercel.app/icon-512.png",
             "address": {
               "@type": "PostalAddress",
               "streetAddress": "Gedung Wirausaha Lt. 1 Unit 104, Jl. H.R. Rasuna Said Kav. C-5",
@@ -85,10 +96,10 @@
           {
             "@type": "SoftwareApplication",
             "name": "plannersm.co",
-            "url": "https://plannersm.co/",
+            "url": "https://plannersm.vercel.app/",
             "applicationCategory": "BusinessApplication",
             "operatingSystem": "Web",
-            "publisher": { "@id": "https://plannersm.co/#organisasi" },
+            "publisher": { "@id": "https://plannersm.vercel.app/#organisasi" },
             "description": "Perencana konten untuk tim media sosial dan agensi: agenda konten, brief, pembagian tugas, dan persetujuan klien.",
             "offers": {
               "@type": "Offer",

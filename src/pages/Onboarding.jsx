@@ -173,6 +173,15 @@ export default function Onboarding() {
       <div className="card" style={{ width: '100%', maxWidth: 520, padding: 30 }}>
         <StepDots current={step} onPilih={setStep} />
 
+        <div style={{ background: 'var(--surface-1, #f5f0fd)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 14px', marginBottom: 18 }}>
+          <p style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--accent)', margin: '0 0 3px 0' }}>
+            👥 Kamu karyawan yang diundang ke tim?
+          </p>
+          <p style={{ fontSize: 11.5, color: 'var(--text-secondary)', margin: 0, lineHeight: 1.45 }}>
+            Kamu tidak perlu membuat brand atau ruang kerja baru di sini. Cukup buka <strong>Link Undangan</strong> dari Manajer Sosmed kamu (format: <code>/invite/...</code>) lalu klik <strong>"Terima Undangan"</strong> untuk langsung bergabung ke akun induk tim.
+          </p>
+        </div>
+
         {drafDipulihkan && step === 0 && (
           <p className="alert alert-info" style={{ marginBottom: 16, display: 'flex', gap: 8 }}>
             <Icon name="refresh-outline" size={15} style={{ marginTop: 1 }} />

@@ -222,9 +222,14 @@ export default function DashboardStaff() {
             />
             <Kelompok judul="Nanti" items={data.nanti} warna="var(--text-secondary)" ikon="time-outline" />
 
-            <Link to="/kanban" className="btn btn-block" style={{ textDecoration: 'none' }}>
-              Buka papan tim
-            </Link>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <Link to="/worksheet" className="btn btn-primary btn-block" style={{ textDecoration: 'none' }}>
+                <Icon name="reader-outline" size={16} /> Buka Lembar Kerja Tugas (Sub Worksheet)
+              </Link>
+              <Link to="/kanban" className="btn btn-block" style={{ textDecoration: 'none' }}>
+                Buka papan tim
+              </Link>
+            </div>
           </>
         )}
       </div>

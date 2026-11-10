@@ -13,6 +13,7 @@ import Icon from '../components/Icon'
 import PanelPersetujuan from '../components/PanelPersetujuan'
 import Komentar from '../components/Komentar'
 import LampiranMateri from '../components/LampiranMateri'
+import ChecklistTugas from '../components/ChecklistTugas'
 
 // Halaman brief konten.
 //
@@ -335,6 +336,8 @@ export default function ContentDetail() {
       <LampiranMateri contentId={id} nilai={lampiran} onBerubah={load} />
 
       <PanelPersetujuan contentId={id} nilai={persetujuan} lampiran={lampiran} onBerubah={load} />
+
+      <ChecklistTugas contentItemId={id} />
 
       <div className="card">
         <p style={{ fontSize: 14, fontWeight: 600, marginBottom: 3 }}>Isi brief</p>

@@ -29,6 +29,7 @@ export const NAV_GROUPS = [
     {icon:'pricetags-outline',label:'Set hashtag',path:'/hashtag-sets'},
   ]},
   { label: 'Kolaborasi', items: [
+    {icon:'reader-outline',label:'Lembar kerja tugas',path:'/worksheet'},
     {icon:'shield-checkmark-outline',label:'Persetujuan',path:'/approvals'},
     {icon:'albums-outline',label:'Progres produksi',path:'/kanban'},
     {icon:'people-outline',label:'Tim',path:'/team'},

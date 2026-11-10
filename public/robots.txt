@@ -17,4 +17,4 @@ Disallow: /dashboard
 Disallow: /settings
 Disallow: /compose
 
-Sitemap: https://plannersm.co/sitemap.xml
+Sitemap: https://plannersm.vercel.app/sitemap.xml

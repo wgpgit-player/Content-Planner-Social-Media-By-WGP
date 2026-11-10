@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import { useBahasa } from '../lib/bahasa'
 
@@ -17,9 +18,14 @@ import { useBahasa } from '../lib/bahasa'
 
 export default function StudioInteractions({ inApp = false }) {
   const { t } = useBahasa()
+  const [mounted, setMounted] = useState(false)
   const [buka, setBuka] = useState(false)
   const [topik, setTopik] = useState('mulai')
   const kursor = !inApp
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const dialog = useRef(null)
   const cincin = useRef(null)
@@ -103,12 +109,12 @@ export default function StudioInteractions({ inApp = false }) {
 
   const jwb = jawaban[topik]
 
-  return (
+  const konten = (
     <>
       <div className="studio-tools">
-        <button ref={pemicu} className="guide-trigger" title={t('Butuh arahan?', 'Need guidance?')} onClick={() => setBuka(true)} aria-haspopup="dialog">
+        <button ref={pemicu} className="guide-trigger" title={t('Butuh bantuan?', 'Need guidance?')} onClick={() => setBuka(true)} aria-haspopup="dialog">
           <img src="/brand/plannersm-icon.svg" alt="" />
-          {t('Butuh arahan?', 'Need guidance?')}
+          {t('Butuh bantuan?', 'Need guidance?')}
         </button>
       </div>
 
@@ -162,4 +168,8 @@ export default function StudioInteractions({ inApp = false }) {
       </dialog>
     </>
   )
+
+  if (!mounted || typeof document === 'undefined') return null
+
+  return createPortal(konten, document.body)
 }

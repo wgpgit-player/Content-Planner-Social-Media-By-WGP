@@ -36,6 +36,7 @@ import Reminders from './pages/Reminders.jsx'
 import Composer from './pages/Composer.jsx'
 import Strategy from './pages/Strategy.jsx'
 import Bayar from './pages/Bayar.jsx'
+import Worksheet from './pages/Worksheet.jsx'
 import { SyaratKetentuan, KebijakanPrivasi } from './pages/Legal.jsx'
 
 // Struktur route:
@@ -104,6 +105,7 @@ export default function App() {
             <Route path="/home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/kanban" element={<ProtectedRoute><KanbanBoard /></ProtectedRoute>} />
+            <Route path="/worksheet" element={<ProtectedRoute><Worksheet /></ProtectedRoute>} />
             <Route path="/content-bank" element={<ProtectedRoute><ContentBank /></ProtectedRoute>} />
             <Route path="/content-calendar" element={<ProtectedRoute><ContentCalendar /></ProtectedRoute>} />
             <Route path="/content/:id" element={<ProtectedRoute><ContentDetail /></ProtectedRoute>} />
