@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { useTenantContext } from '../context/TenantContext'
 import { supabase } from '../lib/supabaseClient'
 import Icon from './Icon'
+import SmartDispatchButton from './SmartDispatchButton'
 import { getPlatform } from '../config/platforms'
 import { getStatus } from '../config/statuses'
 import { todayIso, parseIsoDate } from '../lib/dates'
@@ -504,7 +505,7 @@ export default function CreativeLab({ inApp = false }) {
             </div>
 
             {/* Baris Aksi Interaktif */}
-            <div className="task-action-row">
+            <div className="task-action-row" style={{ flexWrap: 'wrap', gap: 8 }}>
               {/* Tombol Menuju Sub Worksheet */}
               <Link
                 to={String(itemAktif?.id || '').startsWith('preset-') ? '/worksheet' : `/worksheet?id=${itemAktif?.id || ''}`}
@@ -514,6 +515,13 @@ export default function CreativeLab({ inApp = false }) {
                 Buka di Lembar Kerja
               </Link>
 
+              {/* Smart Dispatcher: Buka Studio & Salin Naskah Cepat */}
+              <SmartDispatchButton
+                item={itemAktif}
+                variant="outline"
+                label="Buka Studio & Salin"
+              />
+
               {/* Tombol Colek / Kirim Notifikasi */}
               <button
                 type="button"
@@ -521,7 +529,7 @@ export default function CreativeLab({ inApp = false }) {
                 onClick={kirimNotifikasi}
               >
                 <Icon name="notifications-outline" size={15} />
-                Colek / Ingatkan Tim
+                Colek Tim
               </button>
 
               {/* Tombol Salin WA */}
@@ -532,7 +540,7 @@ export default function CreativeLab({ inApp = false }) {
                 title="Salin template pengingat tugas untuk WhatsApp"
               >
                 <Icon name="chatbubble-ellipses-outline" size={15} />
-                Salin Pesan WA
+                Salin WA
               </button>
             </div>
 

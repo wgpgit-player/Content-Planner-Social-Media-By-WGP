@@ -9,6 +9,7 @@ import Sheet from '../components/Sheet'
 import ChecklistTugas from '../components/ChecklistTugas'
 import Komentar from '../components/Komentar'
 import LampiranMateri from '../components/LampiranMateri'
+import SmartDispatchButton from '../components/SmartDispatchButton'
 import { getPlatform } from '../config/platforms'
 import { getStatus, STATUSES } from '../config/statuses'
 import { parseIsoDate, todayIso } from '../lib/dates'
@@ -37,6 +38,36 @@ const PRESET_HASHTAGS = [
   { nama: 'Edukasi & Inspirasi', tags: '#InspirasiKebaikan #PeduliSesama #GenerasiPeduli #PendidikanUntukSemua' },
   { nama: 'Komunitas & Relawan', tags: '#AksiSosial #RelawanIndonesia #TanganKebaikan #CTARSABersama' },
   { nama: 'Kreator & Viral', tags: '#ContentCreator #ViralIndonesia #EdukasiBermanfaat #FYPIndonesia' },
+]
+
+const PRESET_ARTICLE_TEMPLATES = [
+  {
+    judul: 'Format Siaran Pers Resmi (Press Release Standar)',
+    kategori: 'Siaran Pers',
+    teks: `[KOTA], [TANGGAL] — Lembaga ZISWAF CTARSA hari ini secara resmi menyelenggarakan...
+
+[LEAD 5W+1H]: Inisiatif ini dirancang guna memfasilitasi kebutuhan mendesak masyarakat pra-sejahtera melalui rangkaian program edukasi dan bantuan langsung. Kegiatan berlangsung dengan tertib serta dihadiri oleh jajaran relawan dan pimpinan wilayah setempat.
+
+"[Kutipan resmi dari Pimpinan/Direktur terkait tujuan strategis dan komitmen keberlanjutan program]," ujar perwakilan manajemen ZISWAF CTARSA.
+
+Melalui sinergi bersama para donatur dan mitra kebaikan, bantuan telah tersalurkan secara tepat sasaran kepada para mustahik. Seluruh laporan penyaluran akan dipublikasikan secara transparan.
+
+Tentang ZISWAF CTARSA:
+Lembaga amil zakat, infak, sedekah, dan wakaf yang berdedikasi memutus rantai kemiskinan melalui pilar pendidikan, kesehatan, dan pemberdayaan ekonomi umat. Informasi lebih lanjut: https://ctarsa.or.id`,
+  },
+  {
+    judul: 'Format Artikel Cerita Dampak (Human Interest & Lapangan)',
+    kategori: 'Artikel Web',
+    teks: `[JUDUL EMOSIONAL: Membawa Senyum dan Asa Baru di...]
+
+Di balik senyum hangat [Nama Penerima Manfaat/Keluarga], tersimpan perjuangan panjang menghadapi keterbatasan. Hari ini, suasana di [Lokasi Penyaluran] terasa berbeda saat tim relawan ZISWAF CTARSA menyambangi kediaman mereka.
+
+Program ini membuktikan bahwa uluran tangan kecil dari kita mampu mengubah jalan hidup satu keluarga menuju masa depan yang lebih bermartabat.
+
+"[Kutipan ungkapan rasa syukur dan harapan dari penerima manfaat]," tuturnya dengan penuh haru.
+
+Mari terus alirkan kebaikan dan jaga asa mereka. Setiap sedekah dan zakat yang Anda titipkan melalui ZISWAF CTARSA menjadi lentera bagi mereka yang membutuhkan. Kunjungi https://ctarsa.or.id untuk menyalurkan kepedulian Anda.`,
+  },
 ]
 
 // Sub Worksheet Karyawan — lembar kerja eksekusi tugas dari Manajer Sosmed.
@@ -104,6 +135,16 @@ export default function Worksheet() {
     }))
     setModalBantu(null)
     setPesan('Set hashtag berhasil disisipkan! ✓')
+  }
+
+  function sisipkanTemplateArtikel(teks, ctaOtomatis = 'Baca artikel lengkap di https://ctarsa.or.id') {
+    setDraf((d) => ({
+      ...d,
+      caption: teks,
+      cta: d.cta || ctaOtomatis,
+    }))
+    setModalBantu(null)
+    setPesan('Format standar rilis berita / artikel berhasil disisipkan! ✓')
   }
 
   // 1. Muat daftar tugas yang ditugaskan ke karyawan (atau semua untuk admin)
@@ -432,7 +473,7 @@ export default function Worksheet() {
                   </p>
                 </div>
 
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                   <Link to={`/content/${tugasAktif.id}`} className="btn btn-secondary btn-sm" title="Buka Detail Brief Lengkap">
                     <Icon name="open-outline" size={14} /> Brief Penuh
                   </Link>
@@ -454,6 +495,17 @@ export default function Worksheet() {
                   >
                     <Icon name="paper-plane-outline" size={14} /> Ajukan Review
                   </button>
+
+                  {/* Smart Dispatcher: 1-Klik Salin Naskah & Buka Studio Resmi */}
+                  <SmartDispatchButton
+                    item={{ ...tugasAktif, ...draf }}
+                    targetUrl={draf.reference_url || tugasAktif.reference_url}
+                    onStatusUpdated={(statusBaru) => {
+                      setTugasAktif((prev) => ({ ...prev, status: statusBaru }))
+                      setDraf((prev) => ({ ...prev, status: statusBaru }))
+                      setTugasList((prev) => prev.map((t) => (t.id === tugasAktif.id ? { ...t, status: statusBaru } : t)))
+                    }}
+                  />
                 </div>
               </div>
             </div>
@@ -525,7 +577,19 @@ export default function Worksheet() {
                     <label className="field-label" style={{ margin: 0 }}>
                       Draf Naskah / Caption Lengkap ({draf.caption.length} karakter)
                     </label>
-                    <div style={{ display: 'flex', gap: 6 }}>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      {tugasAktif?.platform === 'article' && (
+                        <button
+                          type="button"
+                          className="btn btn-sm"
+                          onClick={() => setModalBantu('article')}
+                          style={{ fontSize: 11, padding: '3px 9px', display: 'flex', alignItems: 'center', gap: 4, background: '#e0f2fe', color: '#0284c7', border: '1px solid #bae6fd' }}
+                          title="Pilih template format siaran pers / artikel"
+                        >
+                          <Icon name="newspaper-outline" size={13} color="#0284c7" />
+                          <span>Format Rilis Berita</span>
+                        </button>
+                      )}
                       <button
                         type="button"
                         className="btn btn-sm"
@@ -560,8 +624,12 @@ export default function Worksheet() {
                   </div>
                   <textarea
                     className="textarea"
-                    rows={7}
-                    placeholder="Tulis naskah video slide-by-slide atau caption postingan di sini..."
+                    rows={8}
+                    placeholder={
+                      tugasAktif?.platform === 'article'
+                        ? 'Tulis teks siaran pers lengkap (Headline, Dateline, Paragraf Pembuka 5W+1H, Kutipan Narasumber, Rincian Bantuan, dan Boilerplate Tentang ZISWAF CTARSA)...'
+                        : 'Tulis naskah video slide-by-slide atau caption postingan di sini...'
+                    }
                     value={draf.caption}
                     onChange={(e) => setDraf((d) => ({ ...d, caption: e.target.value }))}
                   />
@@ -573,7 +641,7 @@ export default function Worksheet() {
                     <label className="field-label">Ajakan Bertindak (CTA)</label>
                     <input
                       className="input"
-                      placeholder="Contoh: Komen 'ZAKAT' atau klik link di bio"
+                      placeholder={tugasAktif?.platform === 'article' ? 'Baca selengkapnya di https://ctarsa.or.id/berita' : "Contoh: Komen 'ZAKAT' atau klik link di bio"}
                       value={draf.cta}
                       onChange={(e) => setDraf((d) => ({ ...d, cta: e.target.value }))}
                     />
@@ -593,11 +661,15 @@ export default function Worksheet() {
 
                 {/* Link Aset / Referensi Eksekusi */}
                 <div>
-                  <label className="field-label">Link Folder Aset / Desain (Google Drive, Figma, Canva)</label>
+                  <label className="field-label">
+                    {tugasAktif?.platform === 'article'
+                      ? 'Link Portal Publikasi Berita / Dokumentasi Foto (Web Portal, Drive)'
+                      : 'Link Folder Aset / Desain (Google Drive, Figma, Canva)'}
+                  </label>
                   <input
                     className="input"
                     type="url"
-                    placeholder="https://drive.google.com/... atau https://canva.com/..."
+                    placeholder={tugasAktif?.platform === 'article' ? 'https://ctarsa.or.id/berita/... atau folder foto Google Drive' : 'https://drive.google.com/... atau https://canva.com/...'}
                     value={draf.reference_url}
                     onChange={(e) => setDraf((d) => ({ ...d, reference_url: e.target.value }))}
                   />
@@ -642,22 +714,85 @@ export default function Worksheet() {
           open={Boolean(modalBantu)}
           onClose={() => setModalBantu(null)}
           title={
-            modalBantu === 'hook'
+            modalBantu === 'article'
+              ? 'Pilih Format Standar Siaran Pers / Artikel'
+              : modalBantu === 'hook'
               ? 'Pilih Hook Pembuka'
               : modalBantu === 'cta'
               ? 'Pilih Ajakan Bertindak (CTA)'
               : 'Pilih Set Hashtag'
           }
           description={
-            modalBantu === 'hook'
+            modalBantu === 'article'
+              ? 'Pilih format di bawah untuk menerapkan struktur baku siaran pers (Headline, Dateline, 5W+1H, Kutipan Narasumber, Boilerplate).'
+              : modalBantu === 'hook'
               ? 'Klik salah satu hook untuk menyisipkannya langsung ke awal naskah caption kamu.'
               : modalBantu === 'cta'
               ? 'Klik salah satu CTA untuk langsung mengisinya ke kolom Ajakan Bertindak.'
               : 'Klik set hashtag untuk menyisipkannya ke kolom hashtag.'
           }
-          lebar={480}
+          lebar={520}
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '10px 0' }}>
+            {modalBantu === 'article' &&
+              PRESET_ARTICLE_TEMPLATES.map((item, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => sisipkanTemplateArtikel(item.teks)}
+                  className="card"
+                  style={{
+                    textAlign: 'left',
+                    padding: '14px 16px',
+                    border: '1.5px solid var(--border)',
+                    borderRadius: 12,
+                    cursor: 'pointer',
+                    background: 'var(--surface-0)',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#0284c7')}
+                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <span
+                      style={{
+                        fontSize: 10.5,
+                        fontWeight: 700,
+                        color: '#0284c7',
+                        background: '#e0f2fe',
+                        padding: '2px 8px',
+                        borderRadius: 99,
+                      }}
+                    >
+                      {item.kategori}
+                    </span>
+                    <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text-primary)' }}>
+                      {item.judul}
+                    </span>
+                  </div>
+                  <pre
+                    style={{
+                      fontSize: 11.5,
+                      color: 'var(--text-secondary)',
+                      margin: 0,
+                      whiteSpace: 'pre-wrap',
+                      lineHeight: 1.5,
+                      maxHeight: 110,
+                      overflow: 'hidden',
+                      fontFamily: 'inherit',
+                      background: 'var(--surface-1, #f9fafb)',
+                      padding: '8px 10px',
+                      borderRadius: 8,
+                    }}
+                  >
+                    {item.teks}
+                  </pre>
+                  <div style={{ marginTop: 8, textAlign: 'right', fontSize: 11, fontWeight: 650, color: '#0284c7' }}>
+                    + Terapkan Format Ini ke Naskah
+                  </div>
+                </button>
+              ))}
+
             {modalBantu === 'hook' &&
               PRESET_HOOKS.map((item, idx) => (
                 <button

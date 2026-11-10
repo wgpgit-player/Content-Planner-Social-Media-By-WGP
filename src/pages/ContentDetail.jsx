@@ -14,6 +14,7 @@ import PanelPersetujuan from '../components/PanelPersetujuan'
 import Komentar from '../components/Komentar'
 import LampiranMateri from '../components/LampiranMateri'
 import ChecklistTugas from '../components/ChecklistTugas'
+import SmartDispatchButton from '../components/SmartDispatchButton'
 
 // Halaman brief konten.
 //
@@ -234,10 +235,15 @@ export default function ContentDetail() {
       description="Semua yang perlu diketahui tim untuk mengerjakan konten ini."
       maxWidth={760}
       actions={
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <button type="button" className="btn btn-sm" onClick={() => navigate(-1)}>
             <Icon name="chevron-back-outline" size={14} /> Kembali
           </button>
+          <SmartDispatchButton
+            item={{ ...form, id }}
+            targetUrl={form.reference_url}
+            onStatusUpdated={(status) => setForm((prev) => ({ ...prev, status }))}
+          />
           <button type="button" className="btn btn-sm btn-primary" onClick={simpan} disabled={saving}>
             {saving ? 'Menyimpan...' : 'Simpan'}
           </button>
@@ -336,6 +342,50 @@ export default function ContentDetail() {
       <LampiranMateri contentId={id} nilai={lampiran} onBerubah={load} />
 
       <PanelPersetujuan contentId={id} nilai={persetujuan} lampiran={lampiran} onBerubah={load} />
+
+      {/* Smart Dispatcher Quick Action */}
+      <div
+        className="card"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          flexWrap: 'wrap',
+          background: 'linear-gradient(135deg, rgba(89, 53, 213, 0.04), rgba(2, 132, 199, 0.04))',
+          border: '1.5px solid rgba(89, 53, 213, 0.15)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 10,
+              background: platform.bg,
+              color: platform.color,
+              display: 'grid',
+              placeItems: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <Icon name={platform.icon} size={20} />
+          </div>
+          <div>
+            <h4 style={{ fontSize: 13.5, fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+              Smart Dispatcher ({platform.label})
+            </h4>
+            <p style={{ fontSize: 11.5, color: 'var(--text-muted)', margin: '2px 0 0' }}>
+              Salin otomatis seluruh caption + CTA + hashtag ke clipboard dan buka studio resmi {platform.label}.
+            </p>
+          </div>
+        </div>
+        <SmartDispatchButton
+          item={{ ...form, id }}
+          targetUrl={form.reference_url}
+          onStatusUpdated={(status) => setForm((prev) => ({ ...prev, status }))}
+        />
+      </div>
 
       <ChecklistTugas contentItemId={id} />
 

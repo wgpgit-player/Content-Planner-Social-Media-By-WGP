@@ -526,7 +526,11 @@ export default function Composer() {
                 rows={6}
                 value={caption}
                 onChange={(e) => setCaption(e.target.value)}
-                placeholder={`Halo, tulis captionnya di sini${judul ? ` untuk "${judul}"` : ''}...`}
+                placeholder={
+                  platformTerpilih.includes('article')
+                    ? 'Tulis naskah siaran pers / artikel berita (Headline, Dateline, Pembuka 5W+1H, Kutipan Narasumber, Boilerplate CTARSA)...'
+                    : `Halo, tulis captionnya di sini${judul ? ` untuk "${judul}"` : ''}...`
+                }
               />
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 8 }}>
@@ -548,7 +552,11 @@ export default function Composer() {
                 className="input"
                 value={judul}
                 onChange={(e) => setJudul(e.target.value)}
-                placeholder="Judul singkat (dilihat tim, tidak ikut tayang)"
+                placeholder={
+                  platformTerpilih.includes('article')
+                    ? 'Judul Siaran Pers / Headline Berita (contoh: Penyaluran Air Bersih ZISWAF CTARSA di Sukabumi)'
+                    : 'Judul singkat (dilihat tim, tidak ikut tayang)'
+                }
                 style={{ marginTop: 12 }}
               />
             </div>
@@ -570,72 +578,125 @@ export default function Composer() {
         <div className="compose-pratinjau">
           <p className="compose-preview-label">Pratinjau feed <span>Perubahan terlihat langsung</span></p>
           <TeleponMockup lebar={390}>
-            <PratinjauInstagram
-              handle={handle}
-              nama={tenant?.name ?? 'Workspace'}
-              bio={`Pratinjau ${getPlatform(platformPratinjau).label} · terbaru di kiri atas`}
-              logoUrl={tenant?.logo_url}
-              warnaAksen={tenant?.brand_color || 'var(--accent)'}
-              jumlahKonten={feed.length}
-              jumlahTerjadwal={feed.filter((f) => f.status !== 'idea').length}
-              jumlahDraf={feed.filter((f) => f.status === 'idea').length}
-              akunAsli={akunPlatform}
-              filter={filterPratinjau}
-              onFilter={setFilterPratinjau}
-            >
-              <div className="ig-grid">
-                {feedDenganDraf.slice(0, 12).map((item) => {
-                  const p = pillarById[item.pillar_id]
-                  const warna = p?.color ?? 'var(--border-strong)'
-                  return (
-                    <div
-                      key={item.id}
-                      className="ig-sel"
-                      style={{
-                        background: `color-mix(in srgb, ${warna} 16%, #fff)`,
-                        borderColor: item.draf ? 'var(--accent)' : 'transparent',
-                        borderStyle: item.draf ? 'dashed' : 'solid',
-                        cursor: 'default',
-                      }}
-                    >
-                      {item.gambar && <img src={item.gambar} alt="" className="ig-sel-gambar" />}
-
-                      <span className="ig-sel-atas">
-                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: warna, flexShrink: 0 }} />
-                        {item.draf && (
-                          <span style={{ fontSize: 8.5, fontWeight: 700, color: 'var(--accent)' }}>BARU</span>
-                        )}
-                        {/* Penanda video, seperti di grid Instagram asli. */}
-                        {item.video && (
-                          <span style={{ marginLeft: 'auto', color: item.gambar ? '#fff' : 'var(--text-secondary)' }}>
-                            <Icon name="videocam" size={11} />
-                          </span>
-                        )}
-                      </span>
-                      {/* Judul disembunyikan kalau sudah ada gambar — di grid
-                          Instagram yang terlihat memang gambarnya saja. */}
-                      {!item.gambar && <span className="ig-sel-judul">{item.title}</span>}
+            {platformPratinjau === 'article' ? (
+              <div style={{ background: '#fff', minHeight: 480, padding: 18, display: 'flex', flexDirection: 'column' }}>
+                {/* Header Portal Web Berita CTARSA */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border)', paddingBottom: 10, marginBottom: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                    <div style={{ width: 26, height: 26, borderRadius: 7, background: '#0284c7', color: '#fff', display: 'grid', placeItems: 'center' }}>
+                      <Icon name="newspaper-outline" size={15} />
                     </div>
-                  )
-                })}
-              </div>
-
-              {!adaAkunTerhubung && (
-                <div className="ig-cta">
-                  <p>Sambungkan akun sosial supaya jadwal ini benar-benar siap tayang.</p>
-                  <div className="ig-cta-ikon">
-                    {PLATFORMS.map((p) => (
-                      <span key={p.key} style={{ background: p.bg, color: p.color }}>
-                        <Icon name={p.icon} size={11} />
-                      </span>
-                    ))}
+                    <div>
+                      <span style={{ fontSize: 12, fontWeight: 750, color: '#0284c7', display: 'block', lineHeight: 1 }}>ZISWAF CTARSA</span>
+                      <span style={{ fontSize: 9, color: 'var(--text-muted)' }}>Portal Kabar Kebaikan</span>
+                    </div>
                   </div>
-                  <button type="button" onClick={() => navigate('/settings?tab=sosial')}>
-                    Sambungkan akun
-                  </button>
+                  <span style={{ fontSize: 9.5, background: '#e0f2fe', color: '#0369a1', padding: '2px 7px', borderRadius: 99, fontWeight: 700 }}>
+                    SIARAN PERS
+                  </span>
                 </div>
-              )}
-            </PratinjauInstagram>
+
+                {/* Foto / Dokumentasi Utama */}
+                <div style={{ width: '100%', height: 145, borderRadius: 10, background: 'var(--surface-1, #f1f5f9)', overflow: 'hidden', display: 'grid', placeItems: 'center', marginBottom: 12 }}>
+                  {asetUrl ? (
+                    <img src={asetUrl} alt="Foto rilis pers" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 10 }}>
+                      <Icon name="image-outline" size={28} />
+                      <p style={{ fontSize: 10.5, margin: '4px 0 0' }}>Belum ada foto dokumentasi rilis</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Tanggal & Dateline */}
+                <span style={{ fontSize: 9.5, fontWeight: 700, color: '#0284c7', letterSpacing: 0.5, marginBottom: 4 }}>
+                  {tanggal ? `${tanggal} · JAKARTA` : 'DRAFT RILIS PERS'}
+                </span>
+
+                {/* Judul Headline */}
+                <h3 style={{ fontSize: 14, fontWeight: 750, color: 'var(--text-primary)', margin: '0 0 8px', lineHeight: 1.35 }}>
+                  {judul || 'Judul Siaran Pers / Berita Baru'}
+                </h3>
+
+                {/* Isi Naskah Berita */}
+                <div style={{ flex: 1, fontSize: 11.5, color: 'var(--text-secondary)', lineHeight: 1.55, whiteSpace: 'pre-wrap', maxHeight: 160, overflowY: 'auto', background: 'var(--surface-1, #f9fafb)', padding: '8px 10px', borderRadius: 8 }}>
+                  {caption || 'Naskah rilis pers atau artikel berita akan muncul di sini secara real-time saat kamu menulis di sisi kiri...'}
+                </div>
+
+                {/* Footer Web CTARSA */}
+                <div style={{ borderTop: '1px solid var(--border)', paddingTop: 8, marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>ctarsa.or.id/berita</span>
+                  <span style={{ fontSize: 10.5, fontWeight: 600, color: '#0284c7' }}>Siap Publikasi ✓</span>
+                </div>
+              </div>
+            ) : (
+              <PratinjauInstagram
+                handle={handle}
+                nama={tenant?.name ?? 'Workspace'}
+                bio={`Pratinjau ${getPlatform(platformPratinjau).label} · terbaru di kiri atas`}
+                logoUrl={tenant?.logo_url}
+                warnaAksen={tenant?.brand_color || 'var(--accent)'}
+                jumlahKonten={feed.length}
+                jumlahTerjadwal={feed.filter((f) => f.status !== 'idea').length}
+                jumlahDraf={feed.filter((f) => f.status === 'idea').length}
+                akunAsli={akunPlatform}
+                filter={filterPratinjau}
+                onFilter={setFilterPratinjau}
+              >
+                <div className="ig-grid">
+                  {feedDenganDraf.slice(0, 12).map((item) => {
+                    const p = pillarById[item.pillar_id]
+                    const warna = p?.color ?? 'var(--border-strong)'
+                    return (
+                      <div
+                        key={item.id}
+                        className="ig-sel"
+                        style={{
+                          background: `color-mix(in srgb, ${warna} 16%, #fff)`,
+                          borderColor: item.draf ? 'var(--accent)' : 'transparent',
+                          borderStyle: item.draf ? 'dashed' : 'solid',
+                          cursor: 'default',
+                        }}
+                      >
+                        {item.gambar && <img src={item.gambar} alt="" className="ig-sel-gambar" />}
+
+                        <span className="ig-sel-atas">
+                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: warna, flexShrink: 0 }} />
+                          {item.draf && (
+                            <span style={{ fontSize: 8.5, fontWeight: 700, color: 'var(--accent)' }}>BARU</span>
+                          )}
+                          {/* Penanda video, seperti di grid Instagram asli. */}
+                          {item.video && (
+                            <span style={{ marginLeft: 'auto', color: item.gambar ? '#fff' : 'var(--text-secondary)' }}>
+                              <Icon name="videocam" size={11} />
+                            </span>
+                          )}
+                        </span>
+                        {/* Judul disembunyikan kalau sudah ada gambar — di grid
+                            Instagram yang terlihat memang gambarnya saja. */}
+                        {!item.gambar && <span className="ig-sel-judul">{item.title}</span>}
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {!adaAkunTerhubung && (
+                  <div className="ig-cta">
+                    <p>Sambungkan akun sosial supaya jadwal ini benar-benar siap tayang.</p>
+                    <div className="ig-cta-ikon">
+                      {PLATFORMS.map((p) => (
+                        <span key={p.key} style={{ background: p.bg, color: p.color }}>
+                          <Icon name={p.icon} size={11} />
+                        </span>
+                      ))}
+                    </div>
+                    <button type="button" onClick={() => navigate('/settings?tab=sosial')}>
+                      Sambungkan akun
+                    </button>
+                  </div>
+                )}
+              </PratinjauInstagram>
+            )}
           </TeleponMockup>
 
           <p style={{ fontSize: 11.5, color: 'var(--text-muted)', textAlign: 'center', marginTop: 14, lineHeight: 1.6, maxWidth: 290 }}>
