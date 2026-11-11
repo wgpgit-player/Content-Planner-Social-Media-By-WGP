@@ -113,3 +113,11 @@
 .campaign-feedback{font-size:10px;line-height:1.5;min-height:15px;color:#786a80;margin:10px 0 0}
 @media(max-width:800px){.campaign-planner{grid-template-columns:1fr;gap:22px;padding:24px}.campaign-intro>.campaign-art{display:none}.campaign-intro p{max-width:none}}
 @media(max-width:500px){.campaign-planner{width:calc(100% - 36px);padding:20px;margin-bottom:36px}.campaign-workbench{padding:14px}.campaign-plan article{grid-template-columns:36px 1fr 25px;gap:7px;padding:10px}}
+
+/* Responsive hero text toggles */
+.hero-mobile-copy{display:none!important}
+.hero-desktop-copy{display:inline!important}
+@media(max-width:700px){
+  .hero-desktop-copy{display:none!important}
+  .hero-mobile-copy{display:inline!important}
+}
