@@ -152,7 +152,6 @@ export default function Worksheet() {
     caption: '',
     cta: '',
     hashtags: '',
-    reference_url: '',
     status: 'draft',
   })
   const [modalBantu, setModalBantu] = useState(null) // null | 'hook' | 'cta' | 'hashtag'
@@ -302,7 +301,6 @@ export default function Worksheet() {
         caption: data.caption ?? '',
         cta: data.cta ?? '',
         hashtags: data.hashtags ?? '',
-        reference_url: data.reference_url ?? '',
         status: data.status ?? 'draft',
       })
     }
@@ -334,7 +332,6 @@ export default function Worksheet() {
       caption: draf.caption.trim() || null,
       cta: draf.cta.trim() || null,
       hashtags: draf.hashtags.trim() || null,
-      reference_url: draf.reference_url.trim() || null,
       status: statusFinal,
       updated_at: new Date().toISOString(),
     }
@@ -862,7 +859,7 @@ export default function Worksheet() {
                   {/* Smart Dispatcher: 1-Klik Salin Naskah & Buka Studio Resmi */}
                   <SmartDispatchButton
                     item={{ ...tugasAktif, ...draf }}
-                    targetUrl={draf.reference_url || tugasAktif.reference_url}
+                    targetUrl={tugasAktif.reference_url}
                     onStatusUpdated={(statusBaru) => {
                       setTugasAktif((prev) => ({ ...prev, status: statusBaru }))
                       setDraf((prev) => ({ ...prev, status: statusBaru }))
@@ -1213,58 +1210,47 @@ export default function Worksheet() {
                   </div>
                 </div>
 
-                {/* Link Aset / Referensi Eksekusi */}
-                <div>
-                  <label className="field-label">
-                    {tugasAktif?.platform === 'article'
-                      ? 'Link Portal Publikasi Berita / Dokumentasi Foto (Web Portal, Drive)'
-                      : 'Link Folder Aset / Desain (Google Drive, Figma, Canva)'}
-                  </label>
-                  <input
-                    className="input"
-                    type="url"
-                    placeholder={tugasAktif?.platform === 'article' ? 'https://ctarsa.or.id/berita/... atau folder foto Google Drive' : 'https://drive.google.com/... atau https://canva.com/...'}
-                    value={draf.reference_url}
-                    onChange={(e) => setDraf((d) => ({ ...d, reference_url: e.target.value }))}
-                  />
-                </div>
-
                 {/* Tombol Simpan & Serah Terima */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 8, flexWrap: 'wrap' }}>
+                <div className="worksheet-submit-actions">
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      className="btn btn-danger btn-sm"
+                      onClick={hapusBrief}
+                      disabled={saving}
+                      title="Hapus brief / tugas ini secara permanen"
+                      style={{ marginRight: 'auto' }}
+                    >
+                      <Icon name="trash-outline" size={14} /> Hapus Brief
+                    </button>
+                  )}
                   <button
                     type="button"
-                    className="btn btn-danger btn-sm"
-                    onClick={hapusBrief}
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => simpanDraf()}
                     disabled={saving}
-                    title="Hapus brief / tugas ini"
                   >
-                    <Icon name="trash-outline" size={14} /> Hapus Brief
+                    <Icon name="save-outline" size={14} /> Simpan Progres
                   </button>
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    <button
-                      type="button"
-                      className="btn btn-secondary btn-sm"
-                      onClick={() => simpanDraf()}
-                      disabled={saving}
-                    >
-                      <Icon name="save-outline" size={14} /> Simpan Progres
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-primary btn-sm"
-                      onClick={() => simpanDraf('review')}
-                      disabled={saving}
-                      style={{ background: 'var(--success, #10b981)', borderColor: 'transparent' }}
-                    >
-                      <Icon name="checkmark-done-outline" size={14} /> Selesai & Serahkan ke Manajer (ACC)
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    onClick={() => simpanDraf('review')}
+                    disabled={saving}
+                    style={{ background: 'var(--success, #10b981)', borderColor: 'transparent', fontWeight: 650 }}
+                  >
+                    <Icon name="checkmark-done-outline" size={15} /> Selesai & Serahkan ke Manajer (ACC)
+                  </button>
                 </div>
               </div>
             </div>
 
-            {/* SEKSI 4: Lampiran File & Media Materi */}
-            <LampiranMateri contentId={tugasAktif.id} />
+            {/* SEKSI 4: Lampiran File & Media Materi (Upload Gambar/Video & Link Canva/Drive) */}
+            <LampiranMateri
+              contentId={tugasAktif.id}
+              nilai={tugasAktif}
+              onBerubah={() => muatDetailTugas(tugasAktif.id)}
+            />
 
             {/* SEKSI 5: Diskusi & Catatan Feedback Manajer */}
             <Komentar contentId={tugasAktif.id} />

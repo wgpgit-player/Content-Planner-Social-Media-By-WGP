@@ -221,8 +221,8 @@ export default function LampiranMateri({ contentId, nilai, onBerubah }) {
       />
 
       <div style={{ paddingTop: 12, borderTop: '0.5px solid var(--border)' }}>
-        <label className="field-label" htmlFor="lm-tautan">Atau tautan ke Canva, Drive, atau video</label>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <label className="field-label" htmlFor="lm-tautan">Tautan Hasil Kerja (Canva, Google Drive, atau Video)</label>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <input
             id="lm-tautan"
             className="input"
@@ -230,14 +230,25 @@ export default function LampiranMateri({ contentId, nilai, onBerubah }) {
             value={tautan}
             onChange={(e) => setTautan(e.target.value)}
             onBlur={simpanTautan}
-            placeholder="https://"
+            placeholder="https://drive.google.com/... atau Canva"
+            style={{ flex: 1, minWidth: 0 }}
           />
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={simpanTautan}
+            disabled={sibuk}
+            style={{ flexShrink: 0 }}
+          >
+            {sibuk ? '...' : 'Simpan'}
+          </button>
           {nilai?.asset_url && (
             <a
               href={nilai.asset_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn"
+              className="btn btn-sm"
+              title="Buka Tautan Hasil Kerja"
               style={{ textDecoration: 'none', flexShrink: 0 }}
             >
               <Icon name="open-outline" size={15} />
