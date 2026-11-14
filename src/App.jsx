@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import ErrorBoundary from './components/ErrorBoundary'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { TenantProvider } from './context/TenantContext'
+import { NotificationProvider } from './context/NotificationContext'
 import { PenyediaBahasa } from './lib/bahasa'
 import ProtectedRoute from './components/ProtectedRoute'
 import { isMisconfiguredDeployment } from './lib/supabaseClient'
@@ -83,6 +84,7 @@ export default function App() {
       <ErrorBoundary>
       <AuthProvider>
         <TenantProvider>
+          <NotificationProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
@@ -137,6 +139,7 @@ export default function App() {
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          </NotificationProvider>
         </TenantProvider>
       </AuthProvider>
       </ErrorBoundary>

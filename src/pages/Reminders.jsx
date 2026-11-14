@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext'
 import { useTenantContext } from '../context/TenantContext'
 import { alasanTidakBisa, nyalakanPengingat, matikanPengingat, sedangBerlangganan } from '../lib/push'
 import { sedangTerpasang } from '../lib/pwa'
+import { playRingingTone, playTaskTone, vibrateDevice, showNativeNotification } from '../lib/notificationSound'
 
 // Pengingat jam tayang.
 //
@@ -239,6 +240,59 @@ export default function Reminders() {
           ))}
         </div>
       )}
+
+      {/* Fitur Notifikasi PWA: Ringing Admin & Tugas Baru */}
+      <div className="card" style={{ marginTop: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <Icon name="notifications" size={18} color="var(--accent)" />
+          <p style={{ fontSize: 13.5, fontWeight: 700, margin: 0 }}>
+            Uji Suara & Notifikasi PWA (Ringing & Tugas Baru)
+          </p>
+        </div>
+        <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 12 }}>
+          Fitur ini otomatis berdering dan memunculkan pop-up saat <strong>Admin menyenggol/mengingatkan tugas</strong> di Lembar Kerja atau saat <strong>ada tugas baru yang ditugaskan ke kamu</strong>.
+        </p>
+
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="btn btn-sm"
+            onClick={() => {
+              playRingingTone()
+              vibrateDevice([300, 150, 300, 150, 450])
+              showNativeNotification('⏰ Uji Panggilan Admin (Ringing)', {
+                body: 'Suara dering dan getar berfungsi normal di perangkat ini!',
+                tag: 'test-ringing',
+              })
+            }}
+            style={{
+              background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+              color: '#ffffff',
+              border: 'none',
+              fontWeight: 600,
+            }}
+          >
+            <Icon name="alarm-outline" size={14} />
+            Tes Suara Senggol Admin (Ding-Dong!)
+          </button>
+
+          <button
+            type="button"
+            className="btn btn-sm btn-secondary"
+            onClick={() => {
+              playTaskTone()
+              vibrateDevice([180, 100, 180])
+              showNativeNotification('📋 Uji Notif Tugas Baru', {
+                body: 'Chime tugas baru masuk terdengar jelas di perangkat ini!',
+                tag: 'test-task',
+              })
+            }}
+          >
+            <Icon name="musical-notes-outline" size={14} />
+            Tes Suara Tugas Baru (Chime)
+          </button>
+        </div>
+      </div>
 
       <div className="card" style={{ marginTop: 14 }}>
         <p style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 6 }}>Kapan pengingat dikirim</p>

@@ -73,16 +73,19 @@ self.addEventListener('push', (event) => {
     data = { judul: 'plannersm.co', isi: event.data ? event.data.text() : '' }
   }
 
+  const isRinging = (data.tag && data.tag.startsWith('ringing')) || data.tipe === 'ringing'
+
   event.waitUntil(
-    self.registration.showNotification(data.judul || 'plannersm.co', {
+    self.registration.showNotification(data.judul || (isRinging ? '⏰ Peringatan Admin!' : 'plannersm.co'), {
       body: data.isi || '',
       icon: '/icon-192.png',
       badge: '/icon-192.png',
       // tag diisi id konten: pengingat untuk konten yang sama menimpa yang
       // lama alih-alih menumpuk jadi beberapa notifikasi.
-      tag: data.tag || 'pengingat',
-      data: { tautan: data.tautan || '/dashboard' },
-      requireInteraction: false,
+      tag: data.tag || (isRinging ? 'admin-ringing' : 'pengingat'),
+      vibrate: isRinging ? [300, 150, 300, 150, 450] : [200, 100, 200],
+      data: { tautan: data.tautan || '/worksheet' },
+      requireInteraction: Boolean(isRinging),
     })
   )
 })

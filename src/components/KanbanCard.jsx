@@ -1,6 +1,8 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getPlatform } from '../config/platforms'
+import { useTenantContext } from '../context/TenantContext'
+import { useTaskNotification } from '../context/NotificationContext'
 import Icon from './Icon'
 import Avatar from './Avatar'
 
@@ -21,6 +23,21 @@ export default function KanbanCard({ item, onDragStart, onDragEnd, warnaStatus, 
   const platform = getPlatform(item.platform)
   const navigate = useNavigate()
   const posisiAwal = useRef(null)
+  const { isAdmin } = useTenantContext()
+  const { sendAdminRing } = useTaskNotification()
+  const [rung, setRung] = useState(false)
+
+  async function handleSenggol(e) {
+    e.stopPropagation()
+    if (rung || !item.assigneeId) return
+    setRung(true)
+    await sendAdminRing({
+      taskId: item.id,
+      taskTitle: item.title,
+      assigneeId: item.assigneeId,
+    })
+    setTimeout(() => setRung(false), 20000)
+  }
 
   function selesaiKlik(e) {
     const awal = posisiAwal.current
@@ -95,9 +112,30 @@ export default function KanbanCard({ item, onDragStart, onDragEnd, warnaStatus, 
             {item.scheduledDate}
           </p>
         )}
-        <span style={{ marginLeft: 'auto', display: 'flex' }}>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
+          {isAdmin && item.assigneeId && item.status !== 'published' && item.status !== 'archived' && (
+            <button
+              type="button"
+              onClick={handleSenggol}
+              disabled={rung}
+              title={rung ? 'Tersenggol!' : `Senggol ${anggota ? (anggota.full_name || anggota.email) : 'staf'}`}
+              style={{
+                border: 'none',
+                background: rung ? '#e2e8f0' : 'rgba(245, 158, 11, 0.15)',
+                color: rung ? '#94a3b8' : '#d97706',
+                borderRadius: 6,
+                padding: '2px 5px',
+                cursor: rung ? 'not-allowed' : 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                lineHeight: 1,
+              }}
+            >
+              <Icon name="notifications" size={11} />
+            </button>
+          )}
           <Avatar anggota={anggota} size={20} />
-        </span>
+        </div>
       </div>
     </div>
   )

@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import { useTenantContext } from '../context/TenantContext'
+import { useTaskNotification } from '../context/NotificationContext'
+import { useTenantMembers, namaAnggota } from '../lib/useTenantMembers'
 import AppShell from '../components/AppShell'
 import Icon from '../components/Icon'
 import Sheet from '../components/Sheet'
@@ -101,6 +103,48 @@ export default function Worksheet() {
   const [filterTab, setFilterTab] = useState('semua') // 'semua' | 'draft' | 'review' | 'selesai'
   const [saving, setSaving] = useState(false)
   const [pesan, setPesan] = useState(null)
+
+  const { sendAdminRing } = useTaskNotification()
+  const { members } = useTenantMembers()
+  const anggotaById = useMemo(() => {
+    const map = {}
+    for (const m of members) {
+      map[m.user_id] = m
+    }
+    return map
+  }, [members])
+
+  const [ringingCooldown, setRingingCooldown] = useState(0)
+  const [ringingLoading, setRingingLoading] = useState(false)
+
+  useEffect(() => {
+    if (ringingCooldown <= 0) return
+    const timer = setInterval(() => {
+      setRingingCooldown((prev) => (prev > 0 ? prev - 1 : 0))
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [ringingCooldown])
+
+  async function handleSenggolStaf(itemTarget = null) {
+    const target = itemTarget || tugasAktif
+    if (!target || !target.assignee_id) return
+    const targetNama = namaAnggota(anggotaById[target.assignee_id])
+
+    setRingingLoading(true)
+    const res = await sendAdminRing({
+      taskId: target.id,
+      taskTitle: target.title,
+      assigneeId: target.assignee_id,
+    })
+    setRingingLoading(false)
+
+    if (res.ok) {
+      setRingingCooldown(30)
+      setPesan(`🔔 Sinyal dering & notifikasi PWA berhasil dikirim ke perangkat ${targetNama}!`)
+    } else {
+      setPesan(`Gagal mengirim sinyal: ${res.error || 'Terjadi kesalahan'}`)
+    }
+  }
 
   // Form eksekusi draf karyawan
   const [draf, setDraf] = useState({
@@ -603,22 +647,55 @@ export default function Worksheet() {
                       >
                         {it.title}
                       </p>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                          {formatTanggal(it.scheduled_date)}
-                        </span>
-                        <span
-                          style={{
-                            fontSize: 10.5,
-                            padding: '1px 6px',
-                            borderRadius: 99,
-                            background: s.bg,
-                            color: s.color,
-                            fontWeight: 600,
-                          }}
-                        >
-                          {s.label}
-                        </span>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, overflow: 'hidden' }}>
+                          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                            {formatTanggal(it.scheduled_date)}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: 10.5,
+                              padding: '1px 6px',
+                              borderRadius: 99,
+                              background: s.bg,
+                              color: s.color,
+                              fontWeight: 600,
+                            }}
+                          >
+                            {s.label}
+                          </span>
+                          {it.assignee_id && (
+                            <span style={{ fontSize: 10.5, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 75 }}>
+                              • {namaAnggota(anggotaById[it.assignee_id])}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Tombol Cepat Senggol Admin */}
+                        {isAdmin && it.assignee_id && it.status !== 'published' && it.status !== 'archived' && (
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleSenggolStaf(it)
+                            }}
+                            title={`Senggol ${namaAnggota(anggotaById[it.assignee_id])}`}
+                            style={{
+                              padding: '2px 6px',
+                              borderRadius: 6,
+                              background: 'rgba(245, 158, 11, 0.15)',
+                              color: '#d97706',
+                              fontSize: 11,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              cursor: 'pointer',
+                              flexShrink: 0,
+                            }}
+                          >
+                            <Icon name="notifications" size={12} />
+                          </span>
+                        )}
                       </div>
                     </div>
                   </button>
@@ -680,13 +757,49 @@ export default function Worksheet() {
                   <h2 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 6px 0' }}>
                     {tugasAktif.title}
                   </h2>
-                  <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>
-                    Target Tayang: <strong>{formatTanggal(tugasAktif.scheduled_date)}</strong>
-                    {tugasAktif.scheduled_time ? ` pukul ${tugasAktif.scheduled_time.slice(0, 5)} WIB` : ''}
-                  </p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                    <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>
+                      Target Tayang: <strong>{formatTanggal(tugasAktif.scheduled_date)}</strong>
+                      {tugasAktif.scheduled_time ? ` pukul ${tugasAktif.scheduled_time.slice(0, 5)} WIB` : ''}
+                    </p>
+                    {tugasAktif.assignee_id && (
+                      <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                        • PIC: <strong style={{ color: 'var(--text-primary)' }}>{namaAnggota(anggotaById[tugasAktif.assignee_id])}</strong>
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  {/* Tombol Senggol / Ringing Karyawan (Khusus Admin / Manajer) */}
+                  {isAdmin && tugasAktif.assignee_id && tugasAktif.status !== 'published' && tugasAktif.status !== 'archived' && (
+                    <button
+                      type="button"
+                      className="btn btn-sm"
+                      onClick={() => handleSenggolStaf()}
+                      disabled={ringingCooldown > 0 || ringingLoading}
+                      style={{
+                        background: ringingCooldown > 0 ? '#e2e8f0' : 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                        color: ringingCooldown > 0 ? '#64748b' : '#ffffff',
+                        border: 'none',
+                        fontWeight: 650,
+                        boxShadow: ringingCooldown > 0 ? 'none' : '0 2px 8px rgba(217, 119, 6, 0.35)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        cursor: ringingCooldown > 0 ? 'not-allowed' : 'pointer',
+                      }}
+                      title={`Kirim sinyal dering & notifikasi PWA langsung ke perangkat ${namaAnggota(anggotaById[tugasAktif.assignee_id])}`}
+                    >
+                      <Icon name="notifications" size={14} />
+                      {ringingLoading
+                        ? 'Menyenggol...'
+                        : ringingCooldown > 0
+                        ? `Tersenggol (${ringingCooldown}s)`
+                        : `🔔 Senggol ${namaAnggota(anggotaById[tugasAktif.assignee_id])}`}
+                    </button>
+                  )}
+
                   <Link to={`/content/${tugasAktif.id}`} className="btn btn-secondary btn-sm" title="Buka Detail Brief Lengkap">
                     <Icon name="open-outline" size={14} /> Brief Penuh
                   </Link>

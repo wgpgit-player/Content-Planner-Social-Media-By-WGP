@@ -6,6 +6,7 @@ import { PLATFORMS, getPlatform } from '../config/platforms'
 import { supabase } from '../lib/supabaseClient'
 import { useTenantContext } from '../context/TenantContext'
 import { useAuth } from '../context/AuthContext'
+import { useTaskNotification } from '../context/NotificationContext'
 import { useTenantMembers, namaAnggota } from '../lib/useTenantMembers'
 import { todayIso, addDays, isoDate } from '../lib/dates'
 
@@ -58,6 +59,7 @@ export default function CreatePostModal({ open, onClose }) {
   const { tenantId } = useTenantContext()
   const { user } = useAuth()
   const { members } = useTenantMembers()
+  const { sendTaskAssigned } = useTaskNotification()
 
   const [platform, setPlatform] = useState('instagram')
   const [format, setFormat] = useState('carousel')
@@ -172,6 +174,15 @@ export default function CreatePostModal({ open, onClose }) {
         await supabase.from('checklist_items').insert(checklistBaris)
       } catch (e) {
         // Abaikan jika tabel checklist tidak ada
+      }
+
+      // Kirim sinyal notifikasi tugas baru ke PWA staf terkait
+      if (data?.assignee_id) {
+        sendTaskAssigned({
+          taskId: data.id,
+          taskTitle: data.title,
+          assigneeId: data.assignee_id,
+        }).catch(() => {})
       }
 
       if (lanjutKeWorksheet) {

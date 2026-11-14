@@ -8,6 +8,7 @@ import PratinjauInstagram from '../components/PratinjauInstagram'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import { useTenantContext } from '../context/TenantContext'
+import { useTaskNotification } from '../context/NotificationContext'
 import { PLATFORMS, getPlatform } from '../config/platforms'
 import { isoDate, addDays, startOfWeek, buildWeekDates, todayIso } from '../lib/dates'
 import { unggahMediaPerpustakaan, urlMateri, jenisVideo, JENIS_DITERIMA } from '../lib/materi'
@@ -67,6 +68,7 @@ export default function Composer() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { tenantId, tenant } = useTenantContext()
+  const { sendTaskAssigned } = useTaskNotification()
 
   // Dipakai saat datang dari klik "ide konten harian" di kalender
   // (BarisAgenda.jsx): ?ide=teks nya&tanggal=YYYY-MM-DD. Dibaca sekali saja
@@ -296,6 +298,15 @@ export default function Composer() {
       } catch (e) {
         // Abaikan jika tabel checklist tidak ada
       }
+    }
+
+    // Kirim notifikasi tugas baru ke staf yang ditugaskan
+    if (assigneeId && data?.length) {
+      sendTaskAssigned({
+        taskId: data[0].id,
+        taskTitle: judul.trim(),
+        assigneeId,
+      }).catch(() => {})
     }
 
     // Satu platform: langsung ke Lembar Kerja Tugas (/worksheet) agar tim/manajer bisa melihat hasil briefnya
