@@ -101,6 +101,7 @@ export default function Worksheet() {
   const [loadingList, setLoadingList] = useState(true)
   const [loadingDetail, setLoadingDetail] = useState(false)
   const [filterTab, setFilterTab] = useState('semua') // 'semua' | 'draft' | 'review' | 'selesai'
+  const [mobileTab, setMobileTab] = useState(() => searchParams.get('id') ? 'detail' : 'list') // 'list' | 'detail'
   const [saving, setSaving] = useState(false)
   const [pesan, setPesan] = useState(null)
 
@@ -317,6 +318,7 @@ export default function Worksheet() {
   function pilihTugas(id) {
     setTugasAktifId(id)
     setSearchParams({ id })
+    setMobileTab('detail')
   }
 
   // 3. Simpan hasil eksekusi draf karyawan
@@ -535,11 +537,32 @@ export default function Worksheet() {
         </div>
       )}
 
+      {/* Tab Navigasi Khusus Mobile (< 1024px) */}
+      <div className="worksheet-mobile-tabs">
+        <button
+          type="button"
+          className={`worksheet-mobile-tab-btn ${mobileTab === 'list' ? 'active' : ''}`}
+          onClick={() => setMobileTab('list')}
+        >
+          <Icon name="briefcase-outline" size={15} />
+          <span>Daftar Tugas ({tugasTerfilter.length})</span>
+        </button>
+        <button
+          type="button"
+          className={`worksheet-mobile-tab-btn ${mobileTab === 'detail' ? 'active' : ''}`}
+          onClick={() => setMobileTab('detail')}
+        >
+          <Icon name="document-text-outline" size={15} />
+          <span>Lembar Kerja {tugasAktif ? `• ${tugasAktif.title.length > 14 ? tugasAktif.title.slice(0, 12) + '…' : tugasAktif.title}` : ''}</span>
+        </button>
+      </div>
+
       {/* Grid Worksheet: Kiri = Daftar Tugas dari Manajer, Kanan = Lembar Kerja Eksekusi */}
-      <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: 18, alignItems: 'start' }}>
+      <div className="worksheet-layout">
         
         {/* Kolom Kiri: Daftar Tugas */}
-        <div className="card" style={{ padding: '14px 12px' }}>
+        <div className={`worksheet-col-list ${mobileTab === 'list' ? 'mobile-show' : ''}`}>
+          <div className="card" style={{ padding: '14px 12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <Icon name="briefcase-outline" size={16} color="var(--accent)" />
@@ -704,9 +727,23 @@ export default function Worksheet() {
             </div>
           )}
         </div>
+        </div>
 
         {/* Kolom Kanan: Area Worksheet Eksekusi */}
-        {loadingDetail ? (
+        <div className={`worksheet-col-detail ${mobileTab === 'detail' ? 'mobile-show' : ''}`}>
+          {/* Tombol kembali ke daftar tugas khusus tampilan mobile */}
+          <div className="mobile-only-back-btn" style={{ marginBottom: 12 }}>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => setMobileTab('list')}
+              style={{ width: '100%', justifyContent: 'center', gap: 6 }}
+            >
+              <Icon name="arrow-back-outline" size={14} /> Lihat Daftar Semua Tugas ({tugasTerfilter.length})
+            </button>
+          </div>
+
+          {loadingDetail ? (
           <div className="card" style={{ padding: 30, textAlign: 'center' }}>
             <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Membuka lembar kerja tugas...</p>
           </div>
@@ -723,8 +760,8 @@ export default function Worksheet() {
             
             {/* Header Tugas */}
             <div className="card" style={{ padding: '16px 20px' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-                <div>
+              <div className="worksheet-header-flex">
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
                     <span className="chip" style={{ background: platformAktif.bg, color: platformAktif.color, borderColor: 'transparent' }}>
                       <Icon name={platformAktif.icon} size={13} /> {platformAktif.label}
@@ -754,7 +791,7 @@ export default function Worksheet() {
                     )}
                   </div>
 
-                  <h2 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 6px 0' }}>
+                  <h2 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 6px 0', lineHeight: 1.35 }}>
                     {tugasAktif.title}
                   </h2>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
@@ -770,7 +807,7 @@ export default function Worksheet() {
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                <div className="worksheet-actions-flex">
                   {/* Tombol Senggol / Ringing Karyawan (Khusus Admin / Manajer) */}
                   {isAdmin && tugasAktif.assignee_id && tugasAktif.status !== 'published' && tugasAktif.status !== 'archived' && (
                     <button
@@ -796,7 +833,7 @@ export default function Worksheet() {
                         ? 'Menyenggol...'
                         : ringingCooldown > 0
                         ? `Tersenggol (${ringingCooldown}s)`
-                        : `🔔 Senggol ${namaAnggota(anggotaById[tugasAktif.assignee_id])}`}
+                        : `🔔 Senggol ${namaAnggota(anggotaById[tugasAktif.assignee_id]).length > 12 ? namaAnggota(anggotaById[tugasAktif.assignee_id]).slice(0, 10) + '…' : namaAnggota(anggotaById[tugasAktif.assignee_id])}`}
                     </button>
                   )}
 
@@ -972,7 +1009,7 @@ export default function Worksheet() {
                 </button>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
+              <div className="worksheet-brief-grid">
                 <div style={{ background: 'var(--surface-1, #f9fafb)', padding: '10px 12px', borderRadius: 8 }}>
                   <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', margin: '0 0 4px 0', textTransform: 'uppercase' }}>
                     Ringkasan Brief
@@ -1152,7 +1189,7 @@ export default function Worksheet() {
                   />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="worksheet-two-cols">
                   {/* Call to Action */}
                   <div>
                     <label className="field-label">Ajakan Bertindak (CTA)</label>
@@ -1234,6 +1271,7 @@ export default function Worksheet() {
 
           </div>
         )}
+        </div>
       </div>
 
       {/* Drawer Cepat Copywriting */}
@@ -1475,7 +1513,7 @@ export default function Worksheet() {
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div className="worksheet-two-cols" style={{ gap: 10 }}>
               <div>
                 <label className="field-label">Tujuan Konten (Objective)</label>
                 <input
