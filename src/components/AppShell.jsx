@@ -6,6 +6,7 @@ import BottomNav from './BottomNav'
 import Icon from './Icon'
 import { useTenantContext } from '../context/TenantContext'
 import { TenantAvatar } from './TenantSwitcher'
+import MobileTenantBar from './MobileTenantBar'
 
 // Kerangka semua halaman yang sudah login.
 //
@@ -59,14 +60,8 @@ export default function AppShell({ title, description, actions, children, maxWid
 
   return (
     <div className="app-shell">
-      {/* Hanya tampil di layar sempit. Di ponsel, nama ruang kerja tidak
-          terlihat di mana pun lagi karena sidebar disembunyikan, dan tanpa
-          penanda itu orang yang mengelola beberapa klien tidak tahu sedang
-          berada di ruang kerja siapa. */}
-      <div className="app-topbar">
-        <TenantAvatar tenant={tenant} size={26} />
-        <span className="app-topbar-nama">{tenant?.name ?? 'plannersm.co'}</span>
-      </div>
+      {/* Bilah Atas Mobile: Nama Ruang Kerja & Pemilih Workspace (Akun Kerja vs Akun Pribadi) */}
+      <MobileTenantBar />
 
       {/* Hanya tampil di layar lebar — lihat komentar di Topbar.jsx. Di
           ponsel bilah atas yang dipakai tetap yang di atas (.app-topbar). */}

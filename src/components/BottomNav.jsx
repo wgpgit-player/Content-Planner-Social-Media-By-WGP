@@ -42,7 +42,7 @@ export default function BottomNav() {
   const { isOperator } = useOperator()
   const [sheetTerbuka, setSheetTerbuka] = useState(false)
   const { user, signOut, isMock } = useAuth()
-  const { isAdmin, role, tenant } = useTenantContext()
+  const { isAdmin, role, tenant, tenants, switchTenant } = useTenantContext()
   const lokasi = useLocation()
   const navigate = useNavigate()
 
@@ -107,12 +107,91 @@ export default function BottomNav() {
         <Sheet open onClose={() => setSheetTerbuka(false)} lebar={420}>
           <div className="sheet-tenant">
             <TenantAvatar tenant={tenant} size={38} />
-            <div style={{ minWidth: 0 }}>
+            <div style={{ minWidth: 0, flex: 1 }}>
               <p className="sheet-tenant-nama">{tenant?.name ?? 'plannersm.co'}</p>
               <p className="sheet-tenant-peran">
                 {isMock ? 'Mode preview' : role === 'admin' ? 'Admin' : role === 'staff' ? 'Staff' : ''}
                 {user?.email ? ` · ${user.email}` : ''}
               </p>
+            </div>
+          </div>
+
+          {/* Pemilih Workspace Mobile (Beralih Akun Kerja & Akun Pribadi) */}
+          <div className="sheet-grup" style={{ marginTop: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <p className="sheet-grup-label" style={{ margin: 0 }}>GANTI WORKSPACE ({tenants.length})</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setSheetTerbuka(false)
+                  navigate('/onboarding?new=1')
+                }}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--accent)',
+                  fontSize: 11,
+                  fontWeight: 650,
+                  cursor: 'pointer',
+                  padding: 0,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 3,
+                }}
+              >
+                <Icon name="add-outline" size={13} /> + Workspace Baru
+              </button>
+            </div>
+
+            <div className="sheet-daftar">
+              {tenants.map((t) => {
+                const aktif = t.id === tenant?.id
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => {
+                      switchTenant(t.id)
+                      setSheetTerbuka(false)
+                      navigate('/dashboard')
+                    }}
+                    className={`sheet-baris${aktif ? ' aktif' : ''}`}
+                    style={{
+                      width: '100%',
+                      textAlign: 'left',
+                      border: aktif ? '1.5px solid var(--accent)' : '1px solid var(--border)',
+                      background: aktif ? 'var(--accent-bg, rgba(99, 102, 241, 0.08))' : 'var(--surface-1)',
+                      borderRadius: 10,
+                      padding: '8px 10px',
+                      marginBottom: 6,
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                    }}
+                  >
+                    <TenantAvatar tenant={t} size={26} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 13, fontWeight: aktif ? 650 : 500, margin: 0, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {t.name}
+                      </p>
+                      <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>
+                        {t.role === 'admin' ? 'Akun Admin' : t.role === 'staff' ? 'Akun Staff' : 'Member'}
+                      </span>
+                    </div>
+                    {aktif ? (
+                      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: 3 }}>
+                        <Icon name="checkmark-circle" size={16} /> Aktif
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 3 }}>
+                        <Icon name="swap-horizontal-outline" size={13} /> Pilih
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
             </div>
           </div>
 
